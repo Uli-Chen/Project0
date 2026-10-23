@@ -1,0 +1,62 @@
+{
+  "baseline": "v0.1",
+  "frozen_on": "2026-10-23",
+  "timezone": "Asia/Taipei",
+  "kind": "planning_documents_not_product_release",
+  "files": [
+    {
+      "source": "writeup/01_商业计划书.docx",
+      "snapshot": "writeup/01_商业计划书.docx",
+      "bytes": 261932,
+      "sha256": "8f9b0df7493071f2e7dd9e56b8bee2b96ab446818f28c41da6020283cf786303"
+    },
+    {
+      "source": "writeup/01_商业计划书.md",
+      "snapshot": "writeup/01_商业计划书.md",
+      "bytes": 47339,
+      "sha256": "51ac109503b187024a620ff24b5bc48bd12bf2fd5f7e1209d4a2fdbce60a8725"
+    },
+    {
+      "source": "writeup/02_产品设计与技术原型方案.docx",
+      "snapshot": "writeup/02_产品设计与技术原型方案.docx",
+      "bytes": 571388,
+      "sha256": "9a8dbbd686a6d426aa49584559036c73b5cc71ae1dcbd0beb481e875e06f9665"
+    },
+    {
+      "source": "writeup/02_产品设计与技术原型方案.md",
+      "snapshot": "writeup/02_产品设计与技术原型方案.md",
+      "bytes": 40904,
+      "sha256": "48b239033392a1d002a768c7061cef0ad8c23a00be9ded94d50ad369acb30dad"
+    },
+    {
+      "source": "writeup/03_营收模型.xlsx",
+      "snapshot": "writeup/03_营收模型.xlsx",
+      "bytes": 27150,
+      "sha256": "5fce6beef6fc6b4a9b368a5b02754bed6001e467be8adee28cc38bf9ca0759a9"
+    },
+    {
+      "source": "writeup/deep-research-report.md",
+      "snapshot": "writeup/deep-research-report.md",
+      "bytes": 42455,
+      "sha256": "79030aeeca7d4c27904e3e6af9d2d1f680c580e1e0b6ea9fbd59b6ddfde5101a"
+    },
+    {
+      "source": "writeup/model/build_revenue_model.py",
+      "snapshot": "writeup/model/build_revenue_model.py",
+      "bytes": 34387,
+      "sha256": "57889726b4aece9c8c0c9ff309281c9f59aa147539505e2becf2db83e6be569f"
+    },
+    {
+      "source": "writeup/model/docx_style.py",
+      "snapshot": "writeup/model/docx_style.py",
+      "bytes": 3159,
+      "sha256": "a71cbed70c3314c3f518101e09efa4bdfb2977878433b97dd48ccd217b382745"
+    },
+    {
+      "source": "writeup/model/verify_model.py",
+      "snapshot": "writeup/model/verify_model.py",
+      "bytes": 1849,
+      "sha256": "7c90950aac31a003fd1d1e23d438f2d03be1c5f43ac57665263b9f41e2302fce"
+    }
+  ]
+}
