@@ -15,6 +15,7 @@ import { commitPracticeCheckpoint } from "../lib/db/practice-facts";
 import { runAction, SessionError } from "../lib/pipeline/engine";
 import { POST } from "../app/api/sessions/[id]/actions/route";
 import { GET, PATCH, DELETE } from "../app/api/sessions/[id]/route";
+import { POST as LIFECYCLE } from "../app/api/sessions/[id]/lifecycle/route";
 import { POST as REGISTER } from "../app/api/auth/register/route";
 import { register } from "../instrumentation";
 import { catalog, requirements, session, evaluation, time, table } from "./helpers/practice-db";
@@ -105,7 +106,7 @@ test("original evaluate rejects feedback/compared/finished with 409, no model ca
         s.revisionScores = structuredClone(evaluation.scores);
         s.comparison = { issues: [{ rank: 1, status: "resolved", reason: "解释了节省开支的用途", revisionSentenceIds: [6] }], idea: { stanceKept: true, keptPoints: ["支持公共交通"], deepened: [], changed: [] }, aiRatio: 0 };
       }
-      if (stage === "finished") s.finish = { memoryChanges: [{ kind: "improving", text: "例子包含具体后果" }], planChange: "在新题中练习解释后果" };
+      if (stage === "finished") s.finish = { memoryChanges: [{ kind: "improving", text: "例子包含具体后果" }] };
       s.stage = stage; saveSession("u", s);
       const before = structuredClone(s);
       const snapshot = () => ["writing_sessions", "attempt_markers", "completion_events", "familiarity", "legacy_scan", "default_continuations", "request_receipts"].map(name => table(db.$client, name));
@@ -161,7 +162,7 @@ test("deleting an attempt during optional review retry never recreates content o
     const response = await call(saved.id, "POST", { action: "retryReview", requestId: crypto.randomUUID() });
     assert.equal(response.status, 404);
   });
-  assert.equal(getSession("u", saved.id), null); assert.deepEqual(events(), before);
+  assert.equal(getSession("u", saved.id), null); assert.deepEqual(events(), before.map(e => e.attemptId === saved.id ? { ...e, evidenceDeleted: true } : e));
 });
 
 test("interrupted optional review is a read-only failed projection and retries only review", async () => {
@@ -213,4 +214,36 @@ test("startup hook logs scan failure and returns; missing scan remains absent fo
     assert.equal(errors.length, 1);
     assert.equal(db.select().from(legacyScan).all().some(s => s.userId === "malformed"), false);
   } finally { console.error = original; if (runtime === undefined) delete process.env.NEXT_RUNTIME; else process.env.NEXT_RUNTIME = runtime; }
+});
+
+
+test("student review retry stamps recency before calling model; automatic review completion preserves later lifecycle time and state", async () => {
+  const saved = await failedReview(); saved.lastStudentActionAt = time; saveSession("u", saved);
+  let laterTime: string | null = null;
+  await mock(async () => {
+    const reserved = getSession("u", saved.id)!;
+    assert.notEqual(reserved.lastStudentActionAt, time);
+    const request = new Request(`http://practice.test/api/sessions/${saved.id}/lifecycle`, { method: "POST", headers: { origin: "http://practice.test", cookie: `wm_session=${token}`, "content-type": "application/json" }, body: JSON.stringify({ action: "setAside" }) });
+    const response = await inRequest(request, () => LIFECYCLE(request, { params: Promise.resolve({ id: saved.id }) }));
+    assert.equal(response.status, 200);
+    laterTime = (await response.json()).session.lastStudentActionAt;
+    return modelResponse(evaluation.review);
+  }, async () => {
+    const response = await call(saved.id, "POST", { action: "retryReview", requestId: crypto.randomUUID() });
+    assert.equal(response.status, 200);
+    const result = (await response.json()).session;
+    assert.equal(result.lastStudentActionAt, laterTime);
+    assert.equal(result.lifecycle, "set_aside"); assert.equal(result.stage, "feedback");
+    assert.equal(result.completedAt, saved.completedAt);
+  });
+});
+
+test("automatic paragraph nudge updates its result without changing latest student action time", async () => {
+  const s = session(); s.lastStudentActionAt = time; saveSession("u", s);
+  await mock(async () => modelResponse({ message: "这个例子怎样支持你的观点？", code: "example" }), async () => {
+    const response = await call(s.id, "POST", { action: "nudge", kind: "original", paragraphIndex: 0 });
+    assert.equal(response.status, 200);
+    const result = (await response.json()).session;
+    assert.ok(result.nudge); assert.equal(result.lastStudentActionAt, time);
+  });
 });

@@ -1,3 +1,4 @@
+import { isStudentAction } from "@/lib/rules/student-action";
 import { z } from "zod";
 import { withModelAdmission } from "@/lib/llm/admission";
 import { assertSupportedSession, sessionApiError as apiError } from "@/lib/pipeline/http";
@@ -29,6 +30,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       // Reject original regrading before writing pendingAction or changing timestamps.
       if (input.action === "evaluate" && input.kind === "original") assertOriginalEvaluationStage(current);
       const persist = (state: SessionState) => { state.version++; state.updatedAt = state.savedAt = new Date().toISOString(); saveSession(user.id, state); };
+      if (isStudentAction({ kind: "action", action: input.action })) current.lastStudentActionAt = new Date().toISOString();
       current.pendingAction = { requestId, input, startedAt: new Date().toISOString() };
       persist(current);
       try {

@@ -1,0 +1,63 @@
+import "server-only";
+import { createHash } from "node:crypto";
+import { and, eq } from "drizzle-orm";
+import type { z } from "zod";
+import { getDb } from "./client";
+import { attemptMarkers, questions } from "./schema";
+import { getSession, saveSession } from "./queries/sessions";
+import { recordAttempt } from "./practice-facts";
+import { questionContext, resolveAttempt } from "./question-context";
+import { getRequestReceipt, ReceiptConflict, writeRequestReceipt } from "./request-receipts";
+import { createSession } from "../pipeline/initial";
+import { SessionError } from "../pipeline/engine";
+import type { questionCreateSessionSchema } from "../pipeline/schemas";
+import type { SessionState } from "../pipeline/types";
+
+export function saveNewPractice(userId: string, session: SessionState) {
+  const sqlite = getDb().$client;
+  sqlite.transaction(() => {
+    saveSession(userId, session);
+    recordAttempt(sqlite, userId, session, questionContext(sqlite));
+  }).immediate();
+}
+
+export function createQuestionPractice(userId: string, input: z.infer<typeof questionCreateSessionSchema>) {
+  const db = getDb(), sqlite = db.$client;
+  const paramsHash = createHash("sha256").update(JSON.stringify({ questionId: input.questionId,
+    activity: input.activity, mode: input.mode, rewriteOfDeepId: input.rewriteOfDeepId ?? null })).digest("hex");
+  return sqlite.transaction(() => {
+    if (input.activity === "quick") throw new SessionError("速刷创建尚未开放。", 409, "unsupported_activity");
+    if (input.mode === "mock") throw new SessionError("按题目模考需从检查点开始。", 409, "mock_requires_checkpoint");
+    const receipt = getRequestReceipt(sqlite, userId, input.idempotencyKey);
+    if (receipt) {
+      if (receipt.action !== "createQuestionPractice" || receipt.paramsHash !== paramsHash) throw new ReceiptConflict();
+      const session = getSession(userId, receipt.resultRef!);
+      // Never recreate deleted content when a lost creation response is retried.
+      if (!session) throw new SessionError("这次练习已删除，请使用新请求键另开练习。", 409, "practice_deleted");
+      return { session, status: 200 };
+    }
+    const row = db.select().from(questions).where(and(eq(questions.id, input.questionId), eq(questions.isCurrent, true))).get();
+    if (!row) throw new SessionError("题目不存在或不是当前版本。", 404);
+    const context = questionContext(sqlite);
+    if (input.rewriteOfDeepId) {
+      const source = getSession(userId, input.rewriteOfDeepId);
+      const marker = db.select().from(attemptMarkers).where(and(eq(attemptMarkers.userId, userId), eq(attemptMarkers.attemptId, input.rewriteOfDeepId))).get();
+      if (!source && !marker) throw new SessionError("来源练习不存在。", 404);
+      const activity = source?.activity ?? marker!.activity;
+      const family = source ? resolveAttempt(source, context).exposureKey : marker!.exposureKey;
+      if (activity !== "deep" || family !== row.exposureKey) throw new SessionError("只能关联同一题目家族的精练。", 409, "invalid_rewrite");
+    }
+    const session = createSession({ kind: "free", mode: "practice", prompt: row.text });
+    session.question = { id: row.id, version: row.version, exposureKey: row.exposureKey, bankVersion: row.bankVersion,
+      primaryTopic: row.primaryTopic as NonNullable<SessionState["question"]>["primaryTopic"],
+      questionType: row.questionType as SessionState["prompt"]["questionType"], text: row.text };
+    session.prompt = { id: session.question.id, text: session.question.text,
+      questionType: session.question.questionType, topicTags: [session.question.primaryTopic] };
+    session.rewriteOfDeepId = input.rewriteOfDeepId ?? null;
+    session.lastStudentActionAt = session.createdAt;
+    saveNewPractice(userId, session);
+    writeRequestReceipt(sqlite, { userId, idempotencyKey: input.idempotencyKey, attemptId: session.id,
+      action: "createQuestionPractice", paramsHash, resultRef: session.id, createdAt: session.createdAt });
+    return { session, status: 201 };
+  }).immediate();
+}

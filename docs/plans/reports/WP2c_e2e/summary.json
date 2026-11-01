@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "routeCalls": 18,
+  "rendering": "real authenticated EssayPage + React SSR, no browser or listener",
+  "tempDatabaseRemovedAfterRun": true,
+  "network": "blocked; deterministic fetch fixtures only",
+  "emptyUserTables": [
+    "users",
+    "auth_sessions",
+    "auth_attempts",
+    "writing_sessions",
+    "attempt_markers",
+    "completion_events",
+    "familiarity",
+    "legacy_scan",
+    "default_continuations",
+    "request_receipts"
+  ],
+  "remainingQuestions": 38
+}

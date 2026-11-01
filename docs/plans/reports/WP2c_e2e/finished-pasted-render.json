@@ -1,0 +1,10 @@
+{
+  "path": "/essays/be720498-af82-40cf-bf8f-9e259d1f5498",
+  "authenticated": true,
+  "renderer": "EssayPage -> SessionView -> SessionProvider -> EssayScreen; real React SSR",
+  "nextHref": "/",
+  "lastStudentActionAt": "2026-11-01T04:47:35.353Z",
+  "stage": "finished",
+  "lifecycle": "open",
+  "byteLength": 13970
+}

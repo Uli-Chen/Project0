@@ -1,3 +1,4 @@
+import { readFeatures } from "@/lib/config/features";
 import { ArrowUpRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { EssayTable, type EssayRow } from "@/components/library/essay-table";
@@ -24,7 +25,7 @@ export default async function LibraryPage() {
       <div className="min-w-0">
         <header className="flex items-center justify-between gap-4">
           <h1 className="page-heading">作文</h1>
-          <NewEssayDialog focus={summary.focus?.title} trigger={<Button><Plus />新建作文</Button>} />
+          <NewEssayDialog focus={readFeatures().QUESTION_BANK_ENABLED ? undefined : summary.focus?.title} trigger={<Button><Plus />新建作文</Button>} />
         </header>
 
         {!user.profile.onboardingCompleted ? (
@@ -37,7 +38,7 @@ export default async function LibraryPage() {
           {rows.length ? <EssayTable rows={rows} /> : (
             <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed py-20">
               <p className="font-serif text-xl">写第一篇</p>
-              <NewEssayDialog focus={summary.focus?.title} trigger={<Button variant="outline"><Plus />新建作文</Button>} />
+              <NewEssayDialog focus={readFeatures().QUESTION_BANK_ENABLED ? undefined : summary.focus?.title} trigger={<Button variant="outline"><Plus />新建作文</Button>} />
             </div>
           )}
         </div>

@@ -9,8 +9,8 @@ import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { AuthError } from "../lib/auth/http";
 import { getDb } from "../lib/db/client";
 import { authSessions, users, writingSessions } from "../lib/db/schema";
-import { getSession, saveSession } from "../lib/db/queries/sessions";
-import { commitPracticeCheckpoint, markPracticeDeleted } from "../lib/db/practice-facts";
+import { deleteSession, getSession, saveSession } from "../lib/db/queries/sessions";
+import { commitPracticeCheckpoint } from "../lib/db/practice-facts";
 import { markNewUserScanned } from "../lib/db/migrate-0.4";
 import { writeRequestReceipt } from "../lib/db/request-receipts";
 import { importQuestions } from "../lib/db/import-questions";
@@ -86,10 +86,7 @@ try {
   commitPracticeCheckpoint(db.$client, "owner", state, "completeOriginal", s => saveSession("owner", s), now);
   db.$client.prepare("INSERT INTO default_continuations VALUES(?,?,?,?)").run("owner", "source-quick", state.id, now);
   writeRequestReceipt(db.$client, { userId: "owner", idempotencyKey: "request", attemptId: state.id, action: "create", paramsHash: "hash", resultRef: state.id, createdAt: now });
-  db.$client.transaction(() => {
-    markPracticeDeleted(db.$client, "owner", state.id, now);
-    db.delete(writingSessions).where(eq(writingSessions.id, state.id)).run();
-  })();
+  deleteSession("owner", state.id);
   assert.equal(db.select().from(writingSessions).all().length, 0, "正文会话随练习删除");
   for (const table of retainedTables) {
     const rows = db.$client.prepare(`SELECT * FROM ${table}`).all();
@@ -98,7 +95,7 @@ try {
     const foreignKeys = db.$client.prepare(`PRAGMA foreign_key_list(${table})`).all() as { table: string; on_delete: string }[];
     assert.deepEqual(foreignKeys.map(key => [key.table, key.on_delete]), [["users", "CASCADE"]]);
   }
-  assert.equal((db.$client.prepare("SELECT deleted_at FROM attempt_markers").get() as { deleted_at: string }).deleted_at, now);
+  assert.ok((db.$client.prepare("SELECT deleted_at FROM attempt_markers").get() as { deleted_at: string }).deleted_at);
   assert.equal((db.$client.prepare("SELECT evidence_deleted FROM completion_events").get() as { evidence_deleted: number }).evidence_deleted, 1);
   console.log("PASS: deleting an attempt removes its content, retaining all six fact tables and deletion markers.");
   db.delete(users).where(eq(users.id, "owner")).run();

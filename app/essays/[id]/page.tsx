@@ -1,3 +1,4 @@
+import { readFeatures } from "@/lib/config/features";
 import { notFound } from "next/navigation";
 import { SessionView } from "@/components/essay/session-view";
 import { requireUser } from "@/lib/auth/server";
@@ -8,5 +9,5 @@ export default async function EssayPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const session = getSession(user.id, id);
   if (!session) notFound();
-  return <SessionView session={session} />;
+  return <SessionView session={session} questionBankEnabled={readFeatures().QUESTION_BANK_ENABLED} />;
 }

@@ -1,0 +1,3 @@
+PASS: evaluation/comparison orchestration block, prompts and model inputs are byte-for-byte unchanged from HEAD.
+SHA-256: 526c02956f03b73fb2137aac9e72a9122d609145f05688fc4114110c566413f5
+Only finish instruction changed in engine.ts; see WP2c.md for before/after.

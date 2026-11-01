@@ -94,7 +94,7 @@ export function AccountSettings({ user }: { user: CurrentUser }) {
         </form>
       </Row>
       <Row title="删除账户">
-        <p className="text-sm text-muted-foreground">永久删除账户、作文、对话、计划和记忆，无法恢复。</p>
+        <p className="text-sm text-muted-foreground">永久删除账户、作文、对话、练习记录和记忆，无法恢复。</p>
         {!deleteOpen ? <Button variant="destructive" className="mt-3" onClick={() => setDeleteOpen(true)}><Trash2 />删除账户</Button> : (
           <form onSubmit={deleteAccount} className="mt-4 flex max-w-sm flex-col gap-3">
             <Field label="密码" htmlFor="delete-password"><Input id="delete-password" name="password" disabled={deleteBusy} type="password" autoComplete="current-password" required maxLength={128} /></Field>

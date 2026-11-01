@@ -206,7 +206,7 @@ function useSessionController(initialState: SessionState) {
     },
   };
 }
-type SessionContextValue = ReturnType<typeof useSessionController>;
+type SessionContextValue = ReturnType<typeof useSessionController> & { questionBankEnabled: boolean };
 const SessionContext = createContext<SessionContextValue | null>(null);
-export function SessionProvider({ initialState, children }: { initialState: SessionState; children: ReactNode }) { const value = useSessionController(initialState); return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>; }
+export function SessionProvider({ initialState, children, questionBankEnabled = false }: { initialState: SessionState; children: ReactNode; questionBankEnabled?: boolean }) { const value = useSessionController(initialState); return <SessionContext.Provider value={{ ...value, questionBankEnabled }}>{children}</SessionContext.Provider>; }
 export function useSession() { const value = useContext(SessionContext); if (!value) throw new Error("useSession must be used inside SessionProvider"); return value; }

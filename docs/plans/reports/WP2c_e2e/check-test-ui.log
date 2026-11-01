@@ -1,0 +1,31 @@
+
+> project-0@0.1.0 test:ui
+> node --import tsx --test tests/ui/*.test.ts
+
+✔ the reported coach reply renders Chinese bold labels and actual lists (74.302625ms)
+✔ preserves code and deliberately escaped Markdown when repairing emphasis (2.785458ms)
+✔ supports headings, quotes, numbered start, tables and GFM text formatting (10.628708ms)
+✔ does not execute model HTML, unsafe URLs, or load remote images (8.751625ms)
+✔ thread renders stored coach messages as Markdown while user evidence stays literal (3.246583ms)
+✔ finish 下一步: bank=true, question=true, links to topic only when both; old plan never displayed (13.95575ms)
+✔ finish 下一步: bank=true, question=false, links to topic only when both; old plan never displayed (2.490167ms)
+✔ finish 下一步: bank=false, question=true, links to topic only when both; old plan never displayed (0.888ms)
+✔ finish 下一步: bank=false, question=false, links to topic only when both; old plan never displayed (0.574625ms)
+✔ Required feedback saved; optional review failed: score/issues remain visible and failure alone offers 重试 (62.018666ms)
+✔ Required feedback saved; optional review pending: score/issues remain visible and failure alone offers 重试 (6.620666ms)
+✔ Required feedback saved; optional review ok: score/issues remain visible and failure alone offers 重试 (2.707ms)
+✔ Required feedback saved; optional review none: score/issues remain visible and failure alone offers 重试 (3.0295ms)
+✔ Quick activity renders stored content without mounting SessionProvider or essay controls (5.573708ms)
+✔ Quick stage renders stored content without mounting SessionProvider or essay controls (0.594708ms)
+✔ unknown activity renders stored content without mounting SessionProvider or essay controls (0.495208ms)
+✔ unknown stage renders stored content without mounting SessionProvider or essay controls (0.54175ms)
+✔ legacy and Deep sessions retain the original provider and EssayScreen (0.156334ms)
+✔ read-only view prefers the frozen question and tolerates absent essay-only fields (0.318167ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1156.195542

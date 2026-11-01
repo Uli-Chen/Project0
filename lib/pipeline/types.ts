@@ -22,6 +22,6 @@ export type SessionState = {
   submitted: Record<EssayKind, string | null>; evalStep: "scoring" | "feedback" | null; evalError: string | null;
   evaluation: Evaluation | null; revisionScores: Scores | null; comparison: Comparison | null;
   issueLevels: Record<number, 1 | 2 | 3>; activeIssue: number;
-  finish: { memoryChanges: MemoryChange[]; planChange: string } | null;
+  finish: { memoryChanges: MemoryChange[] } | null;
   rating: { useful: number | null; mine: "yes" | "partly" | "no" | null; comment: string } | null;
 };

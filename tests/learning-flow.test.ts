@@ -57,9 +57,10 @@ test("complete practice retains work, checks evidence, compares both drafts and 
     assert.equal(state.submitted.original?.includes("Students could spend"), false);
     assert.equal(state.submitted.revision?.includes("Students could spend"), true);
     state = await runAction(state, { action: "rating", useful: 4, mine: "yes", comment: "Clear feedback" }, persist);
-    outputs.push({ memoryChanges: [{ kind: "improving", text: "Added a consequence to this example." }], planChange: "Practise explaining consequences in a new topic." });
+    outputs.push({ memoryChanges: [{ kind: "improving", text: "Added a consequence to this example." }] });
     state = await runAction(state, { action: "finish" }, persist);
     assert.equal(state.stage, "finished");
+    assert.equal("planChange" in state.finish!, false);
     assert.equal(state.rating?.useful, 4);
     const callsBefore = requests;
     const repeated = await runAction(state, { action: "finish" }, persist);

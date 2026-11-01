@@ -18,7 +18,7 @@ const TONE: Record<MemoryChange["kind"], string> = {
 
 /** 本篇小结：完成后常驻在反馈或对比面板顶部 */
 export function FinishSummary() {
-  const { state } = useSession();
+  const { state, questionBankEnabled } = useSession();
   if (!state.finish) return null;
   return (
     <section className="rounded-xl border bg-background p-4">
@@ -31,7 +31,7 @@ export function FinishSummary() {
           </li>
         ))}
       </ul>
-      <p className="mt-3 border-t pt-3 text-[13px] leading-relaxed"><span className="text-muted-foreground">下一步 · </span>{state.finish.planChange}</p>
+      <p className="mt-3 border-t pt-3 text-[13px] leading-relaxed"><Link href={questionBankEnabled && state.question ? `/topics/${state.question.primaryTopic}` : "/"}>下一步 · {questionBankEnabled && state.question ? "回到本题主题" : "回到首页"}</Link></p>
     </section>
   );
 }

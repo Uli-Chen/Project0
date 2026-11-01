@@ -65,7 +65,7 @@ test("1 Required feedback saved; optional review fails or response is lost: one 
     const retry = await models([evaluation.review], () => runAction(failed, { action: "retryReview" }, persistence(f, "u", later)));
     assert.equal(retry.calls, 1); assert.equal(retry.result.reviewStatus, "ok");
     assert.deepEqual(retry.result.evaluation?.scores, failed.evaluation?.scores);
-    const finished = await models([{ memoryChanges: [{ kind: "new", text: "有具体例子" }], planChange: "继续练习" }], () => runAction(retry.result, { action: "finish" }, persistence(f, "u", later)));
+    const finished = await models([{ memoryChanges: [{ kind: "new", text: "有具体例子" }] }], () => runAction(retry.result, { action: "finish" }, persistence(f, "u", later)));
     save(f.sqlite, "u", finished.result);
     assert.deepEqual(table(f.sqlite, "completion_events"), events);
     assert.equal(completedAtForSession(f.sqlite, "u", s.id), time);

@@ -103,7 +103,7 @@ export async function runAction(current: SessionState, input: AgentAction, check
     requireStage(state, "feedback", "compared", "finished");
     if (state.finish) return state;
     state.finish = await generateJson(
-      "Summarize this student's actual learning evidence and a concrete next-session practice plan. Memory claims must be supported by this session; recurring only if prior session evidence matches. Do not claim stable ability improvement from a single revision. Use 2–5 brief memoryChanges. The planChange must explain a focused next practice, not claim external calendar actions happened.",
+      "Summarize this student's actual learning evidence. Memory claims must be supported by this session; recurring only if prior session evidence matches. Do not claim stable ability improvement from a single revision. Use 2–5 brief memoryChanges.",
       coached({ task: state.prompt.text, evaluation: state.evaluation, comparison: state.comparison, original: state.submitted.original, revision: state.submitted.revision, prior: history.filter(s => s.id !== state.id).slice(0, 5).map(s => ({ issues: s.evaluation?.issues.filter(i => !excluded.has(`issue:${i.code || i.title}`)) })) }), finishSchema);
     state.stage = "finished"; return state;
   }

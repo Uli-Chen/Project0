@@ -161,7 +161,7 @@ function PrimaryAction({ onSubmit, assessment }: { onSubmit: () => void; assessm
         : <Button size="sm" disabled><LoaderCircle className="animate-spin" />评估中</Button>;
     case "feedback":
       return assessment
-        ? <Button size="sm" disabled={busy} onClick={actions.finish}>{busy ? <LoaderCircle className="animate-spin" /> : null}生成学习计划</Button>
+        ? <Button size="sm" disabled={busy} onClick={actions.finish}>{busy ? <LoaderCircle className="animate-spin" /> : null}完成</Button>
         : <Button size="sm" disabled={busy} onClick={actions.startRevision}>开始改写<ArrowRight /></Button>;
     case "compared":
       return <Button size="sm" disabled={busy} onClick={actions.finish}>{busy ? <LoaderCircle className="animate-spin" /> : null}完成</Button>;

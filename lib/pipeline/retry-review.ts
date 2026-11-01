@@ -1,4 +1,5 @@
 import "server-only";
+import { isStudentAction } from "../rules/student-action";
 import { getSession, saveSession } from "../db/queries/sessions";
 import { withModelAdmission } from "../llm/admission";
 import { runAction, SessionError } from "./engine";
@@ -24,6 +25,7 @@ export async function retryReview(userId: string, id: string, requestId: string)
     if (operations.has(key)) throw new SessionError("提纲回顾正在处理中。", 409);
     if (!["feedback", "revising", "compared", "finished"].includes(state.stage) || !state.evaluation || !state.submitted.original) throw new SessionError("尚无可回顾的原稿。", 409);
     if (state.reviewStatus === "none" || state.reviewStatus === "ok") return { state, reserved: false };
+    if (isStudentAction({ kind: "action", action: "retryReview" })) state.lastStudentActionAt = new Date().toISOString();
     state.reviewStatus = "pending";
     state.pendingAction = { requestId, input: { action: "retryReview" }, startedAt: new Date().toISOString() };
     persist(userId, state);

@@ -4,7 +4,8 @@ import type { SessionState } from "@/lib/pipeline/types";
 import { readSession } from "@/lib/pipeline/read-session";
 import { AuthError } from "@/lib/auth/http";
 import { getDb } from "../client";
-import { completedAtForSession, completedAtForSessions } from "../practice-facts";
+import { completedAtForSession, completedAtForSessions, markPracticeDeleted, recordAttempt } from "../practice-facts";
+import { questionContext } from "../question-context";
 import { users, writingSessions } from "../schema";
 
 export function getSession(userId: string, id: string): SessionState | null {
@@ -32,6 +33,20 @@ export function saveSession(userId: string, state: SessionState): void {
   }).run();
 }
 
-export function deleteSession(userId: string, id: string): void {
+/** Central content deletion boundary. WP4 adds cards, check evidence and operation inputs here.
+ * Retained facts/receipts never belong in this function. */
+function deletePracticeContent(userId: string, id: string): void {
   getDb().delete(writingSessions).where(and(eq(writingSessions.userId, userId), eq(writingSessions.id, id))).run();
+}
+
+export function deleteSession(userId: string, id: string): void {
+  const sqlite = getDb().$client;
+  sqlite.transaction(() => {
+    const session = getSession(userId, id);
+    if (!session) return;
+    // Preserve positive exposure even if the startup scan has not reached this old session.
+    recordAttempt(sqlite, userId, session, questionContext(sqlite));
+    markPracticeDeleted(sqlite, userId, id, new Date().toISOString());
+    deletePracticeContent(userId, id);
+  }).immediate();
 }

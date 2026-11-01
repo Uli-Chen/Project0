@@ -1,0 +1,23 @@
+PASS POST /api/sessions -> 201
+PASS POST /api/sessions -> 200
+PASS PATCH /api/sessions/e8c20da7-f1fc-4d2f-992a-9e6579d80b06 -> 200
+PASS POST /api/sessions/e8c20da7-f1fc-4d2f-992a-9e6579d80b06/actions -> 200
+PASS authenticated page writing, next=null; writing.html
+PASS POST /api/sessions/e8c20da7-f1fc-4d2f-992a-9e6579d80b06/lifecycle -> 200
+PASS POST /api/sessions/e8c20da7-f1fc-4d2f-992a-9e6579d80b06/lifecycle -> 200
+PASS POST /api/sessions/e8c20da7-f1fc-4d2f-992a-9e6579d80b06/actions -> 200
+PASS GET /api/sessions/e8c20da7-f1fc-4d2f-992a-9e6579d80b06 -> 200
+PASS POST /api/sessions/e8c20da7-f1fc-4d2f-992a-9e6579d80b06/actions -> 200
+PASS authenticated page finished-topic, next=/topics/education; finished-topic.html
+PASS authenticated page finished-bank-off, next=/; finished-bank-off.html
+PASS POST /api/sessions -> 201
+PASS authenticated page finished-pasted, next=/; finished-pasted.html
+PASS POST /api/sessions/e8c20da7-f1fc-4d2f-992a-9e6579d80b06/lifecycle -> 200
+PASS DELETE /api/sessions/e8c20da7-f1fc-4d2f-992a-9e6579d80b06 -> 200
+PASS POST /api/sessions -> 409
+PASS POST /api/sessions -> 201
+PASS PATCH /api/sessions/5d664938-6684-4daf-8b2c-87d478c507fe -> 200
+PASS POST /api/sessions/5d664938-6684-4daf-8b2c-87d478c507fe/actions -> 200
+PASS POST /api/sessions/5d664938-6684-4daf-8b2c-87d478c507fe/actions -> 200
+PASS DELETE /api/auth/account -> 200
+PASS all route/database steps; three finish link cases; page opens leave database unchanged; account clears every user table.
