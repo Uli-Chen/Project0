@@ -1,4 +1,9 @@
 import { getCard } from "@/lib/db/queries/cards";
+import { readQuick } from "@/lib/pipeline/quick";
+import { cardRequirements } from "@/lib/db/queries/cards";
+import { QuickScreen } from "@/components/quick/quick-screen";
+import { CheckpointClock } from "@/components/checkpoints/clock";
+import { checkpointHistory } from "@/lib/db/checkpoints";
 import { readFeatures } from "@/lib/config/features";
 import { notFound } from "next/navigation";
 import { SessionView } from "@/components/essay/session-view";
@@ -10,5 +15,10 @@ export default async function EssayPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const session = getSession(user.id, id);
   if (!session) notFound();
-  return <SessionView session={session} cardContent={session.activity === "quick" ? getCard(user.id, id)?.content : undefined} questionBankEnabled={readFeatures().QUESTION_BANK_ENABLED} />;
+  if (readFeatures().QUICK_ENABLED && session.activity === "quick" && session.stage === "quick") {
+    const data = readQuick(user.id, id);
+    return <QuickScreen initial={data} requirements={cardRequirements(data.card)} />;
+  }
+  const checkpoint = session.checkpointId ? checkpointHistory(user.id).find(c => c.attemptId === id) : undefined;
+  return <>{checkpoint && !session.originalSubmittedAt && <CheckpointClock deadlineAt={checkpoint.deadlineAt} serverNow={new Date().toISOString()} />}<SessionView session={session} cardContent={session.activity === "quick" ? getCard(user.id, id)?.content : undefined} questionBankEnabled={readFeatures().QUESTION_BANK_ENABLED} /></>;
 }

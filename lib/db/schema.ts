@@ -189,3 +189,14 @@ export const quickPackages = sqliteTable("quick_packages", {
   attemptId: text("attempt_id").notNull(), cardId: text("card_id").notNull(), kind: text("kind", { enum: ["initial", "supplemental"] }).notNull(),
   grantedAt: text("granted_at").notNull(), closedAt: text("closed_at"), limitsJson: text("limits_json").notNull(), usedJson: text("used_json").notNull(),
 }, t => [index("quick_packages_card").on(t.userId, t.cardId), check("quick_packages_kind", sql`${t.kind} IN ('initial','supplemental')`)]);
+
+export const checkpoints = sqliteTable("checkpoints", {
+  id: text("id").primaryKey(), userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  attemptId: text("attempt_id").notNull(), exposureKey: text("exposure_key").notNull(), questionId: text("question_id").notNull(), questionType: text("question_type").notNull(),
+  startedAt: text("started_at").notNull(), deadlineAt: text("deadline_at").notNull(), completedAt: text("completed_at"), submittedAt: text("submitted_at"),
+  status: text("status", { enum: ["in_progress", "eligible", "ineligible", "abandoned"] }).notNull(),
+  startEvidenceJson: text("start_evidence_json").notNull().default("{}"),
+  reason: text("reason"), declaration: text("declaration").notNull(), startQualified: integer("start_qualified", { mode: "boolean" }).notNull(),
+  isBaseline: integer("is_baseline", { mode: "boolean" }).notNull().default(false), evidenceDeleted: integer("evidence_deleted", { mode: "boolean" }).notNull().default(false),
+}, t => [uniqueIndex("checkpoint_active_user").on(t.userId).where(sql`${t.status} = 'in_progress'`),
+  uniqueIndex("checkpoint_attempt").on(t.userId, t.attemptId), uniqueIndex("checkpoint_baseline").on(t.userId).where(sql`${t.isBaseline} = 1`)]);

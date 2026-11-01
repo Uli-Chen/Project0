@@ -1,0 +1,40 @@
+✔ 成功：完整消息与估算一致，一行 ok 记录实际用量，额度按实际计 (24.03775ms)
+✔ 超时：延迟假 fetch 与可控时钟触发 timeout，预留时间仍占额度 (1.3965ms)
+✔ 不合格输出：带预留即使 retries=9 也不自动重试；显式重试重新预留并计 attempt (1.372125ms)
+✔ usage 未知或仅单项已知：NULL 不伪造 0，未知项按预留计 (1.076458ms)
+✔ 核销写库失败：业务仍得到模型结果，原子更新不泄漏实际用量，预留完整保留 (0.737875ms)
+✔ 响应丢失：连接或响应体中断为 indeterminate，绝不自动重发 (1.024ms)
+✔ 启动恢复：reserved 变 indeterminate，用量和预留不变，晚到结果不能释放额度 (0.496209ms)
+✔ 预留写库失败抛错且 fake fetch 从未调用；外层 IMMEDIATE 回滚也不能 dispatch (0.7205ms)
+✔ 输入超长不建行不调模型；预留后的完整消息若超估算也拒绝 (1.012083ms)
+✔ 日志全表任何列均不含独特提示词、上下文、模型输出正文 (1.197ms)
+✔ 无 options 保持 16000 输出、120 秒、两次尝试且不写日志 (0.834041ms)
+✔ 精练观测每次 provider 尝试一行且 package_id 为空，不占速刷额度 (1.83925ms)
+✔ 观测日志插入失败不影响调用；HTTP 错误为 provider_error，日志不含上游正文 (1.491125ms)
+✔ 包用满拒绝；新 operationId/sessionId/packageId 仍受用户限额，滚出窗口后恢复 (2.783125ms)
+✔ 并发：真实 SQLite 两进程两连接，两张卡片争抢用户最后一次额度只有一个成功 (219.826667ms)
+✔ 预留令牌不可复制或重复派发，事务内调用与不同用户/用途均在 fetch 前拒绝 (1.344875ms)
+✔ 另一个用户的相同 packageId/operationId 不占本用户额度 (2.316833ms)
+✔ 响应中断报 AbortError 但本地时限未到：记 indeterminate，不错误释放预留 (0.652708ms)
+✔ 非预留 options 的输出/超时/retries 参数生效；reserved 始终采用持久化限额 (0.955334ms)
+✔ official DeepSeek Quick disables thinking only; scoring and compatible providers retain existing body (0.96575ms)
+✔ empty requirements use deterministic gaps without model or package; passing writes exactly one event and unchanged check is free (30.930542ms)
+✔ saving while check is in flight yields stale without completion or overwriting newer card (18.447667ms)
+✔ invalid English example notes consume one shared automatic retry; frozen manual retry cannot gain another (11.479084ms)
+✔ followup logical slot deduplicates until user answer; never writes model text into card; maximum two (17.480041ms)
+✔ supplemental package closes old allowance, cooldown and unchanged cards cannot reset budget (22.104958ms)
+✔ startup recovers operations without calls; manual retry uses frozen input and becomes stale after edit (13.992417ms)
+✔ input ceiling refuses dispatch with no reservation; deletion in flight cannot resurrect body or completion (11.971ms)
+✔ supplemental check can recover a technically failed unchanged version using its existing frozen operation (11.526333ms)
+✔ missing a question requirement is a deterministic gap; model sees only populated requirements (6.742583ms)
+✔ user rolling budget survives deletion and creation; quota rejection leaves manual saves available (14.293292ms)
+✔ all supplied receipt aliases are checked before replay; combining keys from different operations returns 409 (11.46525ms)
+✔ result persistence failure rolls back completion and exposes indeterminate for an explicit frozen retry (8.117333ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 586.401584

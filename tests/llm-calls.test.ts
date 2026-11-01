@@ -222,3 +222,27 @@ test("非预留 options 的输出/超时/retries 参数生效；reserved 始终�
   await generateJson("instruction", {}, schema, { ...options(r), maxOutputTokens: 16000, timeoutMs: 120000 });
   assert.equal(timeouts[1], 1234);
 });
+
+test("official DeepSeek Quick disables thinking only; scoring and compatible providers retain existing body", async () => {
+  const base = process.env.LLM_BASE_URL, model = process.env.LLM_MODEL;
+  const bodies: Record<string, unknown>[] = [];
+  globalThis.fetch = async (_url, init) => { bodies.push(JSON.parse(String(init?.body))); return response(); };
+  try {
+    process.env.LLM_BASE_URL = "https://api.deepseek.com/v1"; process.env.LLM_MODEL = "deepseek-flash";
+    await generateJson("instruction", {}, schema, { purpose: "quick_followup", retries: 0 });
+    await generateJson("instruction", {}, schema, { purpose: "quick_check", retries: 0 });
+    assert.deepEqual(bodies[0].thinking, { type: "disabled" }); assert.deepEqual(bodies[1].thinking, { type: "disabled" });
+    await generateJson("instruction", {}, schema, { purpose: "scoring", retries: 0 });
+    await generateJson("instruction", {}, schema);
+    assert.equal("thinking" in bodies[2], false); assert.equal("thinking" in bodies[3], false);
+    process.env.LLM_BASE_URL = "https://compatible.test/v1";
+    await generateJson("instruction", {}, schema, { purpose: "quick_check", retries: 0 });
+    assert.equal("thinking" in bodies[4], false);
+    process.env.LLM_BASE_URL = "https://api.deepseek.com"; process.env.LLM_MODEL = "other-model";
+    await generateJson("instruction", {}, schema, { purpose: "quick_check", retries: 0 });
+    assert.equal("thinking" in bodies[5], false);
+  } finally {
+    if (base === undefined) delete process.env.LLM_BASE_URL; else process.env.LLM_BASE_URL = base;
+    if (model === undefined) delete process.env.LLM_MODEL; else process.env.LLM_MODEL = model;
+  }
+});

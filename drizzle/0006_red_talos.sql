@@ -1,0 +1,1 @@
+ALTER TABLE `checkpoints` ADD `start_evidence_json` text DEFAULT '{}' NOT NULL;

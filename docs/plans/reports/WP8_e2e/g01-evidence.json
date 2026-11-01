@@ -1,0 +1,27 @@
+{
+  "baseline": "b01e03d",
+  "files": [
+    {
+      "path": "lib/pipeline/engine.ts",
+      "unchangedSinceWP4a": true,
+      "sha256": "59acb60cabbefb5a8a7b76c65da31a7a1c416cd94c3a48c7aeb8cc7993db57c9"
+    },
+    {
+      "path": "lib/pipeline/schemas.ts",
+      "unchangedSinceWP4a": true,
+      "sha256": "966870c96c5bad90055cc6bf111ae244f3832ff83c67190bb2a8fc7b26315d54"
+    },
+    {
+      "path": "lib/pipeline/initial.ts",
+      "unchangedSinceWP4a": true,
+      "sha256": "e2eb7b1905d7d9536ff2a882d31d4aed71f935c63c4d06b80a1c08ed6f772340"
+    },
+    {
+      "path": "lib/llm/messages.ts",
+      "unchangedSinceWP4a": true,
+      "sha256": "43a1e75df791460adaed0000c8af2c6817dd6d1869c539b9672df00b1d222a22"
+    }
+  ],
+  "clientChange": "Quick-only provider thinking option; no body addition for scoring or generic/undefined purpose",
+  "scoringInput": "engine entire file unchanged; task/essay/sentences and scoring schema unchanged"
+}

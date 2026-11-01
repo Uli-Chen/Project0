@@ -20,7 +20,7 @@ import { reserveCall } from "../lib/llm/calls";
 import { quickBudget } from "../lib/llm/budget";
 
 // This script never reads or mutates the configured application database.
-const retainedTables = ["attempt_markers", "completion_events", "familiarity", "legacy_scan", "default_continuations", "request_receipts", "llm_calls", "quick_operations", "quick_packages"];
+const retainedTables = ["attempt_markers", "completion_events", "familiarity", "legacy_scan", "default_continuations", "request_receipts", "llm_calls", "quick_operations", "quick_packages", "checkpoints"];
 const quickContentTables = ["topic_cards", "quick_check_results", "quick_operation_inputs"];
 const directory = mkdtempSync(join(tmpdir(), "opc-db-regression-"));
 // Empty SQLite file: no startup baseline, every table must come from migrations.
@@ -80,8 +80,19 @@ try {
   migrate(db, { migrationsFolder: baselineFolder });
   assert.ok(db.$client.prepare("SELECT name FROM sqlite_master WHERE name = 'llm_calls'").get());
   assert.equal(db.$client.prepare("SELECT name FROM sqlite_master WHERE name = 'topic_cards'").get(), undefined);
+  // Stage WP4a with real card/check/input rows before applying checkpoints migrations.
+  writeFileSync(join(baselineFolder, "meta/_journal.json"), JSON.stringify({ ...journal, entries: journal.entries.slice(0, 5) }));
+  copyFileSync(resolve(`drizzle/${journal.entries[4].tag}.sql`), join(baselineFolder, `${journal.entries[4].tag}.sql`));
+  migrate(db, { migrationsFolder: baselineFolder });
+  seedQuickEvidence(db.$client, "owner", state.id, now);
+  const beforeCheckpointUpgrade = Object.fromEntries([...quickContentTables,"quick_operations","quick_packages"].map(t=>[t,db.$client.prepare(`SELECT * FROM ${t}`).all()]));
+  assert.equal(db.$client.prepare("SELECT name FROM sqlite_master WHERE name='checkpoints'").get(),undefined);
   migrate(db, { migrationsFolder: resolve("drizzle") });
   migrate(db, { migrationsFolder: resolve("drizzle") });
+  for(const [table,rows] of Object.entries(beforeCheckpointUpgrade)) assert.deepEqual(db.$client.prepare(`SELECT * FROM ${table}`).all(),rows,`${table} survives WP7 migration`);
+  assert.ok((db.$client.prepare("PRAGMA table_info(checkpoints)").all() as {name:string}[]).some(c=>c.name==='start_evidence_json'));
+  // Remove only this pre-upgrade fixture to keep later retained-row assertions exact.
+  for(const table of ["quick_check_results","quick_operation_inputs","quick_operations","quick_packages","topic_cards"]) db.$client.prepare(`DELETE FROM ${table}`).run();
   assert.deepEqual(db.$client.prepare("SELECT * FROM questions").all(), originalCatalog);
   assert.deepEqual(db.$client.prepare("SELECT * FROM writing_sessions").all(), originalRows);
   assert.deepEqual(db.$client.prepare("SELECT * FROM users").all(), originalUsers);
@@ -107,6 +118,8 @@ try {
   writeRequestReceipt(db.$client, { userId: "owner", idempotencyKey: "request", attemptId: state.id, action: "create", paramsHash: "hash", resultRef: state.id, createdAt: now });
   assert.equal(reserveCall({ userId: "owner", sessionId: state.id, operationId: "db-test-op", packageId: "db-test-pack", purpose: "quick_check", perCall: { inputTokens: 4000, maxOutputTokens: 768 }, packageLimits: quickBudget.initial.limits, now }, db.$client).ok, true);
   seedQuickEvidence(db.$client, "owner", state.id, now);
+  db.$client.prepare("INSERT INTO checkpoints(id,user_id,attempt_id,exposure_key,question_id,question_type,started_at,deadline_at,status,declaration,start_qualified,start_evidence_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)")
+    .run("cp-db","owner",state.id,"family-db","question-db","agree_disagree",now,now,"in_progress","no",1,JSON.stringify({bankVersion:"test-v1",aliasVersion:"test-alias",priorAppAttempt:false}));
   // Composite FKs must reject a card owned by someone else on this attempt.
   assert.throws(() => db.$client.prepare("UPDATE topic_cards SET user_id='other-user'").run());
   deleteSession("owner", state.id);
@@ -121,7 +134,10 @@ try {
   }
   assert.ok((db.$client.prepare("SELECT deleted_at FROM attempt_markers").get() as { deleted_at: string }).deleted_at);
   assert.equal((db.$client.prepare("SELECT evidence_deleted FROM completion_events").get() as { evidence_deleted: number }).evidence_deleted, 1);
-  console.log("PASS: WP2c upgrade preserves existing facts; deleting an attempt retains all nine metadata tables including llm_calls/quick_operations/quick_packages (users-only CASCADE).");
+  const retainedCheckpoint = db.$client.prepare("SELECT * FROM checkpoints").get() as {status:string;evidence_deleted:number;start_evidence_json:string};
+  assert.equal(retainedCheckpoint.status,"abandoned");assert.equal(retainedCheckpoint.evidence_deleted,1);
+  assert.equal(JSON.parse(retainedCheckpoint.start_evidence_json).bankVersion,"test-v1");
+  console.log("PASS: WP4a→WP7 migration preserves Quick data; deletion retains ten metadata tables including checkpoint qualification and releases occupancy (users-only CASCADE).");
   // Make account-content cascades non-vacuous: a second surviving session owns all five Quick tables.
   const remaining = createSession({ kind: "free", mode: "practice" }); saveSession("owner", remaining);
   seedQuickEvidence(db.$client, "owner", remaining.id, now);

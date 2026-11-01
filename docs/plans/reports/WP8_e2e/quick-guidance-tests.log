@@ -1,0 +1,21 @@
+✔ empty requirements use deterministic gaps without model or package; passing writes exactly one event and unchanged check is free (24.531042ms)
+✔ saving while check is in flight yields stale without completion or overwriting newer card (12.059167ms)
+✔ invalid English example notes consume one shared automatic retry; frozen manual retry cannot gain another (7.431334ms)
+✔ followup logical slot deduplicates until user answer; never writes model text into card; maximum two (12.348334ms)
+✔ supplemental package closes old allowance, cooldown and unchanged cards cannot reset budget (11.654208ms)
+✔ startup recovers operations without calls; manual retry uses frozen input and becomes stale after edit (8.382584ms)
+✔ input ceiling refuses dispatch with no reservation; deletion in flight cannot resurrect body or completion (10.394208ms)
+✔ supplemental check can recover a technically failed unchanged version using its existing frozen operation (8.983875ms)
+✔ missing a question requirement is a deterministic gap; model sees only populated requirements (5.733083ms)
+✔ user rolling budget survives deletion and creation; quota rejection leaves manual saves available (12.610041ms)
+✔ all supplied receipt aliases are checked before replay; combining keys from different operations returns 409 (13.509417ms)
+✔ result persistence failure rolls back completion and exposes indeterminate for an explicit frozen retry (6.4935ms)
+✔ followup rejects multiple questions and retries once; missing requirements and reasoning-quality instructions reach the model (10.643459ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 557.482417

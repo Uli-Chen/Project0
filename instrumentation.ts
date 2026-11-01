@@ -1,6 +1,10 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   try {
+    const { recoverQuickOperations } = await import("./lib/pipeline/quick-model");
+    recoverQuickOperations();
+  } catch { console.error("quick startup recovery failed; reservations retained"); }
+  try {
     const { recoverInflightCalls } = await import("./lib/llm/calls");
     recoverInflightCalls(new Date().toISOString());
   } catch {

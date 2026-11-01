@@ -1,0 +1,18 @@
+import { inRequest } from "./helpers/request-context";
+import assert from "node:assert/strict";
+import { readFileSync,writeFileSync } from "node:fs";
+import { getDb } from "../lib/db/client";
+import { GET,PATCH } from "../app/api/sessions/[id]/route";
+import { POST } from "../app/api/sessions/[id]/actions/route";
+
+
+import { getSession } from "../lib/db/queries/sessions";
+async function main(){
+const seed=JSON.parse(readFileSync("../seed.json","utf8"));process.env.DATABASE_PATH="../rollback.db";process.env.APP_ORIGIN="http://rollback.test";
+const db=getDb();const session=getSession("rollback",seed.id)!;assert.equal(session.activity,"quick");
+
+const out=[];
+for(const [method,body] of [["GET",undefined],["PATCH",{version:0,drafts:{original:"tamper",revision:""}}],["POST",{action:"startWriting"}],["POST",{action:"continueDeep",explicitNew:false}]] as const){const request=new Request("http://rollback.test/api/sessions/"+seed.id,{method,headers:{origin:"http://rollback.test",cookie:"wm_session="+"a".repeat(64),"content-type":"application/json"},...(body?{body:JSON.stringify(body)}:{})});const response=await inRequest(request,()=>({GET,PATCH,POST})[method](request,{params:Promise.resolve({id:seed.id})}));assert.equal(response.status,method==="GET"?200:409);out.push({method,status:response.status});}
+assert.deepEqual(db.$client.prepare("SELECT * FROM writing_sessions").all(),seed.sessions);assert.deepEqual(db.$client.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all(),seed.tables);assert.equal(db.$client.prepare("SELECT COUNT(*) AS n FROM topic_cards").get().n,1);
+const result={oldCommit:"cd6752b",passed:true,routeChecks:out,sessionBytesUnchanged:true,newTablesPreserved:true,cardPreserved:true};writeFileSync("../result.json",JSON.stringify(result,null,2));console.log(result);db.$client.close();}
+main().catch(e=>{console.error(e);process.exitCode=1});

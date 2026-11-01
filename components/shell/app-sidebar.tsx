@@ -19,7 +19,7 @@ export function Avatar({ name, size = 24 }: { name: string; size?: number }) {
   return <span aria-hidden="true" className="inline-flex shrink-0 items-center justify-center rounded-full bg-foreground font-medium text-background" style={{ width: size, height: size, fontSize: size * 0.46 }}>{Array.from(name)[0]}</span>;
 }
 
-export function AppSidebar({ user, focus }: { user: { name: string; email: string }; focus?: string }) {
+export function AppSidebar({ user, focus, bankEnabled=false, quickEnabled=false }: { user: { name: string; email: string }; focus?: string; bankEnabled?: boolean; quickEnabled?: boolean }) {
   const pathname = usePathname();
   return (
     <Sidebar collapsible="icon">
@@ -37,7 +37,7 @@ export function AppSidebar({ user, focus }: { user: { name: string; email: strin
                 </SidebarMenuButton>
               } />
             </SidebarMenuItem>
-            {NAV.map((item) => {
+            {(bankEnabled ? [{href:"/",label:"练习",icon:FileText},{href:"/essays",label:"作文",icon:FileText},...(quickEnabled ? [{href:"/cards",label:"卡片",icon:FileText}] : []),NAV[1]] : NAV).map((item) => {
               const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
               return (
                 <SidebarMenuItem key={item.href}>

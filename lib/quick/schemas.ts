@@ -32,3 +32,10 @@ export const continueDeepSchema = z.object({ ...envelope, action: z.literal("con
 export const quickActionSchema = z.discriminatedUnion("action", [cardSaveSchema, cardExcerptSchema, quickAnswerSchema, continueDeepSchema]);
 export type QuickAction = z.infer<typeof quickActionSchema>;
 export const quickActionNames = new Set(["cardSave", "cardExcerpt", "quickAnswer", "continueDeep", "quickFollowup", "quickCheck", "quickRetry", "quickSupplemental"]);
+export const quickModelActionSchema = z.discriminatedUnion("action", [
+  z.object({ ...envelope, action: z.literal("quickFollowup"), cardVersion }).strict(),
+  z.object({ ...envelope, action: z.literal("quickCheck"), cardVersion }).strict(),
+  z.object({ ...envelope, action: z.literal("quickRetry"), operationId: key }).strict(),
+  z.object({ ...envelope, action: z.literal("quickSupplemental") }).strict(),
+]);
+export type QuickModelAction = z.infer<typeof quickModelActionSchema>;

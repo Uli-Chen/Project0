@@ -310,6 +310,8 @@ test("原题版本冻结：目录出现 v2 新要求后旧速刷仍用 v1 槽位
   }
 });
 
+test("closed Quick material can continue to Deep without reopening or permitting card edits",async()=>{const id=await create();await save(id,0);const source=getSession("u",id)!;source.lifecycle="closed";saveSession("u",source);const result=await action(id,{action:"continueDeep",explicitNew:false,idempotencyKey:crypto.randomUUID()});assert.ok(result.deepSession);assert.equal(getSession("u",id)!.lifecycle,"closed");await action(id,{action:"cardSave",cardVersion:1,parts:[{key:"reasons.answer",text:"不能编辑"}]},409);});
+
 test("删除速刷只删卡片、检查正文和冻结输入；保留操作/包/映射；账户删除清空全部用户表并隔离他人", async () => {
   const id = await create(); await save(id, 0);
   const child = (await action(id, { action: "continueDeep", explicitNew: false })).deepSession;

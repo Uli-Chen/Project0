@@ -1,7 +1,7 @@
 import type Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { and, eq } from "drizzle-orm";
-import { attemptMarkers, completionEvents, familiarity, legacyScan, writingSessions } from "./schema";
+import { attemptMarkers, checkpoints, completionEvents, familiarity, legacyScan, writingSessions } from "./schema";
 import { questionContext, resolveAttempt, type QuestionContext } from "./question-context";
 import { originalFreshness } from "../rules/original-freshness";
 import { readSession } from "../pipeline/read-session";
@@ -99,6 +99,20 @@ export function commitPracticeCheckpoint(sqlite: Database.Database, userId: stri
         freshness: state.originalFreshness ?? "unknown", relation: completionRelation(state), legacy: false }).run();
       if (facts) db.update(familiarity).set({ priorFeedback: facts.priorFeedback === "unknown_time" ? "unknown_time" : "known" }).where(familyKey).run();
     }
+    if (state.checkpointId) {
+      const key = and(eq(checkpoints.userId,userId),eq(checkpoints.attemptId,state.id));
+      const cp = db.select().from(checkpoints).where(key).get();
+      if(cp && (cp.status === "in_progress" || (cp.status === "ineligible" && !cp.completedAt))) {
+        const submittedAt = cp.submittedAt ?? state.originalSubmittedAt;
+        const external = db.select().from(familiarity).where(and(eq(familiarity.userId,userId),eq(familiarity.exposureKey,cp.exposureKey))).get()?.externalPractice;
+        const reason = external === "yes" || external === "unsure" ? "外部练习声明不符合资格" : !cp.startQualified || cp.declaration !== "no" ? "开始时资格不符" : !submittedAt || submittedAt > cp.deadlineAt ? "超过 40 分钟提交" : state.mode !== "mock" || state.cardSnapshot || state.continuedFromQuickId || state.prewriteTurns > 0 || state.outline.userEdited || state.messages.some(m => m.role === "coach" && ["prewriting", "writing"].includes(m.stage)) || Object.keys(state.suggestions).length > 0 ? "原稿接受前使用了辅导" : null;
+        if(event === "acceptOriginal") db.update(checkpoints).set({submittedAt,...(reason ? {status:"ineligible" as const,reason} : {})}).where(key).run();
+        else {
+          const baseline = db.select().from(checkpoints).where(and(eq(checkpoints.userId,userId),eq(checkpoints.isBaseline,true))).get();
+          db.update(checkpoints).set({submittedAt,completedAt:now,status:reason ? "ineligible" : "eligible",reason,isBaseline:!reason && !baseline}).where(key).run();
+        }
+      }
+    }
     state.completedAt = completedAtForSession(sqlite, userId, state.id);
     persist(state);
   }).immediate();
@@ -114,6 +128,8 @@ export function markPracticeDeleted(sqlite: Database.Database, userId: string, i
     const db = drizzle(sqlite);
     const marker = db.select().from(attemptMarkers).where(and(eq(attemptMarkers.userId, userId), eq(attemptMarkers.attemptId, id))).get();
     if (marker && !marker.deletedAt) db.update(attemptMarkers).set({ deletedAt: now }).where(and(eq(attemptMarkers.userId, userId), eq(attemptMarkers.attemptId, id))).run();
+    db.update(checkpoints).set({evidenceDeleted:true}).where(and(eq(checkpoints.userId,userId),eq(checkpoints.attemptId,id))).run();
+    db.update(checkpoints).set({status:"abandoned",reason:"练习已删除"}).where(and(eq(checkpoints.userId,userId),eq(checkpoints.attemptId,id),eq(checkpoints.status,"in_progress"))).run();
     db.update(completionEvents).set({ evidenceDeleted: true }).where(ownedEvent(userId, id)).run();
   })();
 }

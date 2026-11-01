@@ -16,3 +16,14 @@ export function getLlmConfig() {
     model: env.LLM_MODEL,
   };
 }
+
+/** Official DeepSeek defaults to thinking; its hidden reasoning shares Quick's
+ * small output ceiling. Disable it only for Quick at the official provider.
+ * Scoring, other purposes and compatible providers retain their existing body.
+ * https://api-docs.deepseek.com/guides/thinking_mode/
+ */
+export function quickProviderOptions(config: { baseUrl: string; model: string }, purpose?: string) {
+  return (purpose === "quick_followup" || purpose === "quick_check")
+    && new URL(config.baseUrl).hostname === "api.deepseek.com" && /^deepseek(?:-|$)/i.test(config.model)
+    ? { thinking: { type: "disabled" as const } } : {};
+}

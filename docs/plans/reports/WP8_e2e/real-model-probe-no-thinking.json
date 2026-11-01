@@ -1,0 +1,231 @@
+{
+  "timestamp": "2026-11-01T06:29:22.608Z",
+  "model": "deepseek-flash",
+  "syntheticInputs": true,
+  "temporaryDatabase": true,
+  "providerLimit": 6,
+  "providerCalls": 6,
+  "networkBlocked": false,
+  "requests": [
+    {
+      "number": 1,
+      "outputCap": 512,
+      "thinkingDisabled": true,
+      "latencyMs": 1492,
+      "httpStatus": 200
+    },
+    {
+      "number": 2,
+      "outputCap": 768,
+      "thinkingDisabled": true,
+      "latencyMs": 342,
+      "httpStatus": 200
+    },
+    {
+      "number": 3,
+      "outputCap": 512,
+      "thinkingDisabled": true,
+      "latencyMs": 337,
+      "httpStatus": 200
+    },
+    {
+      "number": 4,
+      "outputCap": 768,
+      "thinkingDisabled": true,
+      "latencyMs": 357,
+      "httpStatus": 200
+    },
+    {
+      "number": 5,
+      "outputCap": 512,
+      "thinkingDisabled": true,
+      "latencyMs": 359,
+      "httpStatus": 200
+    },
+    {
+      "number": 6,
+      "outputCap": 768,
+      "thinkingDisabled": true,
+      "latencyMs": 367,
+      "httpStatus": 200
+    }
+  ],
+  "results": [
+    {
+      "questionId": "qb_mock_edu_004",
+      "layout": "position_reasons",
+      "action": "quickFollowup",
+      "latencyMs": 2138,
+      "providerCalls": 1,
+      "operations": [
+        {
+          "kind": "followup",
+          "status": "ok"
+        }
+      ],
+      "cardState": "draft"
+    },
+    {
+      "questionId": "qb_mock_edu_004",
+      "layout": "position_reasons",
+      "action": "quickCheck",
+      "latencyMs": 859,
+      "providerCalls": 1,
+      "operations": [
+        {
+          "kind": "check",
+          "status": "needs_development"
+        },
+        {
+          "kind": "followup",
+          "status": "ok"
+        }
+      ],
+      "cardState": "needs_development"
+    },
+    {
+      "questionId": "qb_mock_health_001",
+      "layout": "problem_solution",
+      "action": "quickFollowup",
+      "latencyMs": 735,
+      "providerCalls": 1,
+      "operations": [
+        {
+          "kind": "followup",
+          "status": "ok"
+        }
+      ],
+      "cardState": "draft"
+    },
+    {
+      "questionId": "qb_mock_health_001",
+      "layout": "problem_solution",
+      "action": "quickCheck",
+      "latencyMs": 1737,
+      "providerCalls": 1,
+      "operations": [
+        {
+          "kind": "check",
+          "status": "ok"
+        },
+        {
+          "kind": "followup",
+          "status": "ok"
+        }
+      ],
+      "cardState": "passed"
+    },
+    {
+      "questionId": "qb_mock_edu_003",
+      "layout": "both_views_opinion",
+      "action": "quickFollowup",
+      "latencyMs": 1010,
+      "providerCalls": 1,
+      "operations": [
+        {
+          "kind": "followup",
+          "status": "ok"
+        }
+      ],
+      "cardState": "draft"
+    },
+    {
+      "questionId": "qb_mock_edu_003",
+      "layout": "both_views_opinion",
+      "action": "quickCheck",
+      "latencyMs": 931,
+      "providerCalls": 1,
+      "operations": [
+        {
+          "kind": "check",
+          "status": "ok"
+        },
+        {
+          "kind": "followup",
+          "status": "ok"
+        }
+      ],
+      "cardState": "passed"
+    }
+  ],
+  "ledger": [
+    {
+      "purpose": "quick_followup",
+      "attempt": 1,
+      "model": "deepseek-flash",
+      "config_version": "coach-json-v1/quick-budget-20261101-v1/utf8-byte-v1/quick-deepseek-no-thinking-v1",
+      "reserved_input": 1905,
+      "reserved_output": 512,
+      "reserved_ms": 25000,
+      "input_tokens": 350,
+      "output_tokens": 34,
+      "latency_ms": 2132,
+      "outcome": "ok"
+    },
+    {
+      "purpose": "quick_check",
+      "attempt": 1,
+      "model": "deepseek-flash",
+      "config_version": "coach-json-v1/quick-budget-20261101-v1/utf8-byte-v1/quick-deepseek-no-thinking-v1",
+      "reserved_input": 2172,
+      "reserved_output": 768,
+      "reserved_ms": 25000,
+      "input_tokens": 400,
+      "output_tokens": 38,
+      "latency_ms": 852,
+      "outcome": "ok"
+    },
+    {
+      "purpose": "quick_followup",
+      "attempt": 1,
+      "model": "deepseek-flash",
+      "config_version": "coach-json-v1/quick-budget-20261101-v1/utf8-byte-v1/quick-deepseek-no-thinking-v1",
+      "reserved_input": 2473,
+      "reserved_output": 512,
+      "reserved_ms": 25000,
+      "input_tokens": 471,
+      "output_tokens": 35,
+      "latency_ms": 730,
+      "outcome": "ok"
+    },
+    {
+      "purpose": "quick_check",
+      "attempt": 1,
+      "model": "deepseek-flash",
+      "config_version": "coach-json-v1/quick-budget-20261101-v1/utf8-byte-v1/quick-deepseek-no-thinking-v1",
+      "reserved_input": 2740,
+      "reserved_output": 768,
+      "reserved_ms": 25000,
+      "input_tokens": 521,
+      "output_tokens": 34,
+      "latency_ms": 1733,
+      "outcome": "ok"
+    },
+    {
+      "purpose": "quick_followup",
+      "attempt": 1,
+      "model": "deepseek-flash",
+      "config_version": "coach-json-v1/quick-budget-20261101-v1/utf8-byte-v1/quick-deepseek-no-thinking-v1",
+      "reserved_input": 2782,
+      "reserved_output": 512,
+      "reserved_ms": 25000,
+      "input_tokens": 514,
+      "output_tokens": 33,
+      "latency_ms": 1004,
+      "outcome": "ok"
+    },
+    {
+      "purpose": "quick_check",
+      "attempt": 1,
+      "model": "deepseek-flash",
+      "config_version": "coach-json-v1/quick-budget-20261101-v1/utf8-byte-v1/quick-deepseek-no-thinking-v1",
+      "reserved_input": 3049,
+      "reserved_output": 768,
+      "reserved_ms": 25000,
+      "input_tokens": 564,
+      "output_tokens": 43,
+      "latency_ms": 923,
+      "outcome": "ok"
+    }
+  ]
+}

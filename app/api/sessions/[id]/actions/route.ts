@@ -1,3 +1,5 @@
+import { runQuickModel } from "@/lib/pipeline/quick-model";
+import { quickModelActionSchema } from "@/lib/quick/schemas";
 import { commitQuickMutation } from "@/lib/pipeline/quick";
 import { quickActionNames, quickActionSchema } from "@/lib/quick/schemas";
 import { assertQuickSession } from "@/lib/pipeline/http";
@@ -28,6 +30,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (currentSession.activity === "quick") {
       assertQuickSession(currentSession);
       if (!quickActionNames.has(action)) throw new SessionError("速刷不支持精练动作。", 409, "unsupported_session");
+      if (["quickFollowup", "quickCheck", "quickRetry", "quickSupplemental"].includes(action)) return Response.json(await withModelAdmission(user.id, () => runQuickModel(user.id, id, quickModelActionSchema.parse(body))));
       return Response.json(commitQuickMutation(user.id, id, quickActionSchema.parse(body)));
     }
     assertSupportedSession(currentSession);

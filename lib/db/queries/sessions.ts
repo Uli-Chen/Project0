@@ -6,7 +6,7 @@ import { AuthError } from "@/lib/auth/http";
 import { getDb } from "../client";
 import { completedAtForSession, completedAtForSessions, markPracticeDeleted, recordAttempt } from "../practice-facts";
 import { questionContext } from "../question-context";
-import { users, writingSessions } from "../schema";
+import { users, writingSessions, checkpoints } from "../schema";
 
 export function getSession(userId: string, id: string): SessionState | null {
   const row = getDb().select().from(writingSessions).where(and(eq(writingSessions.userId, userId), eq(writingSessions.id, id))).get();
@@ -24,6 +24,8 @@ export function saveSession(userId: string, state: SessionState): void {
   if (!getDb().select({ id: users.id }).from(users).where(eq(users.id, userId)).get()) {
     throw new AuthError("账户已退出或删除，无法保存这次练习。", 401);
   }
+  getDb().$client.transaction(() => {
+  if(state.lifecycle === "closed") getDb().update(checkpoints).set({status:"abandoned",reason:"练习已关闭"}).where(and(eq(checkpoints.userId,userId),eq(checkpoints.attemptId,state.id),eq(checkpoints.status,"in_progress"))).run();
   const now = new Date().toISOString();
   // Upgrade only at a real write; never downgrade a future schema.
   state.schemaVersion = Math.max(2, state.schemaVersion ?? 1);
@@ -31,6 +33,7 @@ export function saveSession(userId: string, state: SessionState): void {
     target: [writingSessions.userId, writingSessions.id],
     set: { stateJson: JSON.stringify(state), updatedAt: now },
   }).run();
+  }).immediate();
 }
 
 /** Central content deletion boundary. Composite owner/session FKs cascade topic_cards,

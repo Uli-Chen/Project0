@@ -1,0 +1,9 @@
+import assert from "node:assert/strict";
+import { readFileSync,writeFileSync } from "node:fs";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { SessionView } from "../components/essay/session-view";
+import { ReadonlySession } from "../components/essay/readonly-session";
+import { readSession } from "../lib/pipeline/read-session";
+const seed=JSON.parse(readFileSync("../seed.json","utf8"));const session=readSession(seed.sessions[0].state_json);assert.equal(SessionView({session}).type,ReadonlySession);
+const html=renderToStaticMarkup(createElement(SessionView,{session}));assert.ok(html.includes("只读")||html.includes("暂不支持"));assert.ok(!html.includes("<button"));assert.ok(!html.includes("<textarea"));writeFileSync("../readonly.html",html);console.log("PASS old WP2a renders current Quick read-only; no button or editable textarea.");

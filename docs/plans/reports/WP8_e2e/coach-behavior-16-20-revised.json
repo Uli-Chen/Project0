@@ -1,0 +1,280 @@
+{
+  "timestamp": "2026-11-01T06:34:15.559Z",
+  "synthetic": true,
+  "temporaryDatabase": true,
+  "providerCap": 6,
+  "providerCalls": 5,
+  "networkBlocked": false,
+  "results": [
+    {
+      "caseId": 16,
+      "scenario": "卡片只有立场：应只追问一个问题，不代写理由",
+      "action": "quickFollowup",
+      "providerCalls": 1,
+      "latencyMs": 2072,
+      "task": "All secondary schools should require their students to wear a school uniform. To what extent do you agree or disagree?",
+      "cardParts": [
+        {
+          "key": "position.answer",
+          "text": "我赞成学校通常要求学生穿校服。"
+        }
+      ],
+      "conversation": [
+        {
+          "role": "coach",
+          "text": "你写的是“学校通常”，但题目要求针对“所有中学”这一普遍规定，你的立场是多大程度赞成？"
+        }
+      ],
+      "cardState": "draft",
+      "checks": [],
+      "operations": [
+        {
+          "kind": "followup",
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "caseId": 17,
+      "scenario": "学生回答不知道：给思考方向，不提供论点",
+      "action": "quickFollowup",
+      "providerCalls": 1,
+      "latencyMs": 1203,
+      "task": "All secondary schools should require their students to wear a school uniform. To what extent do you agree or disagree?",
+      "cardParts": [
+        {
+          "key": "position.answer",
+          "text": "我赞成学校通常要求学生穿校服。"
+        }
+      ],
+      "conversation": [
+        {
+          "role": "coach",
+          "text": "你写的是“学校通常”，但题目要求针对“所有中学”这一普遍规定，你的立场是多大程度赞成？"
+        },
+        {
+          "role": "user",
+          "text": "不知道为什么。"
+        },
+        {
+          "role": "coach",
+          "text": "先只做一步：你是反对所有中学都强制穿校服，还是只赞成其中一部分学校这样做？"
+        }
+      ],
+      "cardState": "draft",
+      "checks": [],
+      "operations": [
+        {
+          "kind": "followup",
+          "status": "ok"
+        },
+        {
+          "kind": "followup",
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "caseId": 18,
+      "scenario": "有理由槽文字但没有因果解释：应判缺口，不给示范",
+      "action": "quickCheck",
+      "providerCalls": 1,
+      "latencyMs": 872,
+      "task": "All secondary schools should require their students to wear a school uniform. To what extent do you agree or disagree?",
+      "cardParts": [
+        {
+          "key": "position.answer",
+          "text": "我赞成学校强制学生穿校服。"
+        },
+        {
+          "key": "position.why",
+          "text": "因为校服很好，穿校服很重要，所以应该穿。"
+        }
+      ],
+      "conversation": [],
+      "cardState": "needs_development",
+      "checks": [
+        {
+          "outcome": "needs_development",
+          "results": [
+            {
+              "id": "position",
+              "status": "gap",
+              "note": "理由只是重复“校服好/重要”，没有说明为什么因此应强制全体中学生穿，缺少因果机制。"
+            }
+          ]
+        }
+      ],
+      "operations": [
+        {
+          "kind": "check",
+          "status": "needs_development"
+        }
+      ]
+    },
+    {
+      "caseId": 19,
+      "scenario": "双问题仅回答原因，未答最有效预防措施：应判缺口",
+      "action": "quickCheck",
+      "providerCalls": 1,
+      "latencyMs": 784,
+      "task": "In many countries, obesity and unhealthy eating habits are increasing. What are the reasons for this trend? What is the most effective way to prevent it?",
+      "cardParts": [
+        {
+          "key": "reasons.answer",
+          "text": "久坐和方便购买的高糖食品让肥胖及不健康饮食增多。"
+        },
+        {
+          "key": "reasons.why",
+          "text": "工作繁忙的人常靠快餐解决用餐，摄入的能量可能超过消耗。"
+        }
+      ],
+      "conversation": [],
+      "cardState": "needs_development",
+      "checks": [
+        {
+          "outcome": "needs_development",
+          "results": [
+            {
+              "id": "most_effective_prevention",
+              "status": "gap",
+              "note": "请补充本项回答和理由。"
+            },
+            {
+              "id": "reasons",
+              "status": "met",
+              "note": null
+            }
+          ]
+        }
+      ],
+      "operations": [
+        {
+          "kind": "check",
+          "status": "needs_development"
+        }
+      ]
+    },
+    {
+      "caseId": 20,
+      "scenario": "观点普通但要求均完整：应判断满足，不以观点新奇度评分",
+      "action": "quickCheck",
+      "providerCalls": 1,
+      "latencyMs": 1080,
+      "task": "Some people think schools should spend more time teaching mathematics and numerical skills. Others believe communication skills, such as writing and speaking, are more important for students' futures. Discuss both views and give your own opinion.",
+      "cardParts": [
+        {
+          "key": "mathematics.answer",
+          "text": "数学训练有助于学生理解数据并作出判断。"
+        },
+        {
+          "key": "mathematics.why",
+          "text": "购物和工作中的费用比较都需要基本数字能力。"
+        },
+        {
+          "key": "communication.answer",
+          "text": "沟通技能帮助学生表达想法并与他人合作。"
+        },
+        {
+          "key": "communication.why",
+          "text": "团队成员如果不能说清需求，就很难共同完成任务。"
+        },
+        {
+          "key": "opinion.answer",
+          "text": "两种技能都应保留，但我更重视沟通练习。"
+        },
+        {
+          "key": "opinion.why",
+          "text": "多数工作要与他人合作，清楚表达也能帮助分享数学分析。"
+        }
+      ],
+      "conversation": [],
+      "cardState": "passed",
+      "checks": [
+        {
+          "outcome": "passed",
+          "results": [
+            {
+              "id": "mathematics",
+              "status": "met",
+              "note": null
+            },
+            {
+              "id": "communication",
+              "status": "met",
+              "note": null
+            },
+            {
+              "id": "opinion",
+              "status": "met",
+              "note": null
+            }
+          ]
+        }
+      ],
+      "operations": [
+        {
+          "kind": "check",
+          "status": "ok"
+        }
+      ]
+    }
+  ],
+  "ledger": [
+    {
+      "purpose": "quick_followup",
+      "attempt": 1,
+      "reserved_output": 512,
+      "reserved_ms": 25000,
+      "input_tokens": 398,
+      "output_tokens": 37,
+      "latency_ms": 2065,
+      "outcome": "ok",
+      "config_version": "coach-json-v2-quick-guidance/quick-budget-20261101-v1/utf8-byte-v1/quick-deepseek-no-thinking-v1"
+    },
+    {
+      "purpose": "quick_followup",
+      "attempt": 1,
+      "reserved_output": 512,
+      "reserved_ms": 25000,
+      "input_tokens": 442,
+      "output_tokens": 34,
+      "latency_ms": 1199,
+      "outcome": "ok",
+      "config_version": "coach-json-v2-quick-guidance/quick-budget-20261101-v1/utf8-byte-v1/quick-deepseek-no-thinking-v1"
+    },
+    {
+      "purpose": "quick_check",
+      "attempt": 1,
+      "reserved_output": 768,
+      "reserved_ms": 25000,
+      "input_tokens": 477,
+      "output_tokens": 40,
+      "latency_ms": 866,
+      "outcome": "ok",
+      "config_version": "coach-json-v2-quick-guidance/quick-budget-20261101-v1/utf8-byte-v1/quick-deepseek-no-thinking-v1"
+    },
+    {
+      "purpose": "quick_check",
+      "attempt": 1,
+      "reserved_output": 768,
+      "reserved_ms": 25000,
+      "input_tokens": 492,
+      "output_tokens": 18,
+      "latency_ms": 780,
+      "outcome": "ok",
+      "config_version": "coach-json-v2-quick-guidance/quick-budget-20261101-v1/utf8-byte-v1/quick-deepseek-no-thinking-v1"
+    },
+    {
+      "purpose": "quick_check",
+      "attempt": 1,
+      "reserved_output": 768,
+      "reserved_ms": 25000,
+      "input_tokens": 651,
+      "output_tokens": 43,
+      "latency_ms": 1077,
+      "outcome": "ok",
+      "config_version": "coach-json-v2-quick-guidance/quick-budget-20261101-v1/utf8-byte-v1/quick-deepseek-no-thinking-v1"
+    }
+  ]
+}

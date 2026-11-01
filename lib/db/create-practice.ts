@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import type { z } from "zod";
 import { getDb } from "./client";
-import { attemptMarkers, questions, topicCards } from "./schema";
+import { attemptMarkers, questions, topicCards, checkpoints } from "./schema";
 import { getSession, saveSession } from "./queries/sessions";
 import { recordAttempt } from "./practice-facts";
 import { questionContext, resolveAttempt } from "./question-context";
@@ -18,6 +18,11 @@ import type { SessionState } from "../pipeline/types";
 export function saveNewPractice(userId: string, session: SessionState) {
   const sqlite = getDb().$client;
   sqlite.transaction(() => {
+    const family = resolveAttempt(session, questionContext(sqlite)).exposureKey;
+    if (family) {
+      const active = getDb().select().from(checkpoints).where(and(eq(checkpoints.userId,userId),eq(checkpoints.exposureKey,family),eq(checkpoints.status,"in_progress"))).get();
+      if(active && active.attemptId !== session.id) throw new SessionError("这道题正在进行检查点，请先完成或关闭。",409,"checkpoint_family_busy");
+    }
     saveSession(userId, session);
     recordAttempt(sqlite, userId, session, questionContext(sqlite));
   }).immediate();

@@ -1,0 +1,44 @@
+import assert from "node:assert/strict";
+import { test, after } from "node:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { getDb } from "../lib/db/client";
+import { importQuestions } from "../lib/db/import-questions";
+import { markNewUserScanned } from "../lib/db/migrate-0.4";
+import { users, completionEvents, familiarity } from "../lib/db/schema";
+import { catalog, requirements, evaluation } from "./helpers/practice-db";
+import { getCheckpointState, startCheckpoint, checkpointHistory, deferCheckpoint } from "../lib/db/checkpoints";
+import { createQuestionPractice } from "../lib/db/create-practice";
+import { deleteSession, saveSession, getSession } from "../lib/db/queries/sessions";
+import { commitPracticeCheckpoint } from "../lib/db/practice-facts";
+import { checkpointState } from "../lib/rules/checkpoint";
+const dir=mkdtempSync(join(tmpdir(),"opc-checkpoints-")); process.env.DATABASE_PATH=join(dir,"db.sqlite");process.env.QUESTION_BANK_ENABLED="true";process.env.CHECKPOINTS_ENABLED="true";
+const db=getDb();migrate(db,{migrationsFolder:resolve("drizzle")});importQuestions(db.$client,catalog,requirements);
+after(()=>{db.$client.close();rmSync(dir,{recursive:true,force:true});});
+const now="2026-11-01T00:00:00.000Z";
+function user(){const id=crypto.randomUUID();db.insert(users).values({id,email:`${id}@test.test`,name:"test",passwordHash:"test",createdAt:now,updatedAt:now}).run();markNewUserScanned(db.$client,id,now);db.insert(completionEvents).values({userId:id,attemptId:"previous",activity:"deep",freshness:"fresh",relation:"none",completedAt:now}).run();return id;}
+function start(id:string){const questionId=getCheckpointState(id,now).candidateQuestionId!;return startCheckpoint(id,{questionId,declaration:"no",idempotencyKey:crypto.randomUUID()},now)!;}
+test("checkpoint due clock, deferral, reserved pool and type ranking",()=>{const input={firstDeepCompletedAt:now,lastEligibleCompletedAt:null,candidates:[{id:"ordinary",pool:"practice",bankOrder:0,eligible:true,eligibleTypeCount:0},{id:"reserved",pool:"checkpoint_reserved",bankOrder:5,eligible:true,eligibleTypeCount:3}]};assert.equal(checkpointState(input,now).candidateQuestionId,"reserved");assert.equal(checkpointState({...input,lastEligibleCompletedAt:now},now).state,"not_due");assert.equal(checkpointState({...input,deferredUntil:"2026-11-08"},now).state,"deferred");});
+test("duplicate start is idempotent; second tab and family creation rejected; deleting releases occupancy but never unseen",()=>{const id=user(), questionId=getCheckpointState(id,now).candidateQuestionId!,input={questionId,declaration:"no" as const,idempotencyKey:"same"};const s=startCheckpoint(id,input,now)!;assert.equal(startCheckpoint(id,input,now)!.id,s.id);assert.throws(()=>start(id));assert.throws(()=>createQuestionPractice(id,{questionId,activity:"deep",mode:"practice",idempotencyKey:"other"}));deleteSession(id,s.id);assert.equal(checkpointHistory(id)[0].status,"abandoned");assert.notEqual(getCheckpointState(id,now).candidateQuestionId,questionId);assert.ok(start(id));});
+test("external yes and unsure persist despite rejected start and cannot be erased by no",()=>{const id=user();for(const declaration of ["yes","unsure"] as const){const q=getCheckpointState(id,now).candidateQuestionId!;assert.throws(()=>startCheckpoint(id,{questionId:q,declaration,idempotencyKey:crypto.randomUUID()},now));assert.throws(()=>startCheckpoint(id,{questionId:q,declaration:"no",idempotencyKey:crypto.randomUUID()},now));}assert.equal(db.select().from(familiarity).all().filter(f=>f.userId===id).length,2);});
+test("on-time original remains eligible when scoring completes late; immutable baseline survives delete",()=>{const id=user(),s=start(id);s.submitted.original="essay";commitPracticeCheckpoint(db.$client,id,s,"acceptOriginal",v=>saveSession(id,v),"2026-11-01T00:39:59.000Z");s.stage="feedback";s.evaluation=evaluation;commitPracticeCheckpoint(db.$client,id,s,"completeOriginal",v=>saveSession(id,v),"2026-11-01T01:10:00.000Z");assert.equal(checkpointHistory(id)[0].status,"eligible");assert.equal(checkpointHistory(id)[0].isBaseline,true);deleteSession(id,s.id);assert.equal(checkpointHistory(id)[0].isBaseline,true);assert.equal(checkpointHistory(id)[0].evidenceDeleted,true);});
+test("late acceptance never becomes eligible through retry, close frees active slot, defer lasts seven days",()=>{const id=user(),s=start(id);s.submitted.original="essay";commitPracticeCheckpoint(db.$client,id,s,"acceptOriginal",v=>saveSession(id,v),"2026-11-01T00:40:01.000Z");const retry=getSession(id,s.id)!;commitPracticeCheckpoint(db.$client,id,retry,"acceptOriginal",v=>saveSession(id,v),"2026-11-01T00:20:00.000Z");retry.stage="feedback";retry.evaluation=evaluation;commitPracticeCheckpoint(db.$client,id,retry,"completeOriginal",v=>saveSession(id,v));assert.equal(checkpointHistory(id)[0].status,"ineligible");const second=start(id);second.lifecycle="closed";saveSession(id,second);assert.equal(checkpointHistory(id).find(c=>c.attemptId===second.id)!.status,"abandoned");assert.equal(deferCheckpoint(id,now),"2026-11-08T00:00:00.000Z");assert.equal(getCheckpointState(id,now).state,"deferred");});
+
+test("unknown legacy exposure refuses candidate; deleted account cascades checkpoint metadata",()=>{const id=user();db.$client.prepare("DELETE FROM legacy_scan WHERE user_id=?").run(id);assert.equal(getCheckpointState(id,now).state,"unavailable");markNewUserScanned(db.$client,id,now);start(id);db.$client.prepare("DELETE FROM users WHERE id=?").run(id);assert.equal(checkpointHistory(id).length,0);});
+test("assisted original is excluded even with on-time submission",()=>{const id=user(),s=start(id);s.submitted.original="essay";s.outline.userEdited=true;commitPracticeCheckpoint(db.$client,id,s,"acceptOriginal",v=>saveSession(id,v),now);assert.equal(checkpointHistory(id)[0].status,"ineligible");s.stage="feedback";s.evaluation=evaluation;commitPracticeCheckpoint(db.$client,id,s,"completeOriginal",v=>saveSession(id,v),now);assert.equal(checkpointHistory(id)[0].isBaseline,false);});
+
+test("checkpoint HTTP cookie auth, start, refresh deadline, skip and feature gates", async()=>{
+ const {inRequest}=await import("./helpers/request-context");const {createHash}=await import("node:crypto");
+ const {authSessions}=await import("../lib/db/schema");const {GET}=await import("../app/api/checkpoints/route");const {POST}=await import("../app/api/checkpoints/start/route");const {POST:SKIP}=await import("../app/api/checkpoints/skip/route");
+ const id=user(),token="b".repeat(64);db.insert(authSessions).values({userId:id,tokenHash:createHash("sha256").update(token).digest("hex"),expiresAt:Date.now()+3600000}).run();process.env.APP_ORIGIN="http://checkpoint.test";
+ const request=(method:string,body?:unknown)=>new Request("http://checkpoint.test/api/checkpoints",{method,headers:{origin:"http://checkpoint.test",cookie:`wm_session=${token}`,"content-type":"application/json"},...(body?{body:JSON.stringify(body)}:{})});
+ const get=request("GET");const before=await(await inRequest(get,GET)).json();assert.equal(before.state,"available");assert.ok(before.candidateText);
+ const post=request("POST",{questionId:before.candidateQuestionId,declaration:"no",idempotencyKey:"api-start"});const response=await inRequest(post,()=>POST(post));assert.equal(response.status,200);
+ const first=await(await inRequest(get,GET)).json(),second=await(await inRequest(get,GET)).json();assert.equal(first.state,"in_progress");assert.equal(first.history[0].deadlineAt,second.history[0].deadlineAt);
+ process.env.CHECKPOINTS_ENABLED="false";const skip=request("POST",{});assert.equal((await inRequest(skip,()=>SKIP(skip))).status,403);process.env.CHECKPOINTS_ENABLED="true";
+ const anonymous=new Request("http://checkpoint.test/api/checkpoints");assert.equal((await inRequest(anonymous,GET)).status,401);
+});
+
+test("external declaration during active checkpoint disqualifies completion; frozen start evidence retained",()=>{const id=user(),s=start(id),before=checkpointHistory(id)[0];const evidence=JSON.parse(before.startEvidenceJson);assert.ok(evidence.questionVersion);assert.ok(evidence.bankVersion);assert.ok(evidence.aliasVersion);assert.equal(evidence.priorAppAttempt,false);assert.throws(()=>startCheckpoint(id,{questionId:s.question!.id,declaration:"unsure",idempotencyKey:crypto.randomUUID()},now));s.submitted.original="essay";commitPracticeCheckpoint(db.$client,id,s,"acceptOriginal",v=>saveSession(id,v),now);s.stage="feedback";s.evaluation=evaluation;commitPracticeCheckpoint(db.$client,id,s,"completeOriginal",v=>saveSession(id,v),now);assert.equal(checkpointHistory(id)[0].status,"ineligible");assert.equal(checkpointHistory(id)[0].startEvidenceJson,before.startEvidenceJson);});

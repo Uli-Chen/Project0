@@ -1,0 +1,17 @@
+import { createHash } from 'node:crypto';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join,resolve } from 'node:path';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { getDb } from '../lib/db/client';
+import { importQuestions } from '../lib/db/import-questions';
+import { markNewUserScanned } from '../lib/db/migrate-0.4';
+import { createQuestionPractice } from '../lib/db/create-practice';
+import { commitQuickMutation } from '../lib/pipeline/quick';
+const folder=readFileSync('/tmp/opc-rollback-location','utf8');process.env.DATABASE_PATH=join(folder,'rollback.db');process.env.QUESTION_BANK_ENABLED='true';process.env.QUICK_ENABLED='true';
+const db=getDb();migrate(db,{migrationsFolder:resolve('drizzle')});importQuestions(db.$client,JSON.parse(readFileSync('data/question-bank/question_bank.mock.json','utf8')),JSON.parse(readFileSync('data/question-bank/requirements.mock.json','utf8')));
+db.$client.prepare("DELETE FROM users WHERE id='rollback'").run();
+db.$client.prepare('INSERT INTO users(id,email,name,password_hash,created_at,updated_at) VALUES(?,?,?,?,?,?)').run('rollback','rollback@test.test','rollback','offline',new Date().toISOString(),new Date().toISOString());
+db.$client.prepare('INSERT INTO auth_sessions(token_hash,user_id,expires_at) VALUES(?,?,?)').run(createHash('sha256').update('a'.repeat(64)).digest('hex'),'rollback',Date.now()+3600000);markNewUserScanned(db.$client,'rollback',new Date().toISOString());
+const {session}=createQuestionPractice('rollback',{questionId:'qb_mock_health_001',activity:'quick',mode:'practice',idempotencyKey:'seed'});
+commitQuickMutation('rollback',session.id,{action:'cardSave',cardVersion:0,parts:[{key:'reasons.answer',text:'学生写下的材料'}]});
+writeFileSync(join(folder,'seed.json'),JSON.stringify({id:session.id,tables:db.$client.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all(),sessions:db.$client.prepare('SELECT * FROM writing_sessions').all()}));db.$client.close();console.log('Seeded current version Quick card + all migrations in isolated database.');

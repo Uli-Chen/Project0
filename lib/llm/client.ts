@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { admitModelCall } from "./admission";
-import { getLlmConfig } from "./config";
+import { getLlmConfig, quickProviderOptions } from "./config";
 import { ModelError, parseModelJson, providerError } from "./json";
 import { buildMessages, estimateInputTokens } from "./messages";
 import { consumeReservation, observeCall, settleCall, type CallRecord, type CallOutcome, type CallUsage, type Reservation } from "./calls";
@@ -52,7 +52,7 @@ export async function generateJson<T>(instruction: string, context: unknown, sch
       signal = AbortSignal.timeout(timeoutMs);
       const response = await fetch(`${config.baseUrl}/chat/completions`, {
         method: "POST", headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json" }, cache: "no-store",
-        body: JSON.stringify({ model: config.model, max_tokens: maxOutputTokens, response_format: { type: "json_object" }, messages }), signal,
+        body: JSON.stringify({ model: config.model, max_tokens: maxOutputTokens, response_format: { type: "json_object" }, messages, ...quickProviderOptions(config, options?.purpose) }), signal,
       });
       if (!response.ok) {
         outcome = "provider_error";

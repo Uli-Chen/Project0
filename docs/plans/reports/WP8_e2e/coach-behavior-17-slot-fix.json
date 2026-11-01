@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-11-01T06:35:33.969Z",
+  "caseId": 17,
+  "synthetic": true,
+  "temporaryDatabase": true,
+  "providerCalls": 1,
+  "providerCap": 2,
+  "outputs": [
+    {
+      "finishReason": "stop",
+      "question": "你提到学校通常要求学生穿校服，能举一个你观察到的具体例子，说明校服对学生日常行为有什么影响吗？",
+      "targetKey": "position.why"
+    }
+  ],
+  "latencyMs": 2247,
+  "conversation": [
+    {
+      "role": "coach",
+      "text": "你写的是“学校通常”，但题目要求针对“所有中学”这一普遍规定，你的立场是多大程度赞成？"
+    },
+    {
+      "role": "user",
+      "text": "不知道为什么。"
+    },
+    {
+      "role": "coach",
+      "text": "你提到学校通常要求学生穿校服，能举一个你观察到的具体例子，说明校服对学生日常行为有什么影响吗？"
+    }
+  ],
+  "operations": [
+    {
+      "kind": "followup",
+      "status": "ok"
+    }
+  ],
+  "ledger": [
+    {
+      "purpose": "quick_followup",
+      "attempt": 1,
+      "config_version": "coach-json-v4-quick-guidance/quick-budget-20261101-v1/utf8-byte-v1/quick-deepseek-no-thinking-v1",
+      "input_tokens": 498,
+      "output_tokens": 39,
+      "latency_ms": 2238,
+      "outcome": "ok"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+✔ 成功：完整消息与估算一致，一行 ok 记录实际用量，额度按实际计 (22.688ms)
+✔ 超时：延迟假 fetch 与可控时钟触发 timeout，预留时间仍占额度 (1.253541ms)
+✔ 不合格输出：带预留即使 retries=9 也不自动重试；显式重试重新预留并计 attempt (1.210125ms)
+✔ usage 未知或仅单项已知：NULL 不伪造 0，未知项按预留计 (1.493209ms)
+✔ 核销写库失败：业务仍得到模型结果，原子更新不泄漏实际用量，预留完整保留 (0.836542ms)
+✔ 响应丢失：连接或响应体中断为 indeterminate，绝不自动重发 (1.086334ms)
+✔ 启动恢复：reserved 变 indeterminate，用量和预留不变，晚到结果不能释放额度 (0.723667ms)
+✔ 预留写库失败抛错且 fake fetch 从未调用；外层 IMMEDIATE 回滚也不能 dispatch (0.626958ms)
+✔ 输入超长不建行不调模型；预留后的完整消息若超估算也拒绝 (1.491625ms)
+✔ 日志全表任何列均不含独特提示词、上下文、模型输出正文 (1.335709ms)
+✔ 无 options 保持 16000 输出、120 秒、两次尝试且不写日志 (0.91425ms)
+✔ 精练观测每次 provider 尝试一行且 package_id 为空，不占速刷额度 (1.070833ms)
+✔ 观测日志插入失败不影响调用；HTTP 错误为 provider_error，日志不含上游正文 (0.902333ms)
+✔ 包用满拒绝；新 operationId/sessionId/packageId 仍受用户限额，滚出窗口后恢复 (2.467083ms)
+✔ 并发：真实 SQLite 两进程两连接，两张卡片争抢用户最后一次额度只有一个成功 (164.378084ms)
+✔ 预留令牌不可复制或重复派发，事务内调用与不同用户/用途均在 fetch 前拒绝 (1.810167ms)
+✔ 另一个用户的相同 packageId/operationId 不占本用户额度 (2.085209ms)
+✔ 响应中断报 AbortError 但本地时限未到：记 indeterminate，不错误释放预留 (0.436167ms)
+✔ 非预留 options 的输出/超时/retries 参数生效；reserved 始终采用持久化限额 (0.787416ms)
+✔ official DeepSeek Quick disables thinking only; scoring and compatible providers retain existing body (0.87725ms)
+✔ all release flags off: legacy create/read/save/evaluate work, new entrypoints reject, Quick stays read-only (24.531917ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 381.092083

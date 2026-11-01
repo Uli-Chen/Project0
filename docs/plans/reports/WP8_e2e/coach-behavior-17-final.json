@@ -1,0 +1,45 @@
+{
+  "timestamp": "2026-11-01T06:35:02.944Z",
+  "caseId": 17,
+  "synthetic": true,
+  "temporaryDatabase": true,
+  "providerCalls": 1,
+  "providerCap": 1,
+  "latencyMs": 1960,
+  "conversation": [
+    {
+      "role": "coach",
+      "text": "你写的是“学校通常”，但题目要求针对“所有中学”这一普遍规定，你的立场是多大程度赞成？"
+    },
+    {
+      "role": "user",
+      "text": "不知道为什么。"
+    }
+  ],
+  "operations": [
+    {
+      "kind": "followup",
+      "status": "indeterminate"
+    }
+  ],
+  "ledger": [
+    {
+      "purpose": "quick_followup",
+      "attempt": 1,
+      "config_version": "coach-json-v3-quick-guidance/quick-budget-20261101-v1/utf8-byte-v1/quick-deepseek-no-thinking-v1",
+      "input_tokens": 495,
+      "output_tokens": 27,
+      "latency_ms": 1951,
+      "outcome": "invalid_output"
+    },
+    {
+      "purpose": "quick_followup",
+      "attempt": 2,
+      "config_version": "coach-json-v3-quick-guidance/quick-budget-20261101-v1/utf8-byte-v1/quick-deepseek-no-thinking-v1",
+      "input_tokens": null,
+      "output_tokens": null,
+      "latency_ms": 0,
+      "outcome": "indeterminate"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import "server-only";
+import { quickDetails } from "./quick-model";
 import { createHash } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "../db/client";
@@ -14,15 +15,15 @@ import { createSession } from "./initial";
 import { SessionError } from "./engine";
 import type { SessionState } from "./types";
 
-function response(session: SessionState, card: TopicCard, deepSession?: SessionState) {
-  return { session, card, operations: [], budget: null, ...(deepSession ? { deepSession } : {}) };
+function response(userId: string, session: SessionState, card: TopicCard, deepSession?: SessionState) {
+  return { defaultDeepId: getDb().select().from(defaultContinuations).where(and(eq(defaultContinuations.userId, card.userId), eq(defaultContinuations.quickAttemptId, session.id))).get()?.deepAttemptId ?? null, session, card, requirements: cardRequirements(card), ...quickDetails(userId, session.id), ...(deepSession ? { deepSession } : {}) };
 }
 export function readQuick(userId: string, id: string) {
   return getDb().$client.transaction(() => {
     const session = getSession(userId, id); assertQuickSession(session);
     const card = getCard(userId, id);
     if (!card) throw new SessionError("卡片不存在。", 404);
-    return response(session, card);
+    return response(userId, session, card);
   })();
 }
 function existingChild(userId: string, id: string) {
@@ -67,8 +68,9 @@ export function commitQuickMutation(userId: string, id: string, action: QuickAct
       if (receipts.some(r => r.resultRef !== ref)) throw new ReceiptConflict();
       const child = input.action === "continueDeep" ? existingChild(userId, ref) : undefined;
       recordRequests(ref);
-      return response(session, card, child);
+      return response(userId, session, card, child);
     }
+    if (session.lifecycle === "closed" && input.action !== "continueDeep") throw new SessionError("练习已关闭，请先恢复。", 409, "lifecycle_conflict");
     let changed = false, deepSession: SessionState | undefined;
     const followups = session.messages.filter(m => m.role === "coach" && m.stage === "quick" && m.action === "quickFollowup");
     if (followups.length > 2) throw new SessionError("追问记录不符合当前版本。", 409, "unsupported_session");
@@ -128,6 +130,6 @@ export function commitQuickMutation(userId: string, id: string, action: QuickAct
     if (changed) db.update(writingSessions).set({ stateJson: JSON.stringify(session), updatedAt: session.updatedAt })
       .where(and(eq(writingSessions.userId, userId), eq(writingSessions.id, id))).run();
     recordRequests(deepSession?.id ?? id);
-    return response(session, card, deepSession);
+    return response(userId, session, card, deepSession);
   }).immediate();
 }

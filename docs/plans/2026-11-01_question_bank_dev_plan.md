@@ -3,7 +3,7 @@
 * **负责人（方案、建议、验收）：** Claude Code
 * **实现者：** Codex gpt-6-astra
 * **日期：** 2026-11-01
-* **状态：** v4 已确认（三轮审阅：[r1](reviews/plan_review_r1.md)、[r2](reviews/plan_review_r2.md)、[r3](reviews/plan_review_r3.md)）；等待 W0-1 基线提交后开始 WP1
+* **状态：** v4 已确认（三轮审阅：[r1](reviews/plan_review_r1.md)、[r2](reviews/plan_review_r2.md)、[r3](reviews/plan_review_r3.md)）；WP1～WP7 已实现并完成本地交叉验收；WP8 完整检查通过，正在执行已授权的线上发布（详见 reports/WP8.md）
 
 ## 0. 依据与范围
 

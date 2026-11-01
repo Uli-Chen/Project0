@@ -1,3 +1,5 @@
+import { practiceCounts } from "../rules/practice";
+import type { CompletionView } from "../rules/recommend";
 import type { SessionState } from "@/lib/prototype/session-store";
 import type { MemoryItem } from "@/lib/prototype/types";
 import type { UserProfile } from "@/lib/auth/types";
@@ -32,7 +34,7 @@ export function formatDate(value: string) {
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString("zh-CN", { timeZone: "Asia/Taipei", month: "short", day: "numeric" });
 }
 
-export function learningSummary(sessions: SessionState[], profile: UserProfile) {
+export function learningSummary(sessions: SessionState[], profile: UserProfile, completionEvents?: CompletionView[]) {
   const evaluated = sessions.filter((session) => session.evaluation).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const finished = sessions.filter((session) => session.stage === "finished");
   const resume = sessions.find((session) => session.stage !== "finished");
@@ -45,7 +47,7 @@ export function learningSummary(sessions: SessionState[], profile: UserProfile) 
   const focus = evaluated.flatMap((session) => session.evaluation?.issues ?? []).find((issue) => !profile.excludedMemoryIds.includes(`issue:${issue.code || issue.title}`));
   const taipeiNow = new Date(Date.now() + 8 * 60 * 60 * 1000);
   const weekStart = new Date(Date.UTC(taipeiNow.getUTCFullYear(), taipeiNow.getUTCMonth(), taipeiNow.getUTCDate() - (taipeiNow.getUTCDay() + 6) % 7) - 8 * 60 * 60 * 1000);
-  const weekCompleted = finished.filter((session) => new Date(session.createdAt) >= weekStart).length;
+  const weekCompleted = completionEvents ? practiceCounts(completionEvents, new Date()).weekCompleted : sessions.filter((session) => session.completedAt && new Date(session.completedAt) >= weekStart && new Date(session.completedAt).getTime() < weekStart.getTime() + 7 * 86400000).length;
   const examPassed = profile.timeBy === "date" && Boolean(profile.examDate) && weeks === 0;
   return { evaluated, finished, resume, latest, totalMinutes, target, weeks, focus, weekCompleted, examPassed };
 }

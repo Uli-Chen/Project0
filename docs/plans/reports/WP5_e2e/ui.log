@@ -1,0 +1,39 @@
+
+> project-0@0.1.0 test:ui
+> node --import tsx --test tests/ui/*.test.ts
+
+✔ the reported coach reply renders Chinese bold labels and actual lists (24.83425ms)
+✔ preserves code and deliberately escaped Markdown when repairing emphasis (3.606416ms)
+✔ supports headings, quotes, numbered start, tables and GFM text formatting (8.660791ms)
+✔ does not execute model HTML, unsafe URLs, or load remote images (8.65875ms)
+✔ thread renders stored coach messages as Markdown while user evidence stays literal (1.77325ms)
+✔ finish 下一步: bank=true, question=true, links to topic only when both; old plan never displayed (9.230875ms)
+✔ finish 下一步: bank=true, question=false, links to topic only when both; old plan never displayed (0.756875ms)
+✔ finish 下一步: bank=false, question=true, links to topic only when both; old plan never displayed (0.461125ms)
+✔ finish 下一步: bank=false, question=false, links to topic only when both; old plan never displayed (0.2495ms)
+✔ Required feedback saved; optional review failed: score/issues remain visible and failure alone offers 重试 (17.923458ms)
+✔ Required feedback saved; optional review pending: score/issues remain visible and failure alone offers 重试 (4.648083ms)
+✔ Required feedback saved; optional review ok: score/issues remain visible and failure alone offers 重试 (3.590834ms)
+✔ Required feedback saved; optional review none: score/issues remain visible and failure alone offers 重试 (2.867417ms)
+✔ 精练 prewriting 左栏只读显示冻结卡片；无快照时原界面不变 (45.493417ms)
+✔ 精练 writing 左栏只读显示冻结卡片；无快照时原界面不变 (21.180958ms)
+✔ 速刷页面始终只读显示卡片，包含直接输入和摘取文字且不挂载精练控制器 (1.04725ms)
+✔ Quick in-page leave confirmation preserves a clear continue-editing choice (answerOnly=false) (39.858375ms)
+✔ Quick in-page leave confirmation preserves a clear continue-editing choice (answerOnly=true) (0.654917ms)
+✔ Quick leave confirmation cannot dispatch navigation during a pending save (0.395833ms)
+✔ Quick editor exposes each requirement, current check only, honest quota and safe model text (29.594625ms)
+✔ passed cards expose Deep continuation and interrupted operations remain explicit (43.778125ms)
+✔ Quick activity renders stored content without mounting SessionProvider or essay controls (7.6335ms)
+✔ Quick stage renders stored content without mounting SessionProvider or essay controls (1.29275ms)
+✔ unknown activity renders stored content without mounting SessionProvider or essay controls (0.803083ms)
+✔ unknown stage renders stored content without mounting SessionProvider or essay controls (0.734541ms)
+✔ legacy and Deep sessions retain the original provider and EssayScreen (0.290833ms)
+✔ read-only view prefers the frozen question and tolerates absent essay-only fields (0.455666ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 875.882916

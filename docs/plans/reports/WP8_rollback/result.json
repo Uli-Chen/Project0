@@ -1,0 +1,25 @@
+{
+  "oldCommit": "cd6752b",
+  "passed": true,
+  "routeChecks": [
+    {
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "status": 409
+    },
+    {
+      "method": "POST",
+      "status": 409
+    },
+    {
+      "method": "POST",
+      "status": 409
+    }
+  ],
+  "sessionBytesUnchanged": true,
+  "newTablesPreserved": true,
+  "cardPreserved": true
+}
