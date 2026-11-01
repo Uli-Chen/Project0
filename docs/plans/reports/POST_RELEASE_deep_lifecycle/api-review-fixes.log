@@ -1,0 +1,26 @@
+✔ Required feedback API commit is visible before optional call; projection overrides stale JSON and lost response replay calls no model (21.203917ms)
+✔ original evaluate rejects feedback/compared/finished with 409, no model call and byte-for-byte unchanged records (14.133834ms)
+✔ optional review retry releases its lock during model call, preserves concurrent saves, and never repeats scoring or completion (9.577542ms)
+✔ deleting an attempt during optional review retry never recreates content or changes completion (8.017334ms)
+✔ interrupted optional review is a read-only failed projection and retries only review (8.209083ms)
+Request failed: test scan write failure
+✔ registration atomically writes legacy_scan unresolved_count=0; scan write failure rolls back the user (108.670083ms)
+✔ startup hook logs scan failure and returns; missing scan remains absent for conservative exposure checks (8.85525ms)
+✔ student review retry stamps recency before calling model; automatic review completion preserves later lifecycle time and state (7.316167ms)
+✔ automatic paragraph nudge updates its result without changing latest student action time (1.683625ms)
+✔ legacy get/list are read-only; real save upgrades to v2 and round-trips nested unknown fields (5.611542ms)
+✔ Quick activity: GET succeeds; PATCH and every action reject with 409 and zero database changes (15.96275ms)
+✔ Quick stage: GET succeeds; PATCH and every action reject with 409 and zero database changes (8.336166ms)
+✔ unknown activity: GET succeeds; PATCH and every action reject with 409 and zero database changes (8.937292ms)
+✔ unknown stage: GET succeeds; PATCH and every action reject with 409 and zero database changes (7.979041ms)
+✔ legacy and Deep GET, editing, actions and idempotency retain existing behavior (10.460459ms)
+✔ unsupported guard preserves authentication, origin checking and owner isolation (1.446792ms)
+✔ non-open Deep rejects new draft/actions including review, while replay and resume remain safe (28.614292ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 552.083708

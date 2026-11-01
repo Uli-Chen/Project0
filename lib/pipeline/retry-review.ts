@@ -3,7 +3,7 @@ import { isStudentAction } from "../rules/student-action";
 import { getSession, saveSession } from "../db/queries/sessions";
 import { withModelAdmission } from "../llm/admission";
 import { runAction, SessionError } from "./engine";
-import { assertSupportedSession } from "./http";
+import { assertSupportedSession, assertOpenSession } from "./http";
 import { withSessionLock } from "./lock";
 import type { SessionState } from "./types";
 
@@ -22,6 +22,7 @@ export async function retryReview(userId: string, id: string, requestId: string)
     const state = getSession(userId, id);
     assertSupportedSession(state);
     if (state.completedRequests?.includes(requestId)) return { state, reserved: false };
+    assertOpenSession(state);
     if (operations.has(key)) throw new SessionError("提纲回顾正在处理中。", 409);
     if (!["feedback", "revising", "compared", "finished"].includes(state.stage) || !state.evaluation || !state.submitted.original) throw new SessionError("尚无可回顾的原稿。", 409);
     if (state.reviewStatus === "none" || state.reviewStatus === "ok") return { state, reserved: false };

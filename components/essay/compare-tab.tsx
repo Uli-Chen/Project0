@@ -103,7 +103,8 @@ export function CompareTab() {
           </div>
         ))}
         {comparison.idea.changed.length > 0 && <ul className="mt-4 text-[13px] text-muted-foreground">{comparison.idea.changed.map((c) => <li key={c}>{c}</li>)}</ul>}
-        <div className="mt-4 flex items-baseline justify-between text-[13px]"><span className="text-xs text-muted-foreground">AI 文字占比</span><span className="font-mono tabular-nums">{Math.round(comparison.aiRatio * 100)}%</span></div>
+        <div className="mt-4 flex items-baseline justify-between gap-3 text-[13px]"><span className="text-xs text-muted-foreground">站内已采用建议文本占比</span><span className="font-mono tabular-nums">{Math.round(comparison.aiRatio * 100)}%</span></div>
+        <p className="mt-1 text-xs text-muted-foreground">按已采用且仍完整保留的站内建议文本词数估算；不检测 AI 生成，也不识别外部来源。</p>
       </section>
 
       <Rating />
@@ -112,7 +113,7 @@ export function CompareTab() {
 }
 
 function Rating() {
-  const { state, actions, coachBusy } = useSession();
+  const { state, actions, coachBusy, lifecycleBusy } = useSession();
   const [useful, setUseful] = useState<string | null>(null);
   const [mine, setMine] = useState<"yes" | "partly" | "no" | null>(null);
   const [comment, setComment] = useState("");
@@ -122,18 +123,18 @@ function Rating() {
       <h2 className="text-xs text-muted-foreground">评价这次练习</h2>
       <div className="flex items-center justify-between gap-3 text-[13px]">
         <span>有用吗</span>
-        <ToggleGroup size="sm" spacing={0} variant="outline" value={useful ? [useful] : []} onValueChange={(value) => setUseful(value[0] ?? null)} aria-label="有用程度">
+        <ToggleGroup disabled={state.lifecycle !== "open" || lifecycleBusy} size="sm" spacing={0} variant="outline" value={useful ? [useful] : []} onValueChange={(value) => setUseful(value[0] ?? null)} aria-label="有用程度">
           {["1", "2", "3", "4", "5"].map((v) => <ToggleGroupItem key={v} value={v} className="h-6 w-7 px-0 font-mono text-xs">{v}</ToggleGroupItem>)}
         </ToggleGroup>
       </div>
       <div className="flex items-center justify-between gap-3 text-[13px]">
         <span>还是你的观点吗</span>
-        <ToggleGroup size="sm" spacing={0} variant="outline" value={mine ? [mine] : []} onValueChange={(value) => setMine((value[0] as typeof mine) ?? null)} aria-label="观点归属">
+        <ToggleGroup disabled={state.lifecycle !== "open" || lifecycleBusy} size="sm" spacing={0} variant="outline" value={mine ? [mine] : []} onValueChange={(value) => setMine((value[0] as typeof mine) ?? null)} aria-label="观点归属">
           {([["yes", "是"], ["partly", "部分"], ["no", "不是"]] as const).map(([v, label]) => <ToggleGroupItem key={v} value={v} className="h-6 px-2 text-xs">{label}</ToggleGroupItem>)}
         </ToggleGroup>
       </div>
-      <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} placeholder="其他想说的（可选）" className="min-h-0 resize-none text-[13px]" />
-      <Button size="sm" variant="outline" className="self-end" disabled={coachBusy || (!useful && !mine)} onClick={() => void actions.rate(useful ? Number(useful) : null, mine, comment)}>提交</Button>
+      <Textarea disabled={state.lifecycle !== "open" || lifecycleBusy} value={comment} onChange={(e) => setComment(e.target.value)} rows={2} placeholder="其他想说的（可选）" className="min-h-0 resize-none text-[13px]" />
+      <Button size="sm" variant="outline" className="self-end" disabled={coachBusy || lifecycleBusy || state.lifecycle !== "open" || (!useful && !mine)} onClick={() => void actions.rate(useful ? Number(useful) : null, mine, comment)}>提交</Button>
     </section>
   );
 }

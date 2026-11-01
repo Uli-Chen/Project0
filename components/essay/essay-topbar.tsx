@@ -3,7 +3,8 @@
 import { ArrowRight, Download, LoaderCircle, MoreHorizontal, PanelLeft, PanelRight, PenLine, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -29,7 +30,13 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
   const [leaving, setLeaving] = useState(false);
   const { stage } = state;
   const editing = stage === "writing" || stage === "revising";
-  const elapsed = state.elapsed[essayKind];
+  const [checkpointSeconds, setCheckpointSeconds] = useState(state.elapsed.original);
+  useEffect(() => {
+    if (!state.checkpointId || state.originalSubmittedAt) return;
+    const update = () => setCheckpointSeconds(Math.max(0, Math.floor((Date.now() - Date.parse(state.createdAt)) / 1000)));
+    update(); const timer = setInterval(update, 1000); return () => clearInterval(timer);
+  }, [state.checkpointId, state.createdAt, state.originalSubmittedAt]);
+  const elapsed = state.checkpointId && essayKind === "original" && !state.originalSubmittedAt ? checkpointSeconds : state.elapsed[essayKind];
   const overtime = essayKind === "original" && elapsed > 2400;
   const assessment = state.kind === "assessment";
   const scores: Record<EssayKind, number | undefined> = { original: state.evaluation?.scores.overall, revision: state.revisionScores?.overall };
@@ -38,9 +45,9 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     if (leaving) return;
-    if (!actions.hasUnsaved()) { router.push("/"); return; }
+    if (!actions.hasUnsaved()) { router.push("/essays"); return; }
     setLeaving(true);
-    if (await actions.save()) router.push("/"); else setLeaving(false);
+    if (await actions.save()) router.push("/essays"); else setLeaving(false);
   };
 
   const togglePanel = (side: "left" | "right") => {
@@ -51,7 +58,7 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
   return (
     <header className="relative z-30 flex h-12 shrink-0 items-center gap-3 border-b bg-background px-3">
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <Link href="/" onClick={leave} className="shrink-0 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
+        <Link href="/essays" onClick={leave} className="shrink-0 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
           {leaving ? "正在保存…" : "作文"}
         </Link>
         <span className="text-muted-foreground/50" aria-hidden>/</span>
@@ -94,11 +101,14 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
 }
 
 function MoreMenu({ assessment }: { assessment: boolean }) {
-  const { state, actions, coachBusy } = useSession();
+  const { state, actions, coachBusy, lifecycleBusy, error } = useSession();
+  const [closing, setClosing] = useState(false);
+  const unavailable = coachBusy || lifecycleBusy;
   const { stage } = state;
   const editing = stage === "writing" || stage === "revising";
-  const revisable = stage === "feedback";
+  const revisable = state.lifecycle === "open" && stage === "feedback";
   return (
+    <>
     <DropdownMenu>
       <Tooltip>
         <TooltipTrigger render={<DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="更多" />} />}><MoreHorizontal /></TooltipTrigger>
@@ -106,19 +116,31 @@ function MoreMenu({ assessment }: { assessment: boolean }) {
       </Tooltip>
       <DropdownMenuContent align="end" className="w-52">
         <DropdownMenuItem onClick={actions.downloadDraft}><Download />下载作文</DropdownMenuItem>
-        {editing && state.mode === "practice" && (
-          <DropdownMenuCheckboxItem checked={state.nudgesEnabled} onCheckedChange={(on) => actions.setNudgesEnabled(Boolean(on))}>主动提醒</DropdownMenuCheckboxItem>
+        {state.lifecycle === "open" && editing && state.mode === "practice" && (
+          <DropdownMenuCheckboxItem disabled={unavailable} checked={state.nudgesEnabled} onCheckedChange={(on) => actions.setNudgesEnabled(Boolean(on))}>主动提醒</DropdownMenuCheckboxItem>
         )}
+        <DropdownMenuSeparator />
+        {state.lifecycle === "open"
+          ? <DropdownMenuItem disabled={unavailable} onClick={() => void actions.changeLifecycle("setAside")}>保存并暂放</DropdownMenuItem>
+          : <DropdownMenuItem disabled={unavailable} onClick={() => void actions.changeLifecycle("resume")}>恢复练习</DropdownMenuItem>}
+        {state.lifecycle !== "closed" && <DropdownMenuItem disabled={unavailable} onClick={() => setClosing(true)}>关闭这次练习</DropdownMenuItem>}
         {revisable && (
           <>
             <DropdownMenuSeparator />
             {assessment
-              ? <DropdownMenuItem disabled={coachBusy} onClick={actions.startRevision}><PenLine />改写这篇</DropdownMenuItem>
-              : <DropdownMenuItem disabled={coachBusy} onClick={actions.finish}>不改写，完成</DropdownMenuItem>}
+              ? <DropdownMenuItem disabled={unavailable} onClick={actions.startRevision}><PenLine />改写这篇</DropdownMenuItem>
+              : <DropdownMenuItem disabled={unavailable} onClick={actions.finish}>不改写，完成</DropdownMenuItem>}
           </>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+    <Dialog open={closing} onOpenChange={setClosing}>
+      <DialogContent><DialogHeader><DialogTitle>关闭这次练习？</DialogTitle><DialogDescription>会先保存当前草稿；未发送的教练文字不会一起保存，离开前请发送或复制。关闭后不再推荐继续，正文和反馈保留，仍可从历史中恢复。{state.checkpointId ? "这会结束当前检查点占位；恢复不会重置计时或重新取得检查点资格。" : "如果只是稍后继续，可以取消并选择暂放。"}</DialogDescription></DialogHeader>
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        <DialogFooter><Button variant="outline" disabled={lifecycleBusy} onClick={() => setClosing(false)}>取消</Button><Button disabled={unavailable} onClick={async () => { if (await actions.changeLifecycle("close")) setClosing(false); }}>{lifecycleBusy ? "正在保存…" : "保存并关闭"}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 
@@ -132,9 +154,10 @@ function IconButton({ label, onClick, active, children }: { label: string; onCli
 }
 
 function PrimaryAction({ onSubmit, assessment }: { onSubmit: () => void; assessment: boolean }) {
-  const { state, actions, coachBusy } = useSession();
+  const { state, actions, coachBusy, lifecycleBusy } = useSession();
   const [confirming, setConfirming] = useState(false);
-  const busy = coachBusy;
+  const busy = coachBusy || lifecycleBusy;
+  if (state.lifecycle !== "open") return null;
   switch (state.stage) {
     case "prewriting":
       return <Button size="sm" disabled={busy} onClick={actions.startWriting}>开始写作<ArrowRight /></Button>;

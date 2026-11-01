@@ -1,3 +1,4 @@
+import { prewriteOpening } from "../learning/prewrite-guidance";
 import type { SessionState } from "./types";
 import type { Mode, Prompt, SessionKind } from "@/lib/prototype/types";
 const questions: Prompt[] = [
@@ -21,6 +22,6 @@ export function createSession(input: { kind: SessionKind; mode: Mode; prompt?: s
     completedAt: null, originalFreshness: null, reviewStatus: "none", feedbackUpdatedAt: null, checkpointId: null,
     id: crypto.randomUUID(), kind: input.kind, mode, prompt, focus: null, stage: mode === "practice" ? "prewriting" : "writing", createdAt: now, updatedAt: now, version: 0,
     outline: { stance: null, reasons: [{ claim: null, why: null, example: null }, { claim: null, why: null, example: null }], counter: { view: null, response: null }, userEdited: false }, prewriteTurns: 0,
-    messages: mode === "practice" ? [{ id: crypto.randomUUID(), role: "coach", stage: "prewriting", action: "opening", content: "先读一遍题目。你的立场是什么？可以用中文或英文告诉我，我们一起把你的想法整理成提纲。" }] : [], suggestions: {}, nudge: null, nudgedParagraphs: {}, nudgesEnabled: true,
+    messages: mode === "practice" ? [{ id: crypto.randomUUID(), role: "coach", stage: "prewriting", action: "opening", content: prewriteOpening(prompt.questionType) }] : [], suggestions: {}, nudge: null, nudgedParagraphs: {}, nudgesEnabled: true,
     drafts: { original: "", revision: "" }, elapsed: { original: 0, revision: 0 }, savedAt: now, submitted: { original: null, revision: null }, evalStep: null, evalError: null, evaluation: null, revisionScores: null, comparison: null, issueLevels: {}, activeIssue: 1, finish: null, rating: null };
 }

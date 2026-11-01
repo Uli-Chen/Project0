@@ -1,6 +1,9 @@
 "use client";
 
+import type { QuestionRequirements } from "@/lib/question-bank/types";
 import { CardSnapshotView } from "@/components/quick/card-readonly";
+import { DeepLeaveGuard } from "./deep-leave-guard";
+import { DeepLifecycleBar } from "./deep-lifecycle-bar";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -22,12 +25,12 @@ import { FinishDialog } from "./finish-summary";
 
 const PANEL_LABEL: Record<Panel, string> = { coach: "教练", feedback: "反馈", compare: "对比" };
 
-export function EssayScreen() {
-  return <EssayUiProvider><Screen /></EssayUiProvider>;
+export function EssayScreen({ cardRequirements }: { cardRequirements?: QuestionRequirements } = {}) {
+  return <EssayUiProvider><Screen cardRequirements={cardRequirements} /></EssayUiProvider>;
 }
 
-function Screen() {
-  const { state, actions, essayKind, error, coachBusy, failedInput } = useSession();
+function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements }) {
+  const { state, actions, essayKind, error, coachBusy, lifecycleBusy, failedInput } = useSession();
   const ui = useEssayUi();
   const { centerRef, editorRef } = useEssayRefs();
   const [notices, setNotices] = useState<Record<string, string>>({});
@@ -83,11 +86,12 @@ function Screen() {
         {!state.evaluation && <span className="meta">{outlineProgress(state.outline).filled} / {outlineProgress(state.outline).total}</span>}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8">
-        {state.cardSnapshot && ["prewriting", "writing"].includes(stage) && <CardSnapshotView snapshot={state.cardSnapshot} />}
+        {state.cardSnapshot && ["prewriting", "writing"].includes(stage) && <CardSnapshotView snapshot={state.cardSnapshot} requirements={cardRequirements} />}
         <OutlineBoard
+          questionType={state.prompt.questionType}
           outline={state.outline}
           density={stage === "prewriting" ? "comfortable" : "compact"}
-          onEdit={["prewriting", "writing", "revising"].includes(stage) ? actions.editOutline : undefined}
+          onEdit={state.lifecycle === "open" && !lifecycleBusy && ["prewriting", "writing", "revising"].includes(stage) ? actions.editOutline : undefined}
           coverage={state.evaluation?.review.outlineCoverage}
         />
       </div>
@@ -112,6 +116,8 @@ function Screen() {
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background">
       <EssayTopbar onSubmit={submit} hasLeft={hasLeft} />
+      <DeepLeaveGuard />
+      <DeepLifecycleBar lifecycle={state.lifecycle} checkpoint={Boolean(state.checkpointId)} busy={coachBusy || lifecycleBusy} onResume={() => void actions.changeLifecycle("resume")} />
       {error && !state.evalError && (
         <div role="alert" className="flex shrink-0 flex-wrap items-center gap-3 border-b border-destructive/20 bg-destructive/5 px-4 py-2 text-[13px]">
           <div className="min-w-0 flex-1"><p>{error}</p>{failedInput && <p className="mt-0.5 truncate text-xs text-muted-foreground">未完成的消息：{failedInput}</p>}</div>
@@ -131,13 +137,13 @@ function Screen() {
       {!ui.wide && (
         <>
           <Sheet open={ui.sheet === "left" && hasLeft} onOpenChange={(open) => ui.setSheet(open ? "left" : null)}>
-            <SheetContent side="left" className="w-[300px] p-0 sm:max-w-[300px]">
+            <SheetContent side="left" className="p-0 data-[side=left]:w-full data-[side=left]:max-w-[300px] data-[side=left]:sm:max-w-[300px]">
               <SheetHeader className="sr-only"><SheetTitle>提纲</SheetTitle><SheetDescription>提纲</SheetDescription></SheetHeader>
               {outline}
             </SheetContent>
           </Sheet>
           <Sheet open={ui.sheet === "right" && hasRight} onOpenChange={(open) => ui.setSheet(open ? "right" : null)}>
-            <SheetContent side="right" className="w-[400px] p-0 sm:max-w-[400px]">
+            <SheetContent side="right" className="p-0 data-[side=right]:w-full data-[side=right]:max-w-[400px] data-[side=right]:sm:max-w-[400px]">
               <SheetHeader className="sr-only"><SheetTitle>检查面板</SheetTitle><SheetDescription>教练、反馈与对比</SheetDescription></SheetHeader>
               {inspector}
             </SheetContent>
@@ -151,7 +157,7 @@ function Screen() {
 
 function useTimerAndAutosave() {
   const { state, actions, essayKind } = useSession();
-  const editing = state.stage === "writing" || state.stage === "revising";
+  const editing = state.lifecycle === "open" && (state.stage === "writing" || state.stage === "revising");
   const { tick, markSaved } = actions;
   useEffect(() => {
     if (!editing) return;

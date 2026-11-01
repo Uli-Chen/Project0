@@ -12,11 +12,11 @@ import { useEssayRefs, useEssayUi } from "./essay-ui";
 
 /** 中栏的纸面：写前是题目，写作和改写是编辑器，其余是当前版本的只读正文 */
 export function EssayBody() {
-  const { state, actions, essayKind, coachBusy, pendingActionName } = useSession();
+  const { state, actions, essayKind, coachBusy, lifecycleBusy, pendingActionName } = useSession();
   const ui = useEssayUi();
   const { editorRef } = useEssayRefs();
   const { stage } = state;
-  const editing = (stage === "writing" || stage === "revising") && ui.version === essayKind;
+  const editing = state.lifecycle === "open" && (stage === "writing" || stage === "revising") && ui.version === essayKind;
   const evaluating = stage === "evaluating" || stage === "re_evaluating";
   const assist = state.mode === "practice" || stage === "revising";
   const issues = state.evaluation?.issues ?? [];
@@ -44,7 +44,7 @@ export function EssayBody() {
             {editing ? (
               <EssayEditor
                 editorRef={editorRef}
-                readOnly={coachBusy && pendingActionName === "evaluate"}
+                readOnly={lifecycleBusy || (coachBusy && pendingActionName === "evaluate")}
                 value={state.drafts[essayKind]}
                 onChange={(text) => actions.setDraft(essayKind, text)}
                 assist={assist}

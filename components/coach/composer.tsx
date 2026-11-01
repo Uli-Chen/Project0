@@ -10,6 +10,7 @@ export function Composer({
   focusKey,
   top,
   toolbar,
+  draft, onDraftChange,
 }: {
   placeholder: string;
   onSend: (text: string) => void;
@@ -18,8 +19,12 @@ export function Composer({
   focusKey?: unknown;
   top?: ReactNode;
   toolbar?: ReactNode;
+  draft?: string;
+  onDraftChange?: (text: string) => void;
 }) {
-  const [text, setText] = useState("");
+  const [localText, setLocalText] = useState("");
+  const text = draft ?? localText;
+  const setText = (next: string) => { setLocalText(next); onDraftChange?.(next); };
   const ref = useRef<HTMLTextAreaElement>(null);
 
   useLayoutEffect(() => {

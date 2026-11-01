@@ -172,3 +172,34 @@ test("unsupported guard preserves authentication, origin checking and owner isol
   assert.equal((await inRequest(request, () => PATCH(request, { params: Promise.resolve({ id }) }))).status, 403);
   assert.deepEqual(rows(), before);
 });
+
+test("non-open Deep rejects new draft/actions including review, while replay and resume remain safe", async () => {
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async () => { assert.fail("non-open new request must not dispatch model"); };
+  try {
+    for (const lifecycle of ["set_aside", "closed"] as const) {
+      const replay = crypto.randomUUID();
+      const s = createSession({ kind: "free", mode: "practice" }); s.lifecycle = lifecycle;
+      s.lastWriteId = replay; s.completedRequests = [replay];
+      const id = insert({ ...s }), before = raw(id);
+      assert.equal((await call(id, "GET")).status, 200);
+      const patch = await call(id, "PATCH", { version: s.version, drafts: { original: "must not save", revision: "" }, requestId: crypto.randomUUID() });
+      assert.equal(patch.status, 409); assert.equal((await patch.json()).code, "lifecycle_conflict");
+      for (const action of actions) {
+        const response = await call(id, "POST", { ...action, requestId: crypto.randomUUID() });
+        assert.equal(response.status, 409, action.action); assert.equal((await response.json()).code, "lifecycle_conflict", action.action);
+      }
+      assert.equal(raw(id), before);
+      assert.equal((await call(id, "PATCH", { version: s.version, requestId: replay })).status, 200);
+      assert.equal((await call(id, "POST", { action: "startWriting", requestId: replay })).status, 200);
+      assert.equal((await call(id, "POST", { action: "retryReview", requestId: replay })).status, 200);
+      assert.equal(raw(id), before);
+      const { POST: lifecyclePost } = await import("../app/api/sessions/[id]/lifecycle/route");
+      const request = new Request(`http://session.test/api/sessions/${id}/lifecycle`, { method: "POST", headers: { origin: "http://session.test", "content-type": "application/json", cookie: `wm_session=${token}` }, body: JSON.stringify({ action: "resume" }) });
+      assert.equal((await inRequest(request, () => lifecyclePost(request, { params: Promise.resolve({ id }) }))).status, 200);
+      const resumed = getSession("owner", id)!;
+      assert.equal((await call(id, "PATCH", { version: resumed.version, drafts: { original: "after resume", revision: "" }, requestId: crypto.randomUUID() })).status, 200);
+      assert.equal(getSession("owner", id)!.drafts.original, "after resume");
+    }
+  } finally { globalThis.fetch = previousFetch; }
+});

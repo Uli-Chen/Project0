@@ -1,3 +1,4 @@
+import { checkpointScorePoints } from "@/lib/learning/checkpoints";
 import { readFeatures } from "@/lib/config/features";
 import { getTopicData } from "@/lib/db/queries/topics";
 import { checkpointHistory } from "@/lib/db/checkpoints";
@@ -22,7 +23,7 @@ export default async function ProgressPage() {
   const checkpoints = checkpointHistory(user.id);
   const qualified = new Set(checkpoints.filter(c => c.status === "eligible").map(c => c.attemptId));
   const otherMocks = summary.evaluated.filter(s => s.mode === "mock" && !qualified.has(s.id));
-  const mockPoints = summary.evaluated.filter((session) => checkpointsEnabled ? qualified.has(session.id) : session.mode === "mock").slice().reverse().map((session, index) => ({ date: sessionDate(session), label: `第 ${index + 1} 篇`, overall: session.evaluation!.scores.overall, dims: session.evaluation!.scores.dims }));
+  const mockPoints = checkpointsEnabled ? checkpointScorePoints(sessions, checkpoints) : summary.evaluated.filter(session => session.mode === "mock").slice().reverse().map((session, index) => ({ date: sessionDate(session), label: `第 ${index + 1} 篇`, overall: session.evaluation!.scores.overall, dims: session.evaluation!.scores.dims }));
   const revisions = summary.evaluated.filter((session) => session.mode === "practice" && session.revisionScores).slice().reverse().map((session) => ({ date: sessionDate(session), original: session.evaluation!.scores.overall, revision: session.revisionScores!.overall }));
 
   return (

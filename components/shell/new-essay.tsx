@@ -1,6 +1,7 @@
 "use client";
 
-import { LoaderCircle } from "lucide-react";
+import Link from "next/link";
+import { LoaderCircle, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type ReactElement } from "react";
 import { Button } from "@/components/ui/button";
@@ -42,9 +43,16 @@ export function StartEssayButton({ kind, mode, children, variant = "default" }: 
   </div>;
 }
 
-export function NewEssayDialog({ trigger, focus }: { trigger: ReactElement; focus?: string }) {
+/** Bank entry always goes to the actual catalog; pasted tasks stay explicit. */
+export function NewEssayButton({ bankEnabled, focus, variant = "default" }: { bankEnabled: boolean; focus?: string; variant?: "default" | "outline" }) {
+  return bankEnabled
+    ? <Button variant={variant} render={<Link href="/#topics" />}><Plus />新建作文</Button>
+    : <NewEssayDialog focus={focus} trigger={<Button variant={variant}><Plus />新建作文</Button>} />;
+}
+
+export function NewEssayDialog({ trigger, focus, pasteOnly = false }: { trigger: ReactElement; focus?: string; pasteOnly?: boolean }) {
   const [mode, setMode] = useState<Mode>("practice");
-  const [source, setSource] = useState("suggested");
+  const [source, setSource] = useState(pasteOnly ? "paste" : "suggested");
   const [topic, setTopic] = useState(0);
   const [text, setText] = useState("");
   const { busy, error, start } = useStartEssay();
@@ -61,7 +69,8 @@ export function NewEssayDialog({ trigger, focus }: { trigger: ReactElement; focu
     <Dialog>
       <DialogTrigger render={trigger} />
       <DialogContent className="gap-5 sm:max-w-lg">
-        <DialogHeader><DialogTitle>新建作文</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{pasteOnly ? "粘贴题目" : "新建作文"}</DialogTitle></DialogHeader>
+        {pasteOnly && <p className="text-sm text-muted-foreground">使用你自己的题目，独立保存为自由练习，不计入题库主题进度。</p>}
 
         <div role="radiogroup" aria-label="类型" className="grid grid-cols-2 gap-2">
           {([["practice", "练习", "有教练"], ["mock", "模考", "40 分钟 · 独立完成"]] as const).map(([value, label, meta]) => (
@@ -73,7 +82,7 @@ export function NewEssayDialog({ trigger, focus }: { trigger: ReactElement; focu
           ))}
         </div>
 
-        <Tabs value={source} onValueChange={(value) => setSource(String(value))} className="gap-3">
+        {pasteOnly ? <PastedPromptInput text={text} setText={setText} /> : <Tabs value={source} onValueChange={(value) => setSource(String(value))} className="gap-3">
           <TabsList className="w-full">
             <TabsTrigger value="suggested">推荐</TabsTrigger>
             <TabsTrigger value="topic">话题</TabsTrigger>
@@ -97,11 +106,8 @@ export function NewEssayDialog({ trigger, focus }: { trigger: ReactElement; focu
               ))}
             </div>
           </TabsContent>
-          <TabsContent value="paste" className="min-h-28">
-            <Textarea value={text} onChange={(event) => setText(event.target.value)} maxLength={3000} rows={5} placeholder="Some people think that…" aria-label="题目" className="font-serif text-[15px]" />
-            <p className="meta mt-1.5 text-right">{pasted.length < 20 ? `至少 20 个字符 · ${pasted.length}` : `${pasted.length} / 3000`}</p>
-          </TabsContent>
-        </Tabs>
+          <TabsContent value="paste" className="min-h-28"><PastedPromptInput text={text} setText={setText} /></TabsContent>
+        </Tabs>}
 
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <DialogFooter>
@@ -110,4 +116,9 @@ export function NewEssayDialog({ trigger, focus }: { trigger: ReactElement; focu
       </DialogContent>
     </Dialog>
   );
+}
+
+function PastedPromptInput({ text, setText }: { text: string; setText(text: string): void }) {
+  const pasted = text.trim();
+  return <div className="min-h-28"><Textarea value={text} onChange={event => setText(event.target.value)} maxLength={3000} rows={5} placeholder="Some people think that…" aria-label="题目" className="font-serif text-[15px]" /><p className="meta mt-1.5 text-right">{pasted.length < 20 ? `至少 20 个字符 · ${pasted.length}` : `${pasted.length} / 3000`}</p></div>;
 }

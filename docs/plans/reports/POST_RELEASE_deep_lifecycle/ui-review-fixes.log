@@ -1,0 +1,51 @@
+
+> project-0@0.1.0 test:ui
+> node --import tsx --test tests/ui/*.test.ts
+
+✔ the reported coach reply renders Chinese bold labels and actual lists (21.504959ms)
+✔ preserves code and deliberately escaped Markdown when repairing emphasis (7.725667ms)
+✔ supports headings, quotes, numbered start, tables and GFM text formatting (15.524708ms)
+✔ does not execute model HTML, unsafe URLs, or load remote images (6.618209ms)
+✔ thread renders stored coach messages as Markdown while user evidence stays literal (1.494084ms)
+✔ Deep lifecycle status exposes recovery with honest checkpoint timing and qualification copy (9.45675ms)
+✔ set-aside and closed Deep drafts render read-only with retained text and disable coach capabilities (11.778ms)
+✔ Deep leave confirmation never promises to save unsent coach text and preserves cancel choice (81.973625ms)
+✔ finish 下一步: bank=true, question=true, links to topic only when both; old plan never displayed (15.103625ms)
+✔ finish 下一步: bank=true, question=false, links to topic only when both; old plan never displayed (2.165459ms)
+✔ finish 下一步: bank=false, question=true, links to topic only when both; old plan never displayed (0.460667ms)
+✔ finish 下一步: bank=false, question=false, links to topic only when both; old plan never displayed (0.479209ms)
+✔ New essay with bank enabled navigates to real topic selection instead of opening legacy random-task dialog (27.38175ms)
+✔ New essay with bank disabled preserves legacy dialog trigger (3.510583ms)
+✔ Required feedback saved; optional review failed: score/issues remain visible and failure alone offers 重试 (40.069625ms)
+✔ Required feedback saved; optional review pending: score/issues remain visible and failure alone offers 重试 (4.677042ms)
+✔ Required feedback saved; optional review ok: score/issues remain visible and failure alone offers 重试 (1.938708ms)
+✔ Required feedback saved; optional review none: score/issues remain visible and failure alone offers 重试 (3.001833ms)
+✔ Two-question outline labels answer each question without imposing stance or counterargument; stored paths remain compatible (7.426417ms)
+✔ Fixed legacy opening is projected by authoritative question type without changing historical message or custom dialogue (0.106ms)
+✔ Set-aside prewriting keeps composer mounted but disables writing actions and adapts opening (8.386958ms)
+✔ 精练 prewriting 左栏只读显示冻结卡片；无快照时原界面不变 (40.835875ms)
+✔ 精练 writing 左栏只读显示冻结卡片；无快照时原界面不变 (20.095292ms)
+✔ 速刷页面始终只读显示卡片，包含直接输入和摘取文字且不挂载精练控制器 (1.50875ms)
+✔ Quick in-page leave confirmation preserves a clear continue-editing choice (answerOnly=false) (43.832ms)
+✔ Quick in-page leave confirmation preserves a clear continue-editing choice (answerOnly=true) (3.638042ms)
+✔ Quick leave confirmation cannot dispatch navigation during a pending save (2.231792ms)
+✔ Quick editor exposes each requirement, current check only, honest quota and safe model text (41.663167ms)
+✔ passed cards expose Deep continuation and interrupted operations remain explicit (7.823625ms)
+✔ pending followup is labelled as coaching rather than a paid card check, including restored polling state (4.63875ms)
+✔ supplemental check stays disabled until the client has checked the displayed earliest time (1.783667ms)
+✔ two-question review preserves separate bilingual prompts, answer/reason groups and user provenance (6.348083ms)
+✔ same-question attempts are distinguished by Taipei start times and trustworthy completion dates (6.261ms)
+✔ Quick activity renders stored content without mounting SessionProvider or essay controls (5.16025ms)
+✔ Quick stage renders stored content without mounting SessionProvider or essay controls (0.819708ms)
+✔ unknown activity renders stored content without mounting SessionProvider or essay controls (0.543ms)
+✔ unknown stage renders stored content without mounting SessionProvider or essay controls (0.490584ms)
+✔ legacy and Deep sessions retain the original provider and EssayScreen (0.143375ms)
+✔ read-only view prefers the frozen question and tolerates absent essay-only fields (0.314958ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 954.545

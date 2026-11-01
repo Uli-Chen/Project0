@@ -1,4 +1,4 @@
-import { assertSupportedSession, sessionApiError as apiError } from "@/lib/pipeline/http";
+import { assertSupportedSession, assertOpenSession, sessionApiError as apiError } from "@/lib/pipeline/http";
 import { isSupportedSession } from "@/lib/pipeline/read-session";
 import { mergeOutline } from "@/lib/pipeline/outline";
 import { requireApiUser } from "@/lib/auth/server";
@@ -33,6 +33,7 @@ export async function PATCH(request: Request, { params }: Context) {
       const session = getSession(user.id, id);
       assertSupportedSession(session);
       if (input.requestId && session.lastWriteId === input.requestId) return Response.json({ session });
+      assertOpenSession(session);
       if (session.version !== input.version) return Response.json({ error: "这份练习已在其他页面更新。请刷新后继续，你的当前文字仍保留在编辑器。", session }, { status: 409 });
       const before = structuredClone({ drafts: session.drafts, outline: session.outline });
       if (input.drafts) {

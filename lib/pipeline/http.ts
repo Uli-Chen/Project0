@@ -23,3 +23,8 @@ export function assertQuickSession(session: SessionState | null): asserts sessio
   if (!readFeatures().QUICK_ENABLED || session.activity !== "quick" || session.stage !== "quick")
     throw new SessionError("当前版本暂不支持编辑这份练习，可以查看已保存的内容。", 409, "unsupported_session");
 }
+
+/** Entry guard for new student mutations. Background commits and replay stay valid. */
+export function assertOpenSession(session: SessionState) {
+  if (session.lifecycle !== "open") throw new SessionError("练习已暂放或关闭，请先恢复后再继续。", 409, "lifecycle_conflict");
+}

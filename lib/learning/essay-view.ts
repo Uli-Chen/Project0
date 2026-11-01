@@ -33,10 +33,11 @@ export function defaultVersion(state: SessionState): EssayKind {
 /** 教练在当前阶段能接受哪些输入 */
 export function coachCapabilities(state: SessionState) {
   const { stage, mode } = state;
+  const open = state.lifecycle === "open";
   return {
-    prewrite: stage === "prewriting",
-    chat: (stage === "writing" && mode === "practice") || stage === "revising",
-    issue: stage === "feedback" || stage === "revising",
+    prewrite: open && stage === "prewriting",
+    chat: open && ((stage === "writing" && mode === "practice") || stage === "revising"),
+    issue: open && (stage === "feedback" || stage === "revising"),
   };
 }
 

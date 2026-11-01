@@ -3,29 +3,13 @@
 import { Check, CircleDashed, CircleDot } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getSlot } from "@/lib/prototype/session-store";
-import type { Outline, Review } from "@/lib/prototype/types";
+import { outlineGroups } from "@/lib/learning/prewrite-guidance";
+import type { Outline, Review, Prompt } from "@/lib/prototype/types";
 import { cn } from "@/lib/utils";
 
 type Coverage = Review["outlineCoverage"];
 
-const GROUPS = [
-  { title: "立场", slots: [{ path: "stance", label: null }] },
-  ...[0, 1].map((i) => ({
-    title: i === 0 ? "理由一" : "理由二",
-    slots: [
-      { path: `reasons.${i}.claim`, label: "观点" },
-      { path: `reasons.${i}.why`, label: "为什么" },
-      { path: `reasons.${i}.example`, label: "例子" },
-    ],
-  })),
-  {
-    title: "反方",
-    slots: [
-      { path: "counter.view", label: "他们会说" },
-      { path: "counter.response", label: "你的回应" },
-    ],
-  },
-] as const;
+const GROUPS = outlineGroups();
 
 const ALL_PATHS = GROUPS.flatMap((g) => g.slots.map((s) => s.path as string));
 
@@ -41,13 +25,16 @@ export function OutlineBoard({
   onEdit,
   coverage,
   density = "comfortable",
+  questionType = "agree_disagree",
 }: {
   outline: Outline;
   onEdit?: (path: string, text: string) => void;
   coverage?: Coverage;
   density?: "comfortable" | "compact";
+  questionType?: Prompt["questionType"];
 }) {
   const { filled } = outlineProgress(outline);
+  const groups = outlineGroups(questionType);
   const flash = useFlash(outline);
   const coverageOf = (path: string) => coverage?.find((c) => c.slot === path)?.status;
 
@@ -59,7 +46,7 @@ export function OutlineBoard({
         </div>
       )}
       <div className={cn("mt-5 flex flex-col", density === "compact" ? "gap-4" : "gap-6")}>
-        {GROUPS.map((group) => (
+        {groups.map((group) => (
           <section key={group.title}>
             <h3 className="text-xs font-medium text-muted-foreground">{group.title}</h3>
             <div className={cn("mt-1.5 flex flex-col", group.slots.length > 1 && "border-l border-border pl-3.5")}>

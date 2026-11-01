@@ -30,3 +30,17 @@ test('pasted ordinary task retains family blocking without gaining bank topic id
  assert.deepEqual(after.topics.map(t=>t.startedOnly),before.topics.map(t=>t.startedOnly));
  const result=after.recommendation!;if(result.kind==='new'||result.kind==='rewrite')assert.notEqual(result.questionId,q.id);
 });
+
+test('Last topic follows the latest student edit, not the newest attempt creation',async()=>{
+ const { createQuestionPractice } = await import('../lib/db/create-practice');
+ const { saveSession } = await import('../lib/db/queries/sessions');
+ const bank=getTopicData('other').questions;
+ const q1=bank.find(q=>q.primaryTopic==='education' && q.pool==='practice')!;
+ const q2=bank.find(q=>q.primaryTopic==='health' && q.pool==='practice')!;
+ const first=createQuestionPractice('other',{questionId:q1.id,activity:'deep',mode:'practice',idempotencyKey:crypto.randomUUID()}).session;
+ const second=createQuestionPractice('other',{questionId:q2.id,activity:'deep',mode:'practice',idempotencyKey:crypto.randomUUID()}).session;
+ first.lastStudentActionAt='2099-01-01T00:00:00.000Z';second.lastStudentActionAt='2098-01-01T00:00:00.000Z';
+ saveSession('other',first);saveSession('other',second);
+ assert.equal(getTopicData('other').lastTopic,'education');
+ assert.equal(getTopicData('other').resume?.id,first.id);
+});

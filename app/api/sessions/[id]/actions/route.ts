@@ -6,7 +6,7 @@ import { assertQuickSession } from "@/lib/pipeline/http";
 import { isStudentAction } from "@/lib/rules/student-action";
 import { z } from "zod";
 import { withModelAdmission } from "@/lib/llm/admission";
-import { assertSupportedSession, sessionApiError as apiError } from "@/lib/pipeline/http";
+import { assertSupportedSession, assertOpenSession, sessionApiError as apiError } from "@/lib/pipeline/http";
 import { requireApiUser } from "@/lib/auth/server";
 import { assertSameOrigin, readJson } from "@/lib/auth/http";
 import { getSession, listSessions, saveSession } from "@/lib/db/queries/sessions";
@@ -43,6 +43,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       const current = getSession(user.id, id);
       assertSupportedSession(current);
       if (requestId && current.completedRequests?.includes(requestId)) return Response.json({ session: current });
+      assertOpenSession(current);
       // Reject original regrading before writing pendingAction or changing timestamps.
       if (input.action === "evaluate" && input.kind === "original") assertOriginalEvaluationStage(current);
       const persist = (state: SessionState) => { state.version++; state.updatedAt = state.savedAt = new Date().toISOString(); saveSession(user.id, state); };

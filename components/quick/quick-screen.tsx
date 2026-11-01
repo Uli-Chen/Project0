@@ -20,7 +20,7 @@ type QuickData = {
   deepSession?: SessionState;
   defaultDeepId?: string | null;
 };
-const operationLabels: Record<string, string> = { running: "处理中", ok: "已完成", needs_development: "还需展开", invalid_output: "教练返回格式不完整", timeout: "等待超时", quota_exhausted: "本次额度已用完", stale: "检查期间卡片有修改，请检查新版本", indeterminate: "上次检查没有完成" };
+const operationLabels: Record<string, string> = { running: "处理中", ok: "已完成", needs_development: "还需展开", invalid_output: "教练返回格式不完整", timeout: "等待超时", quota_exhausted: "本次额度已用完", stale: "检查期间卡片有修改，请检查新版本", indeterminate: "上次操作没有完成" };
 const stateLabels: Record<string, string> = { draft: "草稿", passed: "已通过检查", unchecked: "已修改，待复查", needs_development: "还需展开" };
 const fieldClass = "w-full rounded-lg border bg-background p-3 text-sm leading-relaxed focus-visible:outline-ring";
 export function QuickScreen({ initial, requirements }: { initial: QuickData; requirements: QuestionRequirements }) {
@@ -31,7 +31,8 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
-  const [calling, setCalling] = useState(false);
+  const [calling, setCalling] = useState<"followup" | "check" | "supplemental" | null>(null);
+  const [clock, setClock] = useState<number | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [answering, setAnswering] = useState(false);
   const [childGone, setChildGone] = useState(false);
@@ -55,7 +56,18 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   }, []);
   const slots = cardSlots(requirements);
   const dirty = slots.some(s => (draft[s.key] ?? "") !== (data.card.content.parts.find(p => p.key === s.key)?.text ?? ""));
-  const running = calling || data.operations.some(o => o.status === "running");
+  const runningKind = calling ?? data.operations.find(o => o.status === "running")?.kind;
+  const running = Boolean(runningKind);
+  const runningLabel = runningKind === "followup" ? "教练追问中" : runningKind === "check" ? "检查处理中" : runningKind === "supplemental" ? "正在申请补充检查" : "处理中";
+  const supplementalAt = data.budget?.nextSupplementalAt;
+  const supplementalWaiting = !!supplementalAt && (clock === null || clock < Date.parse(supplementalAt));
+  useEffect(() => {
+    if (!supplementalAt) return;
+    // Client clock only avoids premature clicks; server rechecks actual eligibility.
+    const tick = () => setClock(Date.now());
+    const first = setTimeout(tick, 0), timer = setInterval(tick, 1000);
+    return () => { clearTimeout(first); clearInterval(timer); };
+  }, [supplementalAt]);
   const active = data.session.lifecycle === "open";
   const endpoint = `/api/sessions/${data.session.id}`;
   useEffect(() => {
@@ -110,9 +122,10 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   }
   async function model(action: string, extra: Record<string, unknown> = {}) {
     if (running || intentLatch.current.busy || !modelLatch.current.enter()) return;
-    setCalling(true);
+    const retryKind = action === "quickRetry" ? data.operations.find(o => o.id === extra.operationId)?.kind : null;
+    setCalling(action === "quickSupplemental" ? "supplemental" : action === "quickFollowup" || retryKind === "followup" ? "followup" : "check");
     try { const saved = await save(); if (!saved) return; await request({ action, cardVersion: action === "quickFollowup" || action === "quickCheck" ? saved.card.contentVersion : undefined, ...extra }); }
-    finally { modelLatch.current.leave(); setCalling(false); }
+    finally { modelLatch.current.leave(); setCalling(null); }
   }
   function allowNavigation(e: { preventDefault(): void }, href: string) {
     if (intentLatch.current.busy || mutation.current || answerLatch.current.busy) { e.preventDefault(); return; }
@@ -189,7 +202,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   return <main className="min-h-screen bg-background">
     <header className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
       <div className="flex items-center gap-4"><Link href="/" onNavigate={e => allowNavigation(e, "/")} className="text-sm">← 练习</Link><h1 className="font-semibold">速刷 · 主题卡片</h1><span className="text-xs text-muted-foreground">{stateLabels[data.card.state]}</span></div>
-      <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={saving || !active || transitioning} onClick={() => void save()}>{dirty ? "保存卡片" : "已保存"}</Button><Button disabled={!active || transitioning || saving || (running && data.card.state !== "passed")} onClick={() => data.card.state === "passed" ? void continueDeep() : void model("quickCheck")}>{data.card.state === "passed" ? (data.defaultDeepId ? "打开作文" : "用这张卡写成作文") : running ? "检查处理中" : "检查"}</Button></div>
+      <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={saving || !active || transitioning} onClick={() => void save()}>{dirty ? "保存卡片" : "已保存"}</Button><Button disabled={!active || transitioning || saving || (running && data.card.state !== "passed")} onClick={() => data.card.state === "passed" ? void continueDeep() : void model("quickCheck")}>{data.card.state === "passed" ? (data.defaultDeepId ? "打开作文" : "用这张卡写成作文") : running ? runningLabel : "检查"}</Button></div>
     </header>
     <div className="mx-auto max-w-[1600px] px-5 py-6">
       <p className="mb-2 text-xs text-muted-foreground">练习题（非官方真题） · 不打分，只检查要求是否回答完整</p>
@@ -202,14 +215,14 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
         <section className="space-y-4 rounded-xl border bg-sheet p-4"><h2 className="font-medium">和教练聊聊</h2><p className="text-xs text-muted-foreground">教练只追问。材料由你自己写入卡片。</p>
           {data.session.messages.filter(m => m.stage === "quick").map(m => <div key={m.id} className="space-y-2 border-t pt-3"><p className="text-xs text-muted-foreground">{m.role === "user" ? "你的回答" : "教练"}</p>{m.role === "user" ? <textarea aria-label="选择你的回答原文" readOnly className={fieldClass} value={m.content} onSelect={e => { const t = e.currentTarget; setSelection(t.selectionEnd > t.selectionStart ? { messageId: m.id, start: t.selectionStart, end: t.selectionEnd } : null); }} /> : <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.content}</p>}</div>)}
           {selection && <div className="space-y-2"><label className="text-xs" htmlFor="excerpt-target">将选中的原话放入</label><select disabled={transitioning} id="excerpt-target" className={fieldClass} value={target} onChange={e => setTarget(e.target.value)}>{slots.map(s => <option key={s.key} value={s.key}>{s.zh} · {s.label}</option>)}</select><Button variant="outline" disabled={!active || transitioning || saving} onClick={() => void excerpt()}>摘取原话</Button></div>}
-          <Button variant="outline" disabled={!active || transitioning || running || !!pendingAnswer || data.budget?.remaining.followups === 0} onClick={() => void model("quickFollowup")}>请教练看看{data.budget ? `（剩 ${data.budget.remaining.followups} 次）` : ""}</Button>
+          <Button variant="outline" disabled={!active || transitioning || running || !!pendingAnswer || data.budget?.remaining.followups === 0} onClick={() => void model("quickFollowup")}>{running && runningKind === "followup" ? "教练正在追问…" : "请教练看看"}{data.budget ? `（剩 ${data.budget.remaining.followups} 次）` : ""}</Button>
           {pendingAnswer && <form onSubmit={e => { e.preventDefault(); void sendAnswer(); }} className="space-y-2"><label htmlFor="quick-answer" className="text-sm">你的回答</label><textarea id="quick-answer" disabled={answering || transitioning || !active} required className={fieldClass} value={answer} onChange={e => setAnswer(e.target.value)} /><Button type="submit" disabled={!active || !answer.trim() || answering || transitioning}>发送回答</Button></form>}
         </section>
         <section className="space-y-5 rounded-xl border bg-sheet p-5"><h2 className="font-medium">我的卡片</h2>{requirements.subquestions.map(q => <fieldset key={q.key} className="space-y-3"><legend className="mb-2 text-sm font-medium">{q.zh}</legend><p className="text-xs text-muted-foreground">{q.en}</p>{slots.filter(s => s.requirementKey === q.key).map(s => <div key={s.key}><label htmlFor={s.key} className="mb-1 block text-xs">{s.label}</label><textarea id={s.key} disabled={!active || transitioning} className={fieldClass} rows={3} value={draft[s.key] ?? ""} onChange={e => { edited.current = true; editRevision.current++; setDraft(d => ({ ...d, [s.key]: e.target.value })); }} /><p className="text-right text-xs text-muted-foreground">{[...(draft[s.key] ?? "")].length}/600</p></div>)}</fieldset>)}</section>
         <aside className="space-y-4 rounded-xl border bg-sheet p-4"><h2 className="font-medium">检查结果</h2><p className="text-sm">{stateLabels[data.card.state]}</p>{latest?.results.map(r => <div key={r.id} className="border-t pt-3 text-sm"><p>{r.status === "met" ? "已满足" : "还需展开"} · {requirements.subquestions.find(q => q.key === r.id)?.zh ?? r.id}</p>{r.note && <p className="mt-1 text-muted-foreground">{r.note}</p>}</div>)}
           {data.operations.slice(-4).map(o => <div key={o.id} className="border-t pt-3 text-sm"><p>{o.kind === "check" ? "检查" : "追问"}：{operationLabels[o.status] ?? o.status}</p>{["invalid_output", "timeout", "indeterminate"].includes(o.status) && <Button className="mt-2" variant="outline" disabled={!active || transitioning || running || data.budget?.remaining.retries === 0} onClick={() => void model("quickRetry", { operationId: o.id })}>重试这次操作</Button>}</div>)}
           {data.budget && <div className="space-y-2 border-t pt-3 text-xs text-muted-foreground"><p>剩余检查 {data.budget.remaining.checks} 次 · 技术重试 {data.budget.remaining.retries} 次</p>{data.budget.nextSupplementalAt && <p>补充检查最早可申请：{new Date(data.budget.nextSupplementalAt).toLocaleString("zh-CN", { timeZone: "Asia/Taipei" })}</p>}<p>额度用完仍可编辑、保存或写成作文。</p></div>}
-          <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={!active || transitioning || running} onClick={() => void model("quickSupplemental")}>申请补充检查</Button><Button variant="outline" disabled={!active || transitioning || saving} onClick={() => void continueDeep()}>{data.defaultDeepId ? "打开作文" : "用这张卡写成作文"}</Button>{childGone && <Button variant="outline" disabled={transitioning} onClick={() => void continueDeep(true)}>明确另开一次练习</Button>}<Button variant="ghost" disabled={!active || transitioning || saving} onClick={() => void lifecycle("setAside")}>搁置</Button><Button variant="ghost" onClick={() => void refresh()}>刷新状态</Button><Link className="p-2 text-sm underline" href="/cards" onNavigate={e => allowNavigation(e, "/cards")}>复习卡片</Link></div>
+          <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={!active || transitioning || running || supplementalWaiting} onClick={() => void model("quickSupplemental")}>申请补充检查</Button><Button variant="outline" disabled={!active || transitioning || saving} onClick={() => void continueDeep()}>{data.defaultDeepId ? "打开作文" : "用这张卡写成作文"}</Button>{childGone && <Button variant="outline" disabled={transitioning} onClick={() => void continueDeep(true)}>明确另开一次练习</Button>}<Button variant="ghost" disabled={!active || transitioning || saving} onClick={() => void lifecycle("setAside")}>搁置</Button><Button variant="ghost" onClick={() => void refresh()}>刷新状态</Button><Link className="p-2 text-sm underline" href="/cards" onNavigate={e => allowNavigation(e, "/cards")}>复习卡片</Link></div>
         </aside>
       </div>
     </div>

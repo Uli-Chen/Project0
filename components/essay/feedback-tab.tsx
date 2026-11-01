@@ -13,7 +13,7 @@ import { FinishSummary } from "./finish-summary";
 const ACHIEVED = { yes: "做到了", partial: "部分做到", no: "还没做到" } as const;
 
 export function FeedbackTab() {
-  const { state, actions, coachBusy } = useSession();
+  const { state, actions, coachBusy, lifecycleBusy } = useSession();
   const ui = useEssayUi();
   const evaluation = state.evaluation;
   if (!evaluation) return null;
@@ -45,7 +45,7 @@ export function FeedbackTab() {
           {state.reviewStatus === "pending" && <p className="mt-3 text-sm text-muted-foreground">提纲回顾处理中，评分与问题反馈已保存。</p>}
           {state.reviewStatus === "failed" && <div className="mt-3 flex items-center gap-3 text-sm">
             <p>提纲回顾失败，评分与问题反馈已保存。</p>
-            <Button variant="outline" size="sm" disabled={coachBusy} onClick={() => void actions.retryReview()}>重试</Button>
+            <Button variant="outline" size="sm" disabled={coachBusy || lifecycleBusy || state.lifecycle !== "open"} onClick={() => void actions.retryReview()}>重试</Button>
           </div>}
           <dl className="mt-3 flex flex-col gap-4 text-[13px] leading-relaxed">
             {state.focus && review.focusResult && (
@@ -55,7 +55,7 @@ export function FeedbackTab() {
               </div>
             )}
             {review.breakthrough && <div><dt className="text-xs text-muted-foreground">突破</dt><dd className="mt-1">{review.breakthrough}</dd></div>}
-            {state.mode === "practice" && <div className="flex items-baseline justify-between"><dt className="text-xs text-muted-foreground">AI 文字占比</dt><dd className="font-mono tabular-nums">{Math.round(review.aiRatio * 100)}%</dd></div>}
+            {state.mode === "practice" && <div><div className="flex items-baseline justify-between gap-3"><dt className="text-xs text-muted-foreground">站内已采用建议文本占比</dt><dd className="font-mono tabular-nums">{Math.round(review.aiRatio * 100)}%</dd></div><dd className="mt-1 text-xs text-muted-foreground">按已采用且仍完整保留的站内建议文本词数估算；不检测 AI 生成，也不识别外部来源。</dd></div>}
           </dl>
         </section>
       )}

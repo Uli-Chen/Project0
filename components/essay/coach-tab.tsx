@@ -1,5 +1,6 @@
 "use client";
 
+import { openingForDisplay, prewriteOpening } from "@/lib/learning/prewrite-guidance";
 import { ArrowRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CoachThread } from "@/components/coach/coach-thread";
@@ -15,9 +16,10 @@ import { useEssayUi, type Intent } from "./essay-ui";
 const INTENT_LABEL: Record<Intent, string> = { ask: "提问", attempt: "试写", express: "英文怎么说" };
 
 export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggestion) => void; onUndo: (s: Suggestion) => void; notices: Record<string, string> }) {
-  const { state, actions, coachBusy } = useSession();
+  const { state, actions, coachBusy, lifecycleBusy, composerDraft } = useSession();
+  const unavailable = coachBusy || lifecycleBusy || state.lifecycle !== "open";
   const ui = useEssayUi();
-  const can = coachCapabilities(state);
+  const can = coachCapabilities({ ...state, lifecycle: "open" });
   const issues = state.evaluation?.issues ?? [];
   const issue = issues.find((item) => item.rank === ui.issueContext) ?? null;
   const stage = state.stage;
@@ -32,6 +34,7 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
   const canSend = can.prewrite || intents.length > 0;
 
   const send = (text: string) => {
+    if (unavailable) return;
     if (can.prewrite) return actions.sendPrewrite(text);
     if (intent === "express") return actions.express(text);
     if (issue && can.issue && !ui.quote) return actions.issueAction(issue.rank, intent === "attempt" ? "attempt" : "ask", text);
@@ -79,34 +82,36 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
         {nudge && (
           <div className="mb-5 flex items-start gap-3 rounded-lg bg-coach-soft px-3.5 py-3 animate-in fade-in-0 slide-in-from-top-1">
             <p className="flex-1 text-[13px] leading-relaxed text-coach">{nudge.message}</p>
-            <button type="button" aria-label="关闭提醒" onClick={() => { setNudgeOpen(false); void actions.dismissNudge(); }} className="text-coach/70 hover:text-coach"><X className="size-3.5" /></button>
+            <button type="button" aria-label="关闭提醒" disabled={unavailable} onClick={() => { setNudgeOpen(false); void actions.dismissNudge(); }} className="text-coach/70 hover:text-coach"><X className="size-3.5" /></button>
           </div>
         )}
         {state.messages.length === 0 && !coachBusy ? (
-          <p className="text-[13px] text-muted-foreground">{stage === "writing" ? "选中正文，可以让教练理清、润色或检查。" : stage === "feedback" ? "在反馈里点“讨论”，就某个问题和教练聊。" : ""}</p>
+          <p className="text-[13px] text-muted-foreground">{stage === "writing" ? "选中正文，可以让教练理清、润色或检查。" : stage === "feedback" ? "在反馈里点“讨论”，就某个问题和教练聊。" : stage === "prewriting" ? prewriteOpening(state.prompt.questionType) : ""}</p>
         ) : (
           <CoachThread
-            messages={state.messages}
+            messages={state.messages.map(message => openingForDisplay(message, state.prompt.questionType))}
             suggestions={state.suggestions}
             busy={coachBusy}
             notices={notices}
-            onAccept={can.chat ? onAccept : undefined}
-            onDismiss={(s) => actions.decideSuggestion(s.id, "dismissed")}
-            onUndo={can.chat ? onUndo : undefined}
+            onAccept={can.chat && !unavailable ? onAccept : undefined}
+            onDismiss={!unavailable ? (s) => actions.decideSuggestion(s.id, "dismissed") : undefined}
+            onUndo={can.chat && !unavailable ? onUndo : undefined}
             renderTag={tag}
             showStages
           />
         )}
         {showStartWriting && !coachBusy && (
-          <Button variant="outline" size="sm" className="mt-5" onClick={actions.startWriting}>开始写作<ArrowRight /></Button>
+          <Button variant="outline" size="sm" className="mt-5" disabled={unavailable} onClick={actions.startWriting}>开始写作<ArrowRight /></Button>
         )}
       </div>
 
       {(canSend || (can.issue && issues.length > 0)) && (
         <div className="shrink-0 px-4 pb-4">
           {canSend && <Composer
+            draft={composerDraft}
+            onDraftChange={actions.setComposerDraft}
             placeholder={placeholder}
-            disabled={coachBusy}
+            disabled={unavailable}
             onSend={send}
             focusKey={ui.focusKey}
             top={(ui.quote || issue) ? <>
@@ -120,7 +125,7 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
                 </ToggleGroup>
               )}
               {issue && !ui.quote && can.issue && (
-                <Button size="xs" variant="ghost" className="text-coach" disabled={coachBusy} onClick={() => actions.issueAction(issue.rank, "more")}>
+                <Button size="xs" variant="ghost" className="text-coach" disabled={unavailable} onClick={() => actions.issueAction(issue.rank, "more")}>
                   再给点提示 {state.issueLevels[issue.rank] ?? 1}/3
                 </Button>
               )}

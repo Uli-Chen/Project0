@@ -20,5 +20,6 @@ export default async function EssayPage({ params }: { params: Promise<{ id: stri
     return <QuickScreen initial={data} requirements={cardRequirements(data.card)} />;
   }
   const checkpoint = session.checkpointId ? checkpointHistory(user.id).find(c => c.attemptId === id) : undefined;
-  return <>{checkpoint && !session.originalSubmittedAt && <CheckpointClock deadlineAt={checkpoint.deadlineAt} serverNow={new Date().toISOString()} />}<SessionView session={session} cardContent={session.activity === "quick" ? getCard(user.id, id)?.content : undefined} questionBankEnabled={readFeatures().QUESTION_BANK_ENABLED} /></>;
+  const snapshotRequirements = session.cardSnapshot && session.question ? cardRequirements({ questionId: session.question.id, questionVersion: session.question.version }) : undefined;
+  return <>{checkpoint && <CheckpointClock sessionId={session.id} originalSubmittedAt={session.originalSubmittedAt} deadlineAt={checkpoint.deadlineAt} serverNow={new Date().toISOString()} />}<SessionView session={session} cardRequirements={snapshotRequirements} cardContent={session.activity === "quick" ? getCard(user.id, id)?.content : undefined} questionBankEnabled={readFeatures().QUESTION_BANK_ENABLED} /></>;
 }

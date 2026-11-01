@@ -21,5 +21,11 @@ export function getTopicData(userId: string, topic?: string, now = new Date()) {
   return { topic:name, completed:completed.size, startedOnly:new Set(started.filter(m=>!completed.has(m.exposureKey)).map(m=>m.exposureKey)).size, passedCards:currentCards.filter(c=>c.state==='passed').length, draftCards:currentCards.filter(c=>c.state!=='passed').length, lastPractisedAt:[...started.map(m=>m.createdAt), ...attempts.filter(a=>bank.some(q=>q.id===a.questionId && q.primaryTopic===name)).map(a=>a.lastStudentActionAt)].filter((date): date is string => !!date).sort().at(-1) ?? null };
  });
  const flags = readFeatures();
- return { topics, questions:bank.filter(q=>!topic||q.primaryTopic===topic), attempts, completions, counts:practiceCounts(completions,now), resume:resumeAttempt(attempts,flags.QUICK_ENABLED) ?? null, lastTopic: markers.filter(m=>m.primaryTopic).sort((a,b)=>(b.createdAt ?? '').localeCompare(a.createdAt ?? ''))[0]?.primaryTopic ?? null, recommendation:topic ? recommendInTopic({ topic, questions:bank, attempts, completions, familiarity:db.select().from(familiarity).where(eq(familiarity.userId,userId)).all(), continuations:db.select().from(defaultContinuations).where(eq(defaultContinuations.userId,userId)).all(), quickEnabled:flags.QUICK_ENABLED }) : null };
+ // A return visit/edit is practice too; creation-only ordering points users back
+ // to a newer abandoned topic instead of the one they just worked on.
+ const lastTopic = markers.filter(m=>m.primaryTopic && m.questionId).map(marker => {
+  const attempt = attempts.find(a=>a.id===marker.attemptId);
+  return { topic: marker.primaryTopic, at: attempt?.lastStudentActionAt ?? marker.createdAt ?? '', id: marker.attemptId };
+ }).sort((a,b)=>b.at.localeCompare(a.at) || a.id.localeCompare(b.id))[0]?.topic ?? null;
+ return { topics, questions:bank.filter(q=>!topic||q.primaryTopic===topic), attempts, completions, counts:practiceCounts(completions,now), resume:resumeAttempt(attempts,flags.QUICK_ENABLED) ?? null, lastTopic, recommendation:topic ? recommendInTopic({ topic, questions:bank, attempts, completions, familiarity:db.select().from(familiarity).where(eq(familiarity.userId,userId)).all(), continuations:db.select().from(defaultContinuations).where(eq(defaultContinuations.userId,userId)).all(), quickEnabled:flags.QUICK_ENABLED }) : null };
 }

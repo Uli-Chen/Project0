@@ -31,11 +31,11 @@ export function AppSidebar({ user, focus, bankEnabled=false, quickEnabled=false 
         <SidebarGroup>
           <SidebarMenu>
             <SidebarMenuItem className="mb-2">
-              <NewEssayDialog focus={focus} trigger={
+              {bankEnabled ? <SidebarMenuButton tooltip="新建作文" className="border bg-background font-medium shadow-none hover:bg-background/70" render={<Link href="/#topics" />}><Plus />新建作文</SidebarMenuButton> : <NewEssayDialog focus={focus} trigger={
                 <SidebarMenuButton tooltip="新建作文" className="border bg-background font-medium shadow-none hover:bg-background/70">
                   <Plus />新建作文
                 </SidebarMenuButton>
-              } />
+              } />}
             </SidebarMenuItem>
             {(bankEnabled ? [{href:"/",label:"练习",icon:FileText},{href:"/essays",label:"作文",icon:FileText},...(quickEnabled ? [{href:"/cards",label:"卡片",icon:FileText}] : []),NAV[1]] : NAV).map((item) => {
               const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);

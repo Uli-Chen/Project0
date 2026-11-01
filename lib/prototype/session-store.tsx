@@ -32,6 +32,11 @@ function useSessionController(initialState: SessionState) {
   const [pendingActionName, setPendingActionName] = useState<AgentAction["action"] | null>(initialPending?.input.action ?? null);
   const [error, setError] = useState<string | null>(initialPending?.error ?? null);
   const [failedInput, setFailedInput] = useState<string | null>(initialPending && "text" in initialPending.input ? initialPending.input.text ?? null : null);
+  const [composerDraft, setComposerDraftState] = useState("");
+  const composerDraftRef = useRef("");
+  const setComposerDraft = useCallback((text: string) => { composerDraftRef.current = text; setComposerDraftState(text); }, []);
+  const [lifecycleBusy, setLifecycleBusy] = useState(false);
+  const lifecycleChanging = useRef(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const ref = useRef(initialState);
   const edits = useRef(0);
@@ -76,19 +81,22 @@ function useSessionController(initialState: SessionState) {
     } catch (err) { setSaveStatus("error"); throw err; }
   }, [merge]);
   const save = useCallback(async () => {
+    if (lifecycleChanging.current) return false;
+    if (ref.current.lifecycle !== "open" && edits.current === savedEdits.current && !pendingWrite.current) return true;
     if (busy.current && !actionController.current) { setError("教练正在处理上次请求。完成后会自动保存，请稍候再离开。"); return false; }
     try { await enqueue(saveNow); if (edits.current !== savedEdits.current) { setError("还有未保存的修改，请稍候重试或下载草稿。"); return false; } if (!lastAction.current) setError(null); return true; }
     catch (err) { setError(err instanceof Error ? err.message : "保存失败，请检查网络后重试。"); return false; }
   }, [enqueue, saveNow]);
   const edit = useCallback((field: keyof EditGenerations, fn: (s: SessionState) => SessionState) => {
-    if (busy.current && lastAction.current?.action === "evaluate") return;
+    if (lifecycleChanging.current || ref.current.lifecycle !== "open" || (busy.current && lastAction.current?.action === "evaluate")) return;
     edits.current++; changed.current[field] = edits.current; update(fn); setSaveStatus("unsaved");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => { void save(); }, 800);
   }, [save, update]);
 
   const perform = useCallback(async (input: AgentAction, requestId = crypto.randomUUID()) => {
-    if (busy.current) return;
+    if (busy.current || lifecycleChanging.current) return;
+    if (ref.current.lifecycle !== "open") { setError("请先恢复练习，再继续操作。"); return; }
     const recovering = lastRequestId.current === requestId;
     busy.current = true; setCoachBusy(true); setPendingActionName(input.action); setError(null);
     lastAction.current = input; lastRequestId.current = requestId; setFailedInput("text" in input ? input.text ?? null : null);
@@ -131,8 +139,30 @@ function useSessionController(initialState: SessionState) {
     if (ref.current.completedRequests?.includes(requestId) && edits.current !== savedEdits.current) void save();
   }, [enqueue, merge, saveNow, update, save]);
 
+  const changeLifecycle = useCallback(async (action: "setAside" | "resume" | "close") => {
+    if (busy.current || lifecycleChanging.current) return false;
+    lifecycleChanging.current = true; setLifecycleBusy(true); setError(null);
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    try {
+      await enqueue(async () => {
+        // Freeze new local edits until both the existing save queue and this
+        // transition finish. A failed/conflicted save must never close the draft.
+        if (edits.current !== savedEdits.current || pendingWrite.current) await saveNow();
+        if (edits.current !== savedEdits.current) throw new RequestError("还有未保存的修改，请先保存或下载草稿。");
+        const generation = savedEdits.current;
+        const data = await requestJson(`/api/sessions/${ref.current.id}/lifecycle`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
+        if (!data.session) throw new RequestError("状态更新响应不完整，请重试。");
+        merge(data.session, generation);
+      });
+      return true;
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "状态更新失败，草稿仍保留在当前页面。");
+      return false;
+    } finally { lifecycleChanging.current = false; setLifecycleBusy(false); }
+  }, [enqueue, merge, saveNow]);
+
   useEffect(() => {
-    const warn = (event: BeforeUnloadEvent) => { if (edits.current !== savedEdits.current) { event.preventDefault(); event.returnValue = ""; } };
+    const warn = (event: BeforeUnloadEvent) => { if (edits.current !== savedEdits.current || composerDraftRef.current.trim()) { event.preventDefault(); event.returnValue = ""; } };
     window.addEventListener("beforeunload", warn);
     return () => { window.removeEventListener("beforeunload", warn); if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, []);
@@ -179,8 +209,10 @@ function useSessionController(initialState: SessionState) {
   const essayKind: EssayKind = state.stage === "revising" || state.stage === "re_evaluating" ? "revision" : "original";
   const setDraft = useCallback((kind: EssayKind, text: string) => edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: text } })), [edit]);
   const tick = useCallback((kind: EssayKind) => update(s => ({ ...s, elapsed: { ...s.elapsed, [kind]: s.elapsed[kind] + 1 } })), [update]);
-  return { state, coachBusy, pendingActionName, essayKind, error, saveStatus, failedInput,
+  return { state, coachBusy, lifecycleBusy, composerDraft, pendingActionName, essayKind, error, saveStatus, failedInput,
     actions: {
+      changeLifecycle, setComposerDraft,
+      hasUnsentComposer: () => Boolean(composerDraftRef.current.trim()),
       sendPrewrite: (text: string) => perform({ action: "prewrite", text }),
       editOutline: (path: string, text: string) => edit("outline", s => ({ ...s, outline: { ...setSlot(s.outline, path, text, "用户编辑"), userEdited: true } })),
       startWriting: () => perform({ action: "startWriting" }), setDraft, tick, markSaved: save, save,

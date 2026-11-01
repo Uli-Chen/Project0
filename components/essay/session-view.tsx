@@ -1,3 +1,4 @@
+import type { QuestionRequirements } from "@/lib/question-bank/types";
 import type { CardContent } from "@/lib/quick/schemas";
 import { isSupportedSession } from "@/lib/pipeline/read-session";
 import type { SessionState } from "@/lib/pipeline/types";
@@ -6,7 +7,7 @@ import { EssayScreen } from "./essay-screen";
 import { ReadonlySession } from "./readonly-session";
 
 /** Server boundary: unsupported sessions never mount the editing controller. */
-export function SessionView({ session, questionBankEnabled = false, cardContent }: { session: SessionState; questionBankEnabled?: boolean; cardContent?: CardContent | null }) {
+export function SessionView({ session, questionBankEnabled = false, cardContent, cardRequirements }: { session: SessionState; questionBankEnabled?: boolean; cardContent?: CardContent | null; cardRequirements?: QuestionRequirements }) {
   if (!isSupportedSession(session)) return <ReadonlySession session={session} cardContent={cardContent} />;
-  return <SessionProvider key={session.id} initialState={session} questionBankEnabled={questionBankEnabled}><EssayScreen /></SessionProvider>;
+  return <SessionProvider key={session.id} initialState={session} questionBankEnabled={questionBankEnabled}><EssayScreen cardRequirements={cardRequirements} /></SessionProvider>;
 }
