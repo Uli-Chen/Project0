@@ -14,7 +14,7 @@ export function CoachMark() {
   );
 }
 
-const STAGE_GROUP: Record<CoachMessage["stage"], string> = { prewriting: "写前", writing: "写作", issue: "反馈与改写", revision: "反馈与改写" };
+const STAGE_GROUP: Record<CoachMessage["stage"], string> = { quick: "速刷", prewriting: "写前", writing: "写作", issue: "反馈与改写", revision: "反馈与改写" };
 
 export function CoachThread({
   messages,

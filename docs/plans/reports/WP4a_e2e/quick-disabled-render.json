@@ -1,0 +1,9 @@
+{
+  "path": "/essays/3b810d7f-e07e-489f-a156-ff1e4f144fbb",
+  "authenticated": true,
+  "renderer": "EssayPage -> SessionView -> ReadonlySession; real React SSR",
+  "lastStudentActionAt": "2026-11-01T05:27:44.517Z",
+  "stage": "quick",
+  "lifecycle": "open",
+  "byteLength": 1804
+}

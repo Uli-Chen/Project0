@@ -1,9 +1,11 @@
 import "server-only";
+import { readFeatures } from "../config/features";
+import { requirementSchema } from "../question-bank/types";
 import { createHash } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import type { z } from "zod";
 import { getDb } from "./client";
-import { attemptMarkers, questions } from "./schema";
+import { attemptMarkers, questions, topicCards } from "./schema";
 import { getSession, saveSession } from "./queries/sessions";
 import { recordAttempt } from "./practice-facts";
 import { questionContext, resolveAttempt } from "./question-context";
@@ -26,7 +28,7 @@ export function createQuestionPractice(userId: string, input: z.infer<typeof que
   const paramsHash = createHash("sha256").update(JSON.stringify({ questionId: input.questionId,
     activity: input.activity, mode: input.mode, rewriteOfDeepId: input.rewriteOfDeepId ?? null })).digest("hex");
   return sqlite.transaction(() => {
-    if (input.activity === "quick") throw new SessionError("速刷创建尚未开放。", 409, "unsupported_activity");
+    if (input.activity === "quick" && !readFeatures().QUICK_ENABLED) throw new SessionError("速刷功能尚未开放。", 403, "feature_disabled");
     if (input.mode === "mock") throw new SessionError("按题目模考需从检查点开始。", 409, "mock_requires_checkpoint");
     const receipt = getRequestReceipt(sqlite, userId, input.idempotencyKey);
     if (receipt) {
@@ -55,7 +57,12 @@ export function createQuestionPractice(userId: string, input: z.infer<typeof que
       questionType: session.question.questionType, topicTags: [session.question.primaryTopic] };
     session.rewriteOfDeepId = input.rewriteOfDeepId ?? null;
     session.lastStudentActionAt = session.createdAt;
+    if (input.activity === "quick") { session.activity = "quick"; session.stage = "quick"; session.messages = []; }
     saveNewPractice(userId, session);
+    if (input.activity === "quick") db.insert(topicCards).values({ id: crypto.randomUUID(), userId, attemptId: session.id,
+      questionId: row.id, questionVersion: row.version, contentVersion: 0,
+      contentJson: JSON.stringify({ layout: requirementSchema.parse(JSON.parse(row.requirementsJson)).layout, parts: [] }),
+      state: "draft", createdAt: session.createdAt, updatedAt: session.createdAt }).run();
     writeRequestReceipt(sqlite, { userId, idempotencyKey: input.idempotencyKey, attemptId: session.id,
       action: "createQuestionPractice", paramsHash, resultRef: session.id, createdAt: session.createdAt });
     return { session, status: 201 };

@@ -69,8 +69,8 @@ test("same idempotencyKey concurrent/repeated creates one session, same paramete
   assert.equal(table(db.$client, "writing_sessions").length, count + 1);
   assert.equal((await call("create", "POST", Object.fromEntries(Object.entries(body).reverse()))).status, 200);
   for (const extra of [{ questionId: catalog.questions[1].id }, { activity: "quick" }, { mode: "mock" }, { rewriteOfDeepId: "unknown" }]) {
-    const r = await call("create", "POST", { ...body, ...extra }); assert.equal(r.status, 409);
-    assert.equal(r.body.code, "activity" in extra ? "unsupported_activity" : "mode" in extra ? "mock_requires_checkpoint" : "idempotency_conflict");
+    const r = await call("create", "POST", { ...body, ...extra }); assert.equal(r.status, "activity" in extra ? 403 : 409);
+    assert.equal(r.body.code, "activity" in extra ? "feature_disabled" : "mode" in extra ? "mock_requires_checkpoint" : "idempotency_conflict");
   }
   const other = await call("create", "POST", body, "", "other"); assert.equal(other.status, 201);
   assert.notEqual(other.body.session.id, results[0].body.session.id);
@@ -165,7 +165,7 @@ test("deleting completed practice retains exposure/completion with deleted evide
   const next = await create(); completed(next); assert.equal(next.originalFreshness, "repeat");
 });
 
-test("question-bank switch: disabled question create 403, legacy task keeps focus and pasted marker; enabled task focus null; quick/mock rejected regardless quick flag", async () => {
+test("question-bank switch: disabled question create 403, legacy task keeps focus and pasted marker; enabled task focus null; quick follows its feature flag; mock requires checkpoint", async () => {
   const s = await create(); s.evaluation = evaluation; saveSession("u", s);
   process.env.QUESTION_BANK_ENABLED = "false";
   try {
@@ -178,7 +178,10 @@ test("question-bank switch: disabled question create 403, legacy task keeps focu
   assert.equal((await call("create", "POST", { kind: "task", mode: "practice" })).body.session.focus, null);
   for (const enabled of ["true", "false"]) {
     process.env.QUICK_ENABLED = enabled;
-    const quick = await call("create", "POST", input({ activity: "quick" })); assert.equal(quick.status, 409); assert.equal(quick.body.code, "unsupported_activity");
+    const quick = await call("create", "POST", input({ activity: "quick" }));
+    assert.equal(quick.status, enabled === "true" ? 201 : 403);
+    if (enabled === "true") { assert.equal(quick.body.session.activity, "quick"); assert.equal(quick.body.session.stage, "quick"); }
+    else assert.equal(quick.body.code, "feature_disabled");
   }
   const mock = await call("create", "POST", input({ mode: "mock" })); assert.equal(mock.status, 409); assert.equal(mock.body.code, "mock_requires_checkpoint");
 });

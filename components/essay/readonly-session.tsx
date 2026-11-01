@@ -1,7 +1,9 @@
+import { CardReadonly } from "@/components/quick/card-readonly";
+import type { CardContent } from "@/lib/quick/schemas";
 import Link from "next/link";
 import type { SessionState } from "@/lib/pipeline/types";
 
-export function ReadonlySession({ session }: { session: SessionState }) {
+export function ReadonlySession({ session, cardContent }: { session: SessionState; cardContent?: CardContent | null }) {
   const outline = session.outline;
   const slots = [outline?.stance, ...(outline?.reasons ?? []).flatMap(r => [r.claim, r.why, r.example]), outline?.counter?.view, outline?.counter?.response];
   return (
@@ -11,6 +13,7 @@ export function ReadonlySession({ session }: { session: SessionState }) {
         <h1 className="mt-6 text-xl font-medium">练习内容 · 只读</h1>
         <p className="mt-2 text-sm text-muted-foreground">当前版本暂不支持编辑这份练习，已保存的内容仍可查看。</p>
         <article className="mt-6 space-y-8 rounded-xl border bg-sheet p-6 sm:p-10">
+          {cardContent && <CardReadonly content={cardContent} />}
           <TextSection title="题目" text={session.question?.text ?? session.prompt?.text} />
           {(["original", "revision"] as const).map(kind => {
             const draft = session.drafts?.[kind];

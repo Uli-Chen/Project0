@@ -1,9 +1,10 @@
+import type { QuickAction } from "../quick/schemas";
 import type { AgentAction } from "../pipeline/schemas";
 import type { SessionState } from "../pipeline/types";
 
 type Editable = Pick<SessionState, "drafts" | "outline">;
 type Event = { kind: "draft"; before: Editable; after: Editable }
-  | { kind: "action"; action: AgentAction["action"] }
+  | { kind: "action"; action: AgentAction["action"] | QuickAction["action"] }
   | { kind: "lifecycle" }
   | { kind: "read" | "automaticReview" };
 

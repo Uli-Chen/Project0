@@ -151,3 +151,41 @@ export const requestReceipts = sqliteTable("request_receipts", {
   requestKey: text("request_key").notNull(), attemptId: text("attempt_id").notNull(), action: text("action").notNull(),
   paramsHash: text("params_hash").notNull(), resultRef: text("result_ref").notNull(), createdAt: text("created_at").notNull(),
 }, t => [primaryKey({ columns: [t.userId, t.requestKey] })]);
+
+// Quick content has a composite owner/session FK; accounting survives attempt deletion.
+export const topicCards = sqliteTable("topic_cards", {
+  id: text("id").primaryKey(), userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  attemptId: text("attempt_id").notNull(), questionId: text("question_id").notNull(), questionVersion: integer("question_version").notNull(),
+  contentVersion: integer("content_version").notNull(), contentJson: text("content_json").notNull(),
+  state: text("state", { enum: ["draft", "needs_development", "passed", "unchecked"] }).notNull(),
+  lastCheckId: text("last_check_id"), lastCheckedVersion: integer("last_checked_version"),
+  createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull(),
+}, t => [uniqueIndex("topic_cards_attempt").on(t.userId, t.attemptId),
+  foreignKey({ columns: [t.userId, t.attemptId], foreignColumns: [writingSessions.userId, writingSessions.id] }).onDelete("cascade"),
+  check("topic_cards_state", sql`${t.state} IN ('draft','needs_development','passed','unchecked')`),
+  check("topic_cards_versions", sql`${t.contentVersion} >= 0 AND ${t.questionVersion} > 0 AND (${t.lastCheckedVersion} IS NULL OR ${t.lastCheckedVersion} BETWEEN 0 AND ${t.contentVersion})`),
+]);
+export const quickCheckResults = sqliteTable("quick_check_results", {
+  checkId: text("check_id").primaryKey(), userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  attemptId: text("attempt_id").notNull(), cardVersion: integer("card_version").notNull(), outcome: text("outcome").notNull(),
+  resultsJson: text("results_json").notNull(), createdAt: text("created_at").notNull(),
+}, t => [foreignKey({ columns: [t.userId, t.attemptId], foreignColumns: [writingSessions.userId, writingSessions.id] }).onDelete("cascade")]);
+export const quickOperations = sqliteTable("quick_operations", {
+  id: text("id").primaryKey(), userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  attemptId: text("attempt_id").notNull(), cardId: text("card_id").notNull(), cardVersion: integer("card_version").notNull(),
+  kind: text("kind", { enum: ["followup", "check"] }).notNull(), slot: text("slot").notNull(), packageId: text("package_id").notNull(),
+  status: text("status", { enum: ["running", "ok", "needs_development", "invalid_output", "timeout", "quota_exhausted", "stale", "indeterminate"] }).notNull(),
+  startedAt: text("started_at").notNull(), finishedAt: text("finished_at"),
+}, t => [uniqueIndex("quick_operations_slot").on(t.userId, t.attemptId, t.kind, t.slot),
+  check("quick_operations_kind", sql`${t.kind} IN ('followup','check')`),
+  check("quick_operations_status", sql`${t.status} IN ('running','ok','needs_development','invalid_output','timeout','quota_exhausted','stale','indeterminate')`),
+]);
+export const quickOperationInputs = sqliteTable("quick_operation_inputs", {
+  operationId: text("operation_id").primaryKey(), userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  attemptId: text("attempt_id").notNull(), inputJson: text("input_json").notNull(),
+}, t => [foreignKey({ columns: [t.userId, t.attemptId], foreignColumns: [writingSessions.userId, writingSessions.id] }).onDelete("cascade")]);
+export const quickPackages = sqliteTable("quick_packages", {
+  id: text("id").primaryKey(), userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  attemptId: text("attempt_id").notNull(), cardId: text("card_id").notNull(), kind: text("kind", { enum: ["initial", "supplemental"] }).notNull(),
+  grantedAt: text("granted_at").notNull(), closedAt: text("closed_at"), limitsJson: text("limits_json").notNull(), usedJson: text("used_json").notNull(),
+}, t => [index("quick_packages_card").on(t.userId, t.cardId), check("quick_packages_kind", sql`${t.kind} IN ('initial','supplemental')`)]);

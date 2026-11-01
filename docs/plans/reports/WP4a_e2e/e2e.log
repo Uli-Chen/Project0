@@ -1,0 +1,26 @@
+PASS 按题创建速刷
+PASS 保存卡片
+PASS 夹具注入一条教练追问（非模型）
+PASS 学生回答
+PASS 摘取本人原话
+PASS 默认写成作文
+PASS 换请求 ID 再点打开同一篇
+PASS 明确另开一次
+PASS 另开请求响应丢失后重放
+PASS 修改源卡片
+PASS GET quick 恢复
+PASS authenticated page deep-prewriting, deep-prewriting.html
+PASS 页面 deep-prewriting
+PASS 子练习进入写作
+PASS authenticated page deep-writing, deep-writing.html
+PASS 页面 deep-writing
+PASS authenticated page quick-enabled, quick-enabled.html
+PASS 页面 quick-enabled
+PASS authenticated page quick-disabled, quick-disabled.html
+PASS 页面 quick-disabled
+PASS 夹具填入其余四张表以验证删除
+PASS 删除源速刷
+PASS authenticated page deep-source-deleted, deep-source-deleted.html
+PASS 页面 deep-source-deleted
+PASS 账户删除前新建存活速刷
+PASS 真实账户删除路由

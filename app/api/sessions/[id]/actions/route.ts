@@ -1,3 +1,6 @@
+import { commitQuickMutation } from "@/lib/pipeline/quick";
+import { quickActionNames, quickActionSchema } from "@/lib/quick/schemas";
+import { assertQuickSession } from "@/lib/pipeline/http";
 import { isStudentAction } from "@/lib/rules/student-action";
 import { z } from "zod";
 import { withModelAdmission } from "@/lib/llm/admission";
@@ -17,8 +20,18 @@ export const maxDuration = 300;
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     assertSameOrigin(request); const user = await requireApiUser(); const { id } = await params;
-    assertSupportedSession(getSession(user.id, id));
+    const currentSession = getSession(user.id, id);
+    if (currentSession?.activity === "quick") assertQuickSession(currentSession);
+    else assertSupportedSession(currentSession);
     const body = await readJson(request);
+    const action = z.object({ action: z.string() }).parse(body).action;
+    if (currentSession.activity === "quick") {
+      assertQuickSession(currentSession);
+      if (!quickActionNames.has(action)) throw new SessionError("速刷不支持精练动作。", 409, "unsupported_session");
+      return Response.json(commitQuickMutation(user.id, id, quickActionSchema.parse(body)));
+    }
+    assertSupportedSession(currentSession);
+    if (quickActionNames.has(action)) throw new SessionError("精练不支持速刷动作。", 409, "unsupported_session");
     const input = actionSchema.parse(body);
     const requestId = z.object({ requestId: z.string().uuid().optional() }).parse(body).requestId ?? crypto.randomUUID();
     if (input.action === "retryReview") return Response.json({ session: await retryReview(user.id, id, requestId) });

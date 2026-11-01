@@ -1,3 +1,4 @@
+import { getCard } from "@/lib/db/queries/cards";
 import { readFeatures } from "@/lib/config/features";
 import { notFound } from "next/navigation";
 import { SessionView } from "@/components/essay/session-view";
@@ -9,5 +10,5 @@ export default async function EssayPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const session = getSession(user.id, id);
   if (!session) notFound();
-  return <SessionView session={session} questionBankEnabled={readFeatures().QUESTION_BANK_ENABLED} />;
+  return <SessionView session={session} cardContent={session.activity === "quick" ? getCard(user.id, id)?.content : undefined} questionBankEnabled={readFeatures().QUESTION_BANK_ENABLED} />;
 }

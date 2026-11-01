@@ -1,3 +1,4 @@
+import type { CardSnapshot } from "../quick/schemas";
 import type { AgentAction } from "./schemas";
 import type { CatalogQuestion } from "@/lib/question-bank/types";
 import type { CoachMessage, Comparison, EssayKind, Evaluation, Focus, MemoryChange, Mode, Nudge, Outline, Prompt, Scores, SessionKind, Stage, Suggestion } from "@/lib/prototype/types";
@@ -7,8 +8,7 @@ export type SessionState = {
   question: (Pick<CatalogQuestion, "id" | "version" | "exposureKey" | "primaryTopic" | "questionType" | "text"> & { bankVersion: string }) | null;
   lifecycle: "open" | "set_aside" | "closed"; lastStudentActionAt: string | null;
   continuedFromQuickId: string | null;
-  // Opaque until WP4 defines the frozen card's serialized contract (13 §7).
-  cardSnapshot: Record<string, unknown> | null;
+  cardSnapshot: CardSnapshot | null;
   rewriteOfDeepId: string | null; originalSubmittedAt: string | null; completedAt: string | null;
   originalFreshness: "fresh" | "repeat" | "unknown" | null; reviewStatus: "none" | "pending" | "ok" | "failed";
   feedbackUpdatedAt: string | null; checkpointId: string | null;

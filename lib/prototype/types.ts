@@ -52,8 +52,11 @@ export type CoachMessage = {
   id: string;
   role: "user" | "coach";
   /** 对话发生在哪个阶段；改写阶段问题对话带 issueRank */
-  stage: "prewriting" | "writing" | "issue" | "revision";
-  action?: "opening" | "clarify" | "polish" | "check" | "express" | "chat" | "hint" | "attempt" | "ask";
+  stage: "prewriting" | "writing" | "issue" | "revision" | "quick";
+  userId?: string;
+  afterFollowUp?: 0 | 1 | 2;
+  replyToMessageId?: string;
+  action?: "quickFollowup" | "quickAnswer" | "opening" | "clarify" | "polish" | "check" | "express" | "chat" | "hint" | "attempt" | "ask";
   content: string;
   quote?: string;
   suggestionIds?: string[];

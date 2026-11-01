@@ -1,5 +1,6 @@
 "use client";
 
+import { CardSnapshotView } from "@/components/quick/card-readonly";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -82,6 +83,7 @@ function Screen() {
         {!state.evaluation && <span className="meta">{outlineProgress(state.outline).filled} / {outlineProgress(state.outline).total}</span>}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8">
+        {state.cardSnapshot && ["prewriting", "writing"].includes(stage) && <CardSnapshotView snapshot={state.cardSnapshot} />}
         <OutlineBoard
           outline={state.outline}
           density={stage === "prewriting" ? "comfortable" : "compact"}

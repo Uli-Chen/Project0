@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "routeAndFixtureSteps": 21,
+  "pageRenders": 5,
+  "tablesClearedForDeletedOwner": [
+    "auth_sessions",
+    "writing_sessions",
+    "topic_cards",
+    "quick_check_results",
+    "quick_operation_inputs",
+    "quick_operations",
+    "quick_packages",
+    "attempt_markers",
+    "completion_events",
+    "familiarity",
+    "legacy_scan",
+    "default_continuations",
+    "request_receipts",
+    "llm_calls"
+  ],
+  "networkCalls": 0,
+  "realModelCalls": 0,
+  "integrityCheck": "ok",
+  "fixtureDatabaseRemovedOnExit": true
+}

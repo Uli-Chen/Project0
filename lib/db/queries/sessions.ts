@@ -33,7 +33,8 @@ export function saveSession(userId: string, state: SessionState): void {
   }).run();
 }
 
-/** Central content deletion boundary. WP4 adds cards, check evidence and operation inputs here.
+/** Central content deletion boundary. Composite owner/session FKs cascade topic_cards,
+ * quick_check_results and quick_operation_inputs (covered by deletion tests).
  * Retained facts/receipts never belong in this function. */
 function deletePracticeContent(userId: string, id: string): void {
   getDb().delete(writingSessions).where(and(eq(writingSessions.userId, userId), eq(writingSessions.id, id))).run();
