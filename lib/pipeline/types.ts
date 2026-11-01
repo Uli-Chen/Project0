@@ -1,7 +1,16 @@
 import type { AgentAction } from "./schemas";
+import type { CatalogQuestion } from "@/lib/question-bank/types";
 import type { CoachMessage, Comparison, EssayKind, Evaluation, Focus, MemoryChange, Mode, Nudge, Outline, Prompt, Scores, SessionKind, Stage, Suggestion } from "@/lib/prototype/types";
 
 export type SessionState = {
+  schemaVersion: number; activity: "deep" | "quick";
+  question: (Pick<CatalogQuestion, "id" | "version" | "exposureKey" | "primaryTopic" | "questionType" | "text"> & { bankVersion: string }) | null;
+  lifecycle: "open" | "set_aside" | "closed"; lastStudentActionAt: string | null;
+  continuedFromQuickId: string | null;
+  // Opaque until WP4 defines the frozen card's serialized contract (13 §7).
+  cardSnapshot: Record<string, unknown> | null;
+  rewriteOfDeepId: string | null; originalSubmittedAt: string | null; completedAt: string | null;
+  feedbackUpdatedAt: string | null; checkpointId: string | null;
   id: string; kind: SessionKind; mode: Mode; prompt: Prompt; focus: Focus | null; stage: Stage;
   createdAt: string; updatedAt: string; version: number; completedRequests?: string[];
   lastWriteId?: string;

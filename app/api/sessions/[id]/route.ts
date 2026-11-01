@@ -1,4 +1,5 @@
-import { sessionApiError as apiError } from "@/lib/pipeline/http";
+import { assertSupportedSession, sessionApiError as apiError } from "@/lib/pipeline/http";
+import { mergeOutline } from "@/lib/pipeline/outline";
 import { requireApiUser } from "@/lib/auth/server";
 import { assertSameOrigin, readJson } from "@/lib/auth/http";
 import { deleteSession, getSession, saveSession } from "@/lib/db/queries/sessions";
@@ -17,18 +18,20 @@ export async function GET(_request: Request, { params }: Context) {
 export async function PATCH(request: Request, { params }: Context) {
   try {
     assertSameOrigin(request); const user = await requireApiUser(); const { id } = await params;
+    assertSupportedSession(getSession(user.id, id));
     const input = draftSchema.parse(await readJson(request));
     return await withSessionLock(`${user.id}:${id}`, async () => {
-      const session = getSession(user.id, id); if (!session) throw new SessionError("练习不存在。", 404);
+      const session = getSession(user.id, id);
+      assertSupportedSession(session);
       if (input.requestId && session.lastWriteId === input.requestId) return Response.json({ session });
       if (session.version !== input.version) return Response.json({ error: "这份练习已在其他页面更新。请刷新后继续，你的当前文字仍保留在编辑器。", session }, { status: 409 });
       if (input.drafts) {
         if (["prewriting", "writing"].includes(session.stage)) session.drafts.original = input.drafts.original;
         if (session.stage === "revising") session.drafts.revision = input.drafts.revision;
       }
-      if (input.outline && ["prewriting", "writing", "revising"].includes(session.stage)) session.outline = input.outline;
+      if (input.outline && ["prewriting", "writing", "revising"].includes(session.stage)) session.outline = mergeOutline(session.outline, input.outline);
       if (input.nudgesEnabled !== undefined) session.nudgesEnabled = input.nudgesEnabled;
-      if (input.elapsed) session.elapsed = { original: Math.max(session.elapsed.original, input.elapsed.original), revision: Math.max(session.elapsed.revision, input.elapsed.revision) };
+      if (input.elapsed) session.elapsed = { ...session.elapsed, original: Math.max(session.elapsed.original, input.elapsed.original), revision: Math.max(session.elapsed.revision, input.elapsed.revision) };
       session.lastWriteId = input.requestId;
       session.version++; session.updatedAt = session.savedAt = new Date().toISOString(); saveSession(user.id, session);
       return Response.json({ session });

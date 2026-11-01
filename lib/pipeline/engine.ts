@@ -8,7 +8,7 @@ import { setSlot } from "./outline";
 import type { SessionState } from "./types";
 import type { UserProfile } from "@/lib/auth/types";
 
-export class SessionError extends Error { constructor(message: string, public status = 400) { super(message); } }
+export class SessionError extends Error { constructor(message: string, public status = 400, public code?: string) { super(message); } }
 function requireStage(state: SessionState, ...stages: SessionState["stage"][]) { if (!stages.includes(state.stage)) throw new SessionError("当前阶段不能执行这项操作，请刷新后重试。", 409); }
 function addMessage(state: SessionState, message: Omit<CoachMessage, "id">) { state.messages.push({ id: crypto.randomUUID(), ...message }); }
 function kindFor(state: SessionState): EssayKind { return state.stage === "revising" ? "revision" : "original"; }

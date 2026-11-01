@@ -1,6 +1,7 @@
 // 原型阶段前端使用的类型；字段名与 原型/90_共享规范.md 第 4 节保持一致，便于之后换成真实接口。
 
 export type Stage =
+  | "quick"
   | "prewriting"
   | "writing"
   | "evaluating"
