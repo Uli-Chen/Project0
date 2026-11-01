@@ -1,0 +1,119 @@
+{
+  "status": "pass",
+  "bankVersion": "mock-20261101-v1",
+  "total": 38,
+  "practice": 28,
+  "reserved": 10,
+  "practicePrimaryTopicCounts": {
+    "culture": 4,
+    "education": 4,
+    "environment": 4,
+    "health": 4,
+    "society": 4,
+    "technology": 4,
+    "work": 4
+  },
+  "practiceTypeCounts": {
+    "adv_disadv": 6,
+    "agree_disagree": 11,
+    "discuss_both": 7,
+    "problem_solution": 1,
+    "two_part": 3
+  },
+  "reservedTypeCounts": {
+    "adv_disadv": 2,
+    "agree_disagree": 2,
+    "discuss_both": 2,
+    "problem_solution": 2,
+    "two_part": 2
+  },
+  "sourceKindCounts": {
+    "local_excerpt": 32,
+    "adapted_local": 3,
+    "synthetic": 3
+  },
+  "sourceRecordsReextractedAndHashMatched": 35,
+  "exactNormalizedDuplicateCount": 0,
+  "duplicateExposureKeyCount": 0,
+  "pairComparisons": 703,
+  "highestLexicalSimilarityPairs": [
+    {
+      "first": "qb_mock_work_002",
+      "second": "qb_mock_work_006",
+      "contentTokenJaccard": 0.188,
+      "crossPool": true
+    },
+    {
+      "first": "qb_mock_health_003",
+      "second": "qb_mock_tech_006",
+      "contentTokenJaccard": 0.172,
+      "crossPool": true
+    },
+    {
+      "first": "qb_mock_edu_001",
+      "second": "qb_mock_edu_002",
+      "contentTokenJaccard": 0.15,
+      "crossPool": false
+    },
+    {
+      "first": "qb_mock_edu_003",
+      "second": "qb_mock_edu_004",
+      "contentTokenJaccard": 0.15,
+      "crossPool": false
+    },
+    {
+      "first": "qb_mock_edu_002",
+      "second": "qb_mock_health_001",
+      "contentTokenJaccard": 0.133,
+      "crossPool": false
+    },
+    {
+      "first": "qb_mock_tech_003",
+      "second": "qb_mock_work_002",
+      "contentTokenJaccard": 0.133,
+      "crossPool": false
+    },
+    {
+      "first": "qb_mock_health_003",
+      "second": "qb_mock_soc_008",
+      "contentTokenJaccard": 0.129,
+      "crossPool": true
+    },
+    {
+      "first": "qb_mock_culture_003",
+      "second": "qb_mock_tech_006",
+      "contentTokenJaccard": 0.129,
+      "crossPool": true
+    },
+    {
+      "first": "qb_mock_edu_002",
+      "second": "qb_mock_work_004",
+      "contentTokenJaccard": 0.12,
+      "crossPool": false
+    },
+    {
+      "first": "qb_mock_env_004",
+      "second": "qb_mock_culture_004",
+      "contentTokenJaccard": 0.118,
+      "crossPool": false
+    },
+    {
+      "first": "qb_mock_health_001",
+      "second": "qb_mock_work_006",
+      "contentTokenJaccard": 0.118,
+      "crossPool": true
+    },
+    {
+      "first": "qb_mock_health_002",
+      "second": "qb_mock_culture_004",
+      "contentTokenJaccard": 0.118,
+      "crossPool": false
+    }
+  ],
+  "manualReview": "reviewed_no_duplicate_question_family_selected",
+  "limits": [
+    "Content labels and semantic family distinctness were reviewed by the preparing agent, not an independent IELTS examiner.",
+    "No web, official exam provenance, publication rights, visual DOCX layout, unseen-by-user eligibility or model-based learning outcomes verified.",
+    "A reserved pool is a design allocation; it does not prove that a particular user has never seen its questions."
+  ]
+}

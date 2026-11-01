@@ -5,7 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-sans: var(--font-geist-sans), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+  --font-serif: var(--font-newsreader), "Songti SC", "STSong", "Noto Serif SC", serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -32,58 +34,91 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-sheet: var(--sheet);
+  --color-ink: var(--ink);
+  --color-coach: var(--coach);
+  --color-coach-soft: var(--coach-soft);
+  --color-warn: var(--warn);
+  --color-good: var(--good);
+  --color-hl-1: var(--hl-1);
+  --color-hl-2: var(--hl-2);
+  --color-hl-3: var(--hl-3);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-xl: calc(var(--radius) * 1.5);
 }
 
+/*
+ * 单色、细线、暖中性：界面像精密仪器，纸面像纸。
+ * 唯一的彩色是教练（陶土色）和问题高亮（琥珀、玫瑰、鼠尾草）。
+ */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: var(--background);
+  color-scheme: light;
+  --radius: 0.5rem;
+  --background: #faf9f7;
+  --foreground: #141413;
+  --sheet: #ffffff;
+  --ink: #141413;
+  --card: var(--sheet);
   --card-foreground: var(--foreground);
-  --popover: var(--background);
+  --popover: #ffffff;
   --popover-foreground: var(--foreground);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: var(--primary);
-  --muted: var(--secondary);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: var(--secondary);
-  --accent-foreground: var(--primary);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: var(--border);
-  --ring: oklch(0.708 0 0);
-  --sidebar: oklch(0.985 0 0);
+  --primary: var(--ink);
+  --primary-foreground: #faf9f7;
+  --secondary: #f1efeb;
+  --secondary-foreground: var(--foreground);
+  --muted: #f1efeb;
+  --muted-foreground: #6f6e69;
+  --accent: #efede8;
+  --accent-foreground: var(--foreground);
+  --destructive: #b42318;
+  --border: #e8e6e1;
+  --input: #dedbd5;
+  --ring: #a8a59d;
+  --sidebar: #f5f4f0;
   --sidebar-foreground: var(--foreground);
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: var(--accent);
-  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-primary: var(--ink);
+  --sidebar-primary-foreground: #faf9f7;
+  --sidebar-accent: #eae8e3;
+  --sidebar-accent-foreground: var(--foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
+  --coach: #b8532f;
+  --coach-soft: #f8ece6;
+  --warn: #a15c07;
+  --good: #2f7a4f;
+  --hl-1: rgb(233 185 73 / 0.32);
+  --hl-2: rgb(229 140 138 / 0.3);
+  --hl-3: rgb(127 182 133 / 0.32);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --popover: var(--card);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: var(--foreground);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent-foreground: var(--foreground);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --sidebar: var(--card);
+  color-scheme: dark;
+  --background: #0c0c0b;
+  --foreground: #ecebe6;
+  --sheet: #151514;
+  --ink: #ecebe6;
+  --popover: #1a1a19;
+  --primary-foreground: #0c0c0b;
+  --secondary: #1f1f1d;
+  --muted: #1f1f1d;
+  --muted-foreground: #9c9a93;
+  --accent: #222220;
+  --destructive: #f97066;
+  --border: #262624;
+  --input: #34342f;
+  --ring: #5f5d57;
+  --sidebar: #0f0f0e;
+  --sidebar-primary-foreground: #0c0c0b;
+  --sidebar-accent: #1d1d1b;
+  --coach: #e2845f;
+  --coach-soft: #2a1a13;
+  --warn: #e3b25c;
+  --good: #7cc495;
+  --hl-1: rgb(233 185 73 / 0.24);
+  --hl-2: rgb(229 140 138 / 0.24);
+  --hl-3: rgb(127 182 133 / 0.24);
 }
 
 @layer base {
@@ -91,7 +126,156 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    font-size: 16px;
+  }
+
   body {
-    @apply bg-background font-sans text-foreground;
+    @apply bg-background font-sans text-sm text-foreground antialiased;
+    font-feature-settings: "kern", "ss01";
+    min-width: 320px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--coach) 22%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .coach-markdown {
+    overflow-wrap: anywhere;
+  }
+
+  .coach-markdown > * + * {
+    margin-top: 0.75rem;
+  }
+
+  .coach-markdown p {
+    white-space: pre-line;
+  }
+
+  .coach-markdown :is(h1, h2, h3, h4, h5, h6) {
+    margin-top: 1.1rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .coach-markdown > :first-child {
+    margin-top: 0;
+  }
+
+  .coach-markdown strong {
+    font-weight: 650;
+  }
+
+  .coach-markdown :is(ul, ol) {
+    padding-inline-start: 1.4rem;
+  }
+
+  .coach-markdown ul { list-style-type: disc; }
+  .coach-markdown ol { list-style-type: decimal; }
+  .coach-markdown li + li { margin-top: 0.4rem; }
+  .coach-markdown li > :is(p, ul, ol) + * { margin-top: 0.4rem; }
+  .coach-markdown li > :is(ul, ol) { margin-top: 0.35rem; }
+  .coach-markdown li::marker { color: var(--muted-foreground); }
+  .coach-markdown .contains-task-list { list-style-type: none; }
+  .coach-markdown input[type="checkbox"] { margin-inline: -1.2rem 0.4rem; accent-color: var(--coach); }
+
+  .coach-markdown blockquote {
+    border-inline-start: 2px solid var(--coach);
+    padding-inline-start: 0.8rem;
+    color: var(--muted-foreground);
+  }
+
+  .coach-markdown a {
+    color: var(--coach);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .coach-markdown code {
+    border-radius: 0.25rem;
+    background: var(--secondary);
+    padding: 0.1rem 0.3rem;
+    font-size: 0.85em;
+  }
+
+  .coach-markdown pre {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--sheet);
+    padding: 0.75rem;
+    white-space: pre;
+    overflow-wrap: normal;
+  }
+
+  .coach-markdown pre code { padding: 0; background: transparent; }
+  .coach-markdown hr { border-top: 1px solid var(--border); }
+  .coach-table-scroll { max-width: 100%; overflow-x: auto; }
+  .coach-markdown table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+  .coach-markdown :is(th, td) { border: 1px solid var(--border); padding: 0.4rem 0.65rem; }
+  .coach-markdown th { background: var(--secondary); font-weight: 600; }
+
+  .page-heading {
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+
+  .surface {
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background: var(--sheet);
+  }
+
+  .meta {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    color: var(--muted-foreground);
+  }
+
+  .field-input {
+    min-height: 2.75rem;
+    width: 100%;
+    border: 1px solid var(--input);
+    border-radius: 0.5rem;
+    background: var(--sheet);
+    padding: 0.65rem 0.8rem;
+    font-size: 0.875rem;
+  }
+
+  .prose-essay {
+    font-family: var(--font-serif);
+    font-size: 1.125rem;
+    line-height: 1.75;
+    font-optical-sizing: auto;
+    letter-spacing: 0.002em;
+  }
+
+  .prose-prompt {
+    font-family: var(--font-serif);
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    font-style: italic;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

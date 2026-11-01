@@ -1,0 +1,184 @@
+"use client";
+
+import { Check, CircleDashed, CircleDot } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { getSlot } from "@/lib/prototype/session-store";
+import type { Outline, Review } from "@/lib/prototype/types";
+import { cn } from "@/lib/utils";
+
+type Coverage = Review["outlineCoverage"];
+
+const GROUPS = [
+  { title: "立场", slots: [{ path: "stance", label: null }] },
+  ...[0, 1].map((i) => ({
+    title: i === 0 ? "理由一" : "理由二",
+    slots: [
+      { path: `reasons.${i}.claim`, label: "观点" },
+      { path: `reasons.${i}.why`, label: "为什么" },
+      { path: `reasons.${i}.example`, label: "例子" },
+    ],
+  })),
+  {
+    title: "反方",
+    slots: [
+      { path: "counter.view", label: "他们会说" },
+      { path: "counter.response", label: "你的回应" },
+    ],
+  },
+] as const;
+
+const ALL_PATHS = GROUPS.flatMap((g) => g.slots.map((s) => s.path as string));
+
+const COVERAGE_LABEL = { written: "已写进文章", partly: "写了一部分", missing: "没有写到" } as const;
+
+export function outlineProgress(outline: Outline) {
+  return { filled: ALL_PATHS.filter((p) => getSlot(outline, p)).length, total: ALL_PATHS.length };
+}
+
+/** 提纲本身不带标题行，标题与“想好了 n / 9”由所在的栏提供 */
+export function OutlineBoard({
+  outline,
+  onEdit,
+  coverage,
+  density = "comfortable",
+}: {
+  outline: Outline;
+  onEdit?: (path: string, text: string) => void;
+  coverage?: Coverage;
+  density?: "comfortable" | "compact";
+}) {
+  const { filled } = outlineProgress(outline);
+  const flash = useFlash(outline);
+  const coverageOf = (path: string) => coverage?.find((c) => c.slot === path)?.status;
+
+  return (
+    <div className="flex flex-col">
+      {!coverage && (
+        <div className="h-[3px] overflow-hidden rounded-full bg-secondary">
+          <div className="h-full rounded-full bg-coach transition-[width] duration-500" style={{ width: `${(filled / ALL_PATHS.length) * 100}%` }} />
+        </div>
+      )}
+      <div className={cn("mt-5 flex flex-col", density === "compact" ? "gap-4" : "gap-6")}>
+        {GROUPS.map((group) => (
+          <section key={group.title}>
+            <h3 className="text-xs font-medium text-muted-foreground">{group.title}</h3>
+            <div className={cn("mt-1.5 flex flex-col", group.slots.length > 1 && "border-l border-border pl-3.5")}>
+              {group.slots.map((slot) => (
+                <SlotRow
+                  key={slot.path}
+                  label={slot.label}
+                  accessibleLabel={`${group.title}${slot.label ? `：${slot.label}` : ""}`}
+                  text={getSlot(outline, slot.path)?.text ?? null}
+                  flash={flash === slot.path}
+                  coverage={coverageOf(slot.path)}
+                  onSave={onEdit ? (text) => onEdit(slot.path, text) : undefined}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SlotRow({
+  label,
+  accessibleLabel,
+  text,
+  flash,
+  coverage,
+  onSave,
+}: {
+  label: string | null;
+  accessibleLabel: string;
+  text: string | null;
+  flash: boolean;
+  coverage?: "written" | "partly" | "missing";
+  onSave?: (text: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(text ?? "");
+
+  const start = () => {
+    if (!onSave) return;
+    setDraft(text ?? "");
+    setEditing(true);
+  };
+  const commit = () => {
+    setEditing(false);
+    if (draft.trim() !== (text ?? "")) onSave?.(draft);
+  };
+
+  return (
+    <div className={cn("group -mx-2 rounded-md px-2 py-1.5 transition-colors duration-700", flash && "bg-coach-soft")}>
+      {label && <p className="text-[11px] text-muted-foreground">{label}</p>}
+      {editing ? (
+        <textarea
+          autoFocus
+          value={draft}
+          aria-label={accessibleLabel}
+          maxLength={2000}
+          rows={2}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.nativeEvent.isComposing) return;
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              commit();
+            }
+            if (e.key === "Escape") setEditing(false);
+          }}
+          className="mt-0.5 w-full resize-none rounded-md border border-coach/40 bg-sheet px-2 py-1 text-sm outline-none"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={start}
+          aria-label={`${accessibleLabel}：${text ?? "还没想好"}`}
+          disabled={!onSave}
+          className={cn(
+            "mt-0.5 flex w-full items-start gap-2 text-left text-sm leading-relaxed",
+            text ? "text-foreground" : "text-muted-foreground/70",
+            onSave && "cursor-text",
+          )}
+        >
+          <span className="flex-1">{text ?? "还没想好"}</span>
+          {coverage && text && <CoverageMark status={coverage} />}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function CoverageMark({ status }: { status: "written" | "partly" | "missing" }) {
+  const Icon = status === "written" ? Check : status === "partly" ? CircleDot : CircleDashed;
+  return (
+    <span
+      title={COVERAGE_LABEL[status]}
+      className={cn(
+        "mt-0.5 flex shrink-0 items-center gap-1 text-[11px]",
+        status === "written" ? "text-good" : status === "partly" ? "text-warn" : "text-muted-foreground",
+      )}
+    >
+      <Icon className="size-3.5" />
+      {COVERAGE_LABEL[status]}
+    </span>
+  );
+}
+
+/** 返回刚被教练填上的槽位路径，用于短暂高亮 */
+function useFlash(outline: Outline) {
+  const prev = useRef(outline);
+  const [flash, setFlash] = useState<string | null>(null);
+  useEffect(() => {
+    const changed = ALL_PATHS.find((p) => !getSlot(prev.current, p) && getSlot(outline, p));
+    prev.current = outline;
+    if (!changed) return;
+    setFlash(changed);
+    const t = setTimeout(() => setFlash(null), 1400);
+    return () => clearTimeout(t);
+  }, [outline]);
+  return flash;
+}

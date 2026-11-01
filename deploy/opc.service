@@ -1,0 +1,22 @@
+[Unit]
+Description=Project 0 writing app
+After=network.target
+
+[Service]
+Type=simple
+User=squareofchen
+Group=squareofchen
+WorkingDirectory=/home/squareofchen/opc
+Environment=NODE_ENV=production
+Environment=PATH=/home/squareofchen/.local/node/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/squareofchen/.local/node/bin/node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3000
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=330
+KillSignal=SIGTERM
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

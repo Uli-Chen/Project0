@@ -1,0 +1,735 @@
+{
+  "bankVersion": "mock-20261101-v1",
+  "status": "mock_not_production",
+  "questions": [
+    {
+      "id": "qb_mock_edu_001",
+      "version": 1,
+      "exposureKey": "qfamily_university_living_away",
+      "bankOrder": 1,
+      "text": "In some countries, university students live at home with their families while they study, whereas in other countries students attend university in another city. Do you think the benefits of living away from home during university outweigh the disadvantages?",
+      "primaryTopic": "education",
+      "secondaryTopics": [
+        "society"
+      ],
+      "questionType": "adv_disadv",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[10].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_edu_002",
+      "version": 1,
+      "exposureKey": "qfamily_science_subject_shortage",
+      "bankOrder": 2,
+      "text": "It is observed that in many countries not enough students are choosing to study science as a subject. What are the causes? And what will be the effects on society?",
+      "primaryTopic": "education",
+      "secondaryTopics": [
+        "technology"
+      ],
+      "questionType": "two_part",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[15].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_edu_003",
+      "version": 1,
+      "exposureKey": "qfamily_math_vs_communication_curriculum",
+      "bankOrder": 3,
+      "text": "Some people think schools should spend more time teaching mathematics and numerical skills. Others believe communication skills, such as writing and speaking, are more important for students' futures. Discuss both views and give your own opinion.",
+      "primaryTopic": "education",
+      "secondaryTopics": [],
+      "questionType": "discuss_both",
+      "pool": "practice",
+      "source": {
+        "kind": "adapted_local",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/writing_translations.json",
+        "locator": "$.simply[0][1]",
+        "sha256": "3bfdd6e6da2573ef0afdf3e228808c314deb63d8458029f78a3ec6dae7aaacb7",
+        "note": "Translated the complete Chinese local prompt into English; no original English wording is claimed."
+      }
+    },
+    {
+      "id": "qb_mock_edu_004",
+      "version": 1,
+      "exposureKey": "qfamily_school_uniform_requirement",
+      "bankOrder": 4,
+      "text": "All secondary schools should require their students to wear a school uniform. To what extent do you agree or disagree?",
+      "primaryTopic": "education",
+      "secondaryTopics": [],
+      "questionType": "agree_disagree",
+      "pool": "practice",
+      "source": {
+        "kind": "synthetic",
+        "path": null,
+        "locator": null,
+        "sha256": null,
+        "note": "New mock prompt composed for this bank to fill a topic/type gap; not a claimed past exam question."
+      }
+    },
+    {
+      "id": "qb_mock_tech_001",
+      "version": 1,
+      "exposureKey": "qfamily_technology_crime_effect",
+      "bankOrder": 5,
+      "text": "Some people think technology development decreases crime, while others believe it actually encourages crime. Discuss both views and give your own opinion.",
+      "primaryTopic": "technology",
+      "secondaryTopics": [
+        "society"
+      ],
+      "questionType": "discuss_both",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 71 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_tech_002",
+      "version": 1,
+      "exposureKey": "qfamily_private_scientific_research",
+      "bankOrder": 6,
+      "text": "In today's world, it is private companies rather than government who pay for and carry out most scientific research. Do you think the advantages outweigh the disadvantages?",
+      "primaryTopic": "technology",
+      "secondaryTopics": [],
+      "questionType": "adv_disadv",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 100 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_tech_003",
+      "version": 1,
+      "exposureKey": "qfamily_corporate_personal_data",
+      "bankOrder": 7,
+      "text": "The personal information of many individuals is held by large internet companies and organisations. Do you think the advantages of this outweigh the disadvantages?",
+      "primaryTopic": "technology",
+      "secondaryTopics": [
+        "society"
+      ],
+      "questionType": "adv_disadv",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 245 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_tech_004",
+      "version": 1,
+      "exposureKey": "qfamily_social_media_contact_news",
+      "bankOrder": 8,
+      "text": "Many people around the world use social media to keep in touch with other people and get the news. Do you think the advantages of this development outweigh the disadvantages?",
+      "primaryTopic": "technology",
+      "secondaryTopics": [
+        "society"
+      ],
+      "questionType": "adv_disadv",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[14].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_env_001",
+      "version": 1,
+      "exposureKey": "qfamily_wildlife_resource_allocation",
+      "bankOrder": 9,
+      "text": "Some people say that too much attention and resources are given to the protection of wild animals and birds. To what extent do you agree or disagree?",
+      "primaryTopic": "environment",
+      "secondaryTopics": [],
+      "questionType": "agree_disagree",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 187 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_env_002",
+      "version": 1,
+      "exposureKey": "qfamily_climate_adaptation_vs_prevention",
+      "bankOrder": 10,
+      "text": "Some people think that instead of preventing climate change, we need to find a way to live with it. To what extent do you agree or disagree?",
+      "primaryTopic": "environment",
+      "secondaryTopics": [],
+      "questionType": "agree_disagree",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 274 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_env_003",
+      "version": 1,
+      "exposureKey": "qfamily_biodiversity_action_too_late",
+      "bankOrder": 11,
+      "text": "Human activities have had negative effects on plant and animal species. Some people think it is too late to do anything about this problem, while others believe that effective measures can still be taken to improve this situation. Discuss both views and give your opinion.",
+      "primaryTopic": "environment",
+      "secondaryTopics": [],
+      "questionType": "discuss_both",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 303 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_env_004",
+      "version": 1,
+      "exposureKey": "qfamily_freshwater_use_control",
+      "bankOrder": 12,
+      "text": "Some people think they have the right to use as much fresh water as they want, while others believe that governments should strictly control the use of fresh water as it is a limited resource. Discuss both views and give your own opinion.",
+      "primaryTopic": "environment",
+      "secondaryTopics": [
+        "society"
+      ],
+      "questionType": "discuss_both",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 419 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_soc_001",
+      "version": 1,
+      "exposureKey": "qfamily_city_functional_zoning",
+      "bankOrder": 13,
+      "text": "In many cities, planners have located shops, schools, offices and homes in specific areas which may be widely separated from each other. Do you think the advantages of this policy outweigh the disadvantages for city residents?",
+      "primaryTopic": "society",
+      "secondaryTopics": [],
+      "questionType": "adv_disadv",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 42 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_soc_002",
+      "version": 1,
+      "exposureKey": "qfamily_mandatory_parent_training",
+      "bankOrder": 14,
+      "text": "Childcare training courses should be mandatory for all parents. Do you agree or disagree with this statement?",
+      "primaryTopic": "society",
+      "secondaryTopics": [
+        "education"
+      ],
+      "questionType": "agree_disagree",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 129 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_soc_003",
+      "version": 1,
+      "exposureKey": "qfamily_crime_reporting_restriction",
+      "bankOrder": 15,
+      "text": "Some people think that the detailed description of crimes on newspapers and TV has bad consequences, so this kind of information should be restricted in the media. To what extent do you agree or disagree?",
+      "primaryTopic": "society",
+      "secondaryTopics": [],
+      "questionType": "agree_disagree",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 158 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_soc_004",
+      "version": 1,
+      "exposureKey": "qfamily_city_public_outdoor_spaces",
+      "bankOrder": 16,
+      "text": "It is important for all towns and cities to have large public outdoor places like squares and parks. To what extent do you agree or disagree with this statement?",
+      "primaryTopic": "society",
+      "secondaryTopics": [],
+      "questionType": "agree_disagree",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[0].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_work_001",
+      "version": 1,
+      "exposureKey": "qfamily_career_stability_changes",
+      "bankOrder": 17,
+      "text": "People who decide on a career path early and keep to it are likelier to have a satisfying working life than those who change jobs frequently. To what extent do you agree or disagree?",
+      "primaryTopic": "work",
+      "secondaryTopics": [],
+      "questionType": "agree_disagree",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[1].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_work_002",
+      "version": 1,
+      "exposureKey": "qfamily_remote_work",
+      "bankOrder": 18,
+      "text": "In many organisations, employees can now work from home. Do the advantages of this development outweigh the disadvantages?",
+      "primaryTopic": "work",
+      "secondaryTopics": [
+        "technology"
+      ],
+      "questionType": "adv_disadv",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思A类写作8分备考宝典.md",
+        "locator": "line 1184, section 10.5 Task 2",
+        "sha256": "a944e3eeaf348204131db11c9cf4c9297c7cf3fd10c2a2a2dd3069e1f8ae7d4e",
+        "note": "Source explicitly labels this as an original practice question; extracted prompt only, excluding model essay."
+      }
+    },
+    {
+      "id": "qb_mock_work_003",
+      "version": 1,
+      "exposureKey": "qfamily_legal_working_hours_limits",
+      "bankOrder": 19,
+      "text": "Some countries have introduced laws to limit working hours for employees. Why are these laws introduced? Do you think they are a positive or negative development?",
+      "primaryTopic": "work",
+      "secondaryTopics": [
+        "society"
+      ],
+      "questionType": "two_part",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[16].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_work_004",
+      "version": 1,
+      "exposureKey": "qfamily_national_salary_cap",
+      "bankOrder": 20,
+      "text": "In many countries, a small number of people earn extremely high salaries. Some people believe this is good for the country, but others think governments should not allow salaries above a certain level. Discuss both these views and give your own opinion.",
+      "primaryTopic": "work",
+      "secondaryTopics": [
+        "society"
+      ],
+      "questionType": "discuss_both",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 535 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_health_001",
+      "version": 1,
+      "exposureKey": "qfamily_obesity_unhealthy_eating_prevention",
+      "bankOrder": 21,
+      "text": "In many countries, obesity and unhealthy eating habits are increasing. What are the reasons for this trend? What is the most effective way to prevent it?",
+      "primaryTopic": "health",
+      "secondaryTopics": [],
+      "questionType": "problem_solution",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 361 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_health_002",
+      "version": 1,
+      "exposureKey": "qfamily_illness_pollution_housing_prevention",
+      "bankOrder": 22,
+      "text": "Some people say that to prevent illness and disease, governments should focus more on reducing environmental pollution and housing problems. To what extent do you agree or disagree?",
+      "primaryTopic": "health",
+      "secondaryTopics": [
+        "environment",
+        "society"
+      ],
+      "questionType": "agree_disagree",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[3].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_health_003",
+      "version": 1,
+      "exposureKey": "qfamily_healthcare_tax_spending_priority",
+      "bankOrder": 23,
+      "text": "Some people say that when deciding how taxes should be spent, governments should prioritize health care. Other people believe that there are more important priorities for taxpayers' money. Discuss both views and give your opinion.",
+      "primaryTopic": "health",
+      "secondaryTopics": [
+        "society"
+      ],
+      "questionType": "discuss_both",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 216 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_health_004",
+      "version": 1,
+      "exposureKey": "qfamily_adults_sleep_loss_effects",
+      "bankOrder": 24,
+      "text": "In many societies, adults sleep fewer hours than they did in the past. Why is this happening? How can a lack of sleep affect individuals and the people around them?",
+      "primaryTopic": "health",
+      "secondaryTopics": [],
+      "questionType": "two_part",
+      "pool": "practice",
+      "source": {
+        "kind": "synthetic",
+        "path": null,
+        "locator": null,
+        "sha256": null,
+        "note": "New mock prompt composed for this bank to fill a topic/type gap; not a claimed past exam question."
+      }
+    },
+    {
+      "id": "qb_mock_culture_001",
+      "version": 1,
+      "exposureKey": "qfamily_live_vs_televised_performance",
+      "bankOrder": 25,
+      "text": "Many people believe that watching a live performance is more enjoyable than watching the same event on television. To what extent do you agree or disagree?",
+      "primaryTopic": "culture",
+      "secondaryTopics": [
+        "technology"
+      ],
+      "questionType": "agree_disagree",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[4].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_culture_002",
+      "version": 1,
+      "exposureKey": "qfamily_responsible_tourism_possible",
+      "bankOrder": 26,
+      "text": "In recent years, \"responsible tourists\" have paid attention to preserving both the culture and environment of the places they visit. However, some people say that it is impossible to be a \"responsible tourist\". To what extent do you agree or disagree?",
+      "primaryTopic": "culture",
+      "secondaryTopics": [
+        "environment"
+      ],
+      "questionType": "agree_disagree",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 390 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_culture_003",
+      "version": 1,
+      "exposureKey": "qfamily_public_libraries_vs_internet",
+      "bankOrder": 27,
+      "text": "Some people think that the government should establish free libraries in each town. Others, however, believe that it is a waste of money since the public can use the Internet at home to obtain information. Discuss both sides and give your own opinion.",
+      "primaryTopic": "culture",
+      "secondaryTopics": [
+        "education",
+        "technology"
+      ],
+      "questionType": "discuss_both",
+      "pool": "practice",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 332 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    },
+    {
+      "id": "qb_mock_culture_004",
+      "version": 1,
+      "exposureKey": "qfamily_endangered_language_public_funding",
+      "bankOrder": 28,
+      "text": "Governments should provide funding to preserve endangered languages. To what extent do you agree or disagree?",
+      "primaryTopic": "culture",
+      "secondaryTopics": [],
+      "questionType": "agree_disagree",
+      "pool": "practice",
+      "source": {
+        "kind": "adapted_local",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/writing_translations.json",
+        "locator": "$.simply[9][1]",
+        "sha256": "3bfdd6e6da2573ef0afdf3e228808c314deb63d8458029f78a3ec6dae7aaacb7",
+        "note": "Translated a local topic statement and supplied a complete agree/disagree instruction absent from the source. This is an adapted practice prompt, not an exact past question."
+      }
+    },
+    {
+      "id": "qb_mock_work_005",
+      "version": 1,
+      "exposureKey": "qfamily_working_in_old_age",
+      "bankOrder": 29,
+      "text": "It is a good idea for people to continue working in their old age if it is possible for them to do so. Do you agree or disagree?",
+      "primaryTopic": "work",
+      "secondaryTopics": [
+        "health"
+      ],
+      "questionType": "agree_disagree",
+      "pool": "checkpoint_reserved",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[2].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_tech_005",
+      "version": 1,
+      "exposureKey": "qfamily_computers_smarter_than_humans",
+      "bankOrder": 30,
+      "text": "Computers are becoming more intelligent than human beings, and some people believe this is a negative development. To what extent do you agree or disagree?",
+      "primaryTopic": "technology",
+      "secondaryTopics": [],
+      "questionType": "agree_disagree",
+      "pool": "checkpoint_reserved",
+      "source": {
+        "kind": "adapted_local",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/writing_translations.json",
+        "locator": "$.sohu[3][1]",
+        "sha256": "3bfdd6e6da2573ef0afdf3e228808c314deb63d8458029f78a3ec6dae7aaacb7",
+        "note": "Translated the complete Chinese local prompt into English; original English wording and exam provenance were not verified."
+      }
+    },
+    {
+      "id": "qb_mock_tech_006",
+      "version": 1,
+      "exposureKey": "qfamily_alien_life_public_spending",
+      "bankOrder": 31,
+      "text": "Some people want governments to spend money looking for life on other planets. Others, however, think this is a waste of public money when there are so many problems on earth. Discuss both these views and give your own opinion.",
+      "primaryTopic": "technology",
+      "secondaryTopics": [
+        "society"
+      ],
+      "questionType": "discuss_both",
+      "pool": "checkpoint_reserved",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[7].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_soc_005",
+      "version": 1,
+      "exposureKey": "qfamily_modern_independence_dependence",
+      "bankOrder": 32,
+      "text": "Some people think that in modern society individuals are becoming more dependent on each other, while others say that individuals are becoming more independent of each other. Discuss both these views and give your own opinion.",
+      "primaryTopic": "society",
+      "secondaryTopics": [],
+      "questionType": "discuss_both",
+      "pool": "checkpoint_reserved",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[8].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_work_006",
+      "version": 1,
+      "exposureKey": "qfamily_work_relocation_family_friends",
+      "bankOrder": 33,
+      "text": "In many countries today, if people want to find work, they have to move away from their friends and their families. Do you think the advantages of this development outweigh the disadvantages?",
+      "primaryTopic": "work",
+      "secondaryTopics": [
+        "society"
+      ],
+      "questionType": "adv_disadv",
+      "pool": "checkpoint_reserved",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[11].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_soc_006",
+      "version": 1,
+      "exposureKey": "qfamily_economic_development_social_values",
+      "bankOrder": 34,
+      "text": "Most countries aim to improve their standard of living through economic development, but many important social values can be lost as a result. Do the advantages of economic development outweigh the disadvantages?",
+      "primaryTopic": "society",
+      "secondaryTopics": [
+        "culture"
+      ],
+      "questionType": "adv_disadv",
+      "pool": "checkpoint_reserved",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[13].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_soc_007",
+      "version": 1,
+      "exposureKey": "qfamily_declining_bicycle_transport",
+      "bankOrder": 35,
+      "text": "Nowadays people use bicycles less as a form of transport. Why is this the case? What can we do to encourage people to use bicycles more?",
+      "primaryTopic": "society",
+      "secondaryTopics": [
+        "environment",
+        "health"
+      ],
+      "questionType": "problem_solution",
+      "pool": "checkpoint_reserved",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[17].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_culture_005",
+      "version": 1,
+      "exposureKey": "qfamily_historic_building_neglect",
+      "bankOrder": 36,
+      "text": "In many towns, historic buildings are falling into disrepair because they are no longer maintained. What problems can this cause for local communities? What measures could be taken to address this situation?",
+      "primaryTopic": "culture",
+      "secondaryTopics": [],
+      "questionType": "problem_solution",
+      "pool": "checkpoint_reserved",
+      "source": {
+        "kind": "synthetic",
+        "path": null,
+        "locator": null,
+        "sha256": null,
+        "note": "New mock prompt composed for this bank to fill a topic/type gap; not a claimed past exam question."
+      }
+    },
+    {
+      "id": "qb_mock_edu_005",
+      "version": 1,
+      "exposureKey": "qfamily_parental_success_pressure",
+      "bankOrder": 37,
+      "text": "Parents are putting a lot of pressure on their children to succeed. What are the reasons for this? Is it a positive or negative development?",
+      "primaryTopic": "education",
+      "secondaryTopics": [
+        "society"
+      ],
+      "questionType": "two_part",
+      "pool": "checkpoint_reserved",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+        "locator": "$[18].prompt",
+        "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+        "note": "Exact local JSON prompt; its legacy verified flag and external URL were not revalidated and do not establish official exam provenance."
+      }
+    },
+    {
+      "id": "qb_mock_soc_008",
+      "version": 1,
+      "exposureKey": "qfamily_national_success_non_economic_measures",
+      "bankOrder": 38,
+      "text": "Economic progress is often used to measure a country's success. However, some people believe that other factors are more important. What other factors should also be considered when measuring a country's success? Do you think one factor is more important than others?",
+      "primaryTopic": "society",
+      "secondaryTopics": [],
+      "questionType": "two_part",
+      "pool": "checkpoint_reserved",
+      "source": {
+        "kind": "local_excerpt",
+        "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+        "locator": "word/document.xml paragraph 477 (1-based, all w:p including empty/table paragraphs)",
+        "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+        "note": "Extracted only the paragraph immediately after 原题. Local document attribution is not independent verification of a past exam or publication rights."
+      }
+    }
+  ]
+}

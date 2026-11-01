@@ -1,0 +1,77 @@
+"use client";
+
+import { ArrowUp } from "lucide-react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+
+export function Composer({
+  placeholder,
+  onSend,
+  disabled,
+  focusKey,
+  top,
+  toolbar,
+}: {
+  placeholder: string;
+  onSend: (text: string) => void;
+  disabled?: boolean;
+  /** 变化时把焦点移到输入框，例如带着引用切过来 */
+  focusKey?: unknown;
+  top?: ReactNode;
+  toolbar?: ReactNode;
+}) {
+  const [text, setText] = useState("");
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+  }, [text]);
+
+  useLayoutEffect(() => {
+    if (focusKey) ref.current?.focus();
+  }, [focusKey]);
+
+  const send = () => {
+    const value = text.trim();
+    if (!value || disabled) return;
+    onSend(value);
+    setText("");
+  };
+
+  return (
+    <div className="rounded-xl border bg-sheet transition-colors focus-within:border-foreground/30">
+      {top && <div className="flex flex-wrap gap-1.5 px-2.5 pt-2.5">{top}</div>}
+      <textarea
+        ref={ref}
+        rows={2}
+        value={text}
+        aria-label={placeholder}
+        maxLength={12000}
+        placeholder={placeholder}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+            e.preventDefault();
+            send();
+          }
+        }}
+        className="block max-h-[180px] w-full resize-none bg-transparent px-3 pt-2.5 text-sm leading-relaxed outline-none placeholder:text-muted-foreground/70"
+      />
+      <div className="flex items-center gap-2 px-2 pb-2">
+        <div className="min-w-0 flex-1">{toolbar}</div>
+        {text.length >= 11000 && <span role="status" className="meta">{text.length.toLocaleString()} / 12,000</span>}
+        <button
+          type="button"
+          onClick={send}
+          disabled={!text.trim() || disabled}
+          aria-label="发送"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-opacity disabled:opacity-20"
+        >
+          <ArrowUp className="size-4" />
+        </button>
+      </div>
+    </div>
+  );
+}

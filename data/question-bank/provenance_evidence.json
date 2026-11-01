@@ -1,0 +1,285 @@
+[
+  {
+    "questionId": "qb_mock_edu_001",
+    "sourceExcerpt": "In some countries, university students live at home with their families while they study, whereas in other countries students attend university in another city. Do you think the benefits of living away from home during university outweigh the disadvantages?",
+    "extraction": "band",
+    "pointer": [
+      10
+    ]
+  },
+  {
+    "questionId": "qb_mock_edu_002",
+    "sourceExcerpt": "It is observed that in many countries not enough students are choosing to study science as a subject. What are the causes? And what will be the effects on society?",
+    "extraction": "band",
+    "pointer": [
+      15
+    ]
+  },
+  {
+    "questionId": "qb_mock_edu_003",
+    "sourceExcerpt": "有人主张学校把更多课时用于数学和数字技能，另有人认为写作、表达等沟通技能对学生未来更重要。讨论双方并给出观点。",
+    "extraction": "trans",
+    "pointer": [
+      "simply",
+      0
+    ]
+  },
+  {
+    "questionId": "qb_mock_tech_001",
+    "sourceExcerpt": "Some people think technology development decreases crime, while others believe it actually encourages crime. Discuss both views and give your own opinion.",
+    "extraction": "doc",
+    "pointer": [
+      71
+    ]
+  },
+  {
+    "questionId": "qb_mock_tech_002",
+    "sourceExcerpt": "In today's world, it is private companies rather than government who pay for and carry out most scientific research. Do you think the advantages outweigh the disadvantages?",
+    "extraction": "doc",
+    "pointer": [
+      100
+    ]
+  },
+  {
+    "questionId": "qb_mock_tech_003",
+    "sourceExcerpt": "The personal information of many individuals is held by large internet companies and organisations. Do you think the advantages of this outweigh the disadvantages?",
+    "extraction": "doc",
+    "pointer": [
+      245
+    ]
+  },
+  {
+    "questionId": "qb_mock_tech_004",
+    "sourceExcerpt": "Many people around the world use social media to keep in touch with other people and get the news. Do you think the advantages of this development outweigh the disadvantages?",
+    "extraction": "band",
+    "pointer": [
+      14
+    ]
+  },
+  {
+    "questionId": "qb_mock_env_001",
+    "sourceExcerpt": "Some people say that too much attention and resources are given to the protection of wild animals and birds. To what extent do you agree or disagree?",
+    "extraction": "doc",
+    "pointer": [
+      187
+    ]
+  },
+  {
+    "questionId": "qb_mock_env_002",
+    "sourceExcerpt": "Some people think that instead of preventing climate change, we need to find a way to live with it. To what extent do you agree or disagree?",
+    "extraction": "doc",
+    "pointer": [
+      274
+    ]
+  },
+  {
+    "questionId": "qb_mock_env_003",
+    "sourceExcerpt": "Human activities have had negative effects on plant and animal species. Some people think it is too late to do anything about this problem, while others believe that effective measures can still be taken to improve this situation. Discuss both views and give your opinion.",
+    "extraction": "doc",
+    "pointer": [
+      303
+    ]
+  },
+  {
+    "questionId": "qb_mock_env_004",
+    "sourceExcerpt": "Some people think they have the right to use as much fresh water as they want, while others believe that governments should strictly control the use of fresh water as it is a limited resource. Discuss both views and give your own opinion.",
+    "extraction": "doc",
+    "pointer": [
+      419
+    ]
+  },
+  {
+    "questionId": "qb_mock_soc_001",
+    "sourceExcerpt": "In many cities, planners have located shops, schools, offices and homes in specific areas which may be widely separated from each other. Do you think the advantages of this policy outweigh the disadvantages for city residents?",
+    "extraction": "doc",
+    "pointer": [
+      42
+    ]
+  },
+  {
+    "questionId": "qb_mock_soc_002",
+    "sourceExcerpt": "Childcare training courses should be mandatory for all parents. Do you agree or disagree with this statement?",
+    "extraction": "doc",
+    "pointer": [
+      129
+    ]
+  },
+  {
+    "questionId": "qb_mock_soc_003",
+    "sourceExcerpt": "Some people think that the detailed description of crimes on newspapers and TV has bad consequences, so this kind of information should be restricted in the media. To what extent do you agree or disagree?",
+    "extraction": "doc",
+    "pointer": [
+      158
+    ]
+  },
+  {
+    "questionId": "qb_mock_soc_004",
+    "sourceExcerpt": "It is important for all towns and cities to have large public outdoor places like squares and parks. To what extent do you agree or disagree with this statement?",
+    "extraction": "band",
+    "pointer": [
+      0
+    ]
+  },
+  {
+    "questionId": "qb_mock_work_001",
+    "sourceExcerpt": "People who decide on a career path early and keep to it are likelier to have a satisfying working life than those who change jobs frequently. To what extent do you agree or disagree?",
+    "extraction": "band",
+    "pointer": [
+      1
+    ]
+  },
+  {
+    "questionId": "qb_mock_work_002",
+    "sourceExcerpt": "In many organisations, employees can now work from home. Do the advantages of this development outweigh the disadvantages?",
+    "extraction": "md",
+    "pointer": [
+      1184
+    ]
+  },
+  {
+    "questionId": "qb_mock_work_003",
+    "sourceExcerpt": "Some countries have introduced laws to limit working hours for employees. Why are these laws introduced? Do you think they are a positive or negative development?",
+    "extraction": "band",
+    "pointer": [
+      16
+    ]
+  },
+  {
+    "questionId": "qb_mock_work_004",
+    "sourceExcerpt": "In many countries, a small number of people earn extremely high salaries. Some people believe this is good for the country, but others think governments should not allow salaries above a certain level. Discuss both these views and give your own opinion.",
+    "extraction": "doc",
+    "pointer": [
+      535
+    ]
+  },
+  {
+    "questionId": "qb_mock_health_001",
+    "sourceExcerpt": "In many countries, obesity and unhealthy eating habits are increasing. What are the reasons for this trend? What is the most effective way to prevent it?",
+    "extraction": "doc",
+    "pointer": [
+      361
+    ]
+  },
+  {
+    "questionId": "qb_mock_health_002",
+    "sourceExcerpt": "Some people say that to prevent illness and disease, governments should focus more on reducing environmental pollution and housing problems. To what extent do you agree or disagree?",
+    "extraction": "band",
+    "pointer": [
+      3
+    ]
+  },
+  {
+    "questionId": "qb_mock_health_003",
+    "sourceExcerpt": "Some people say that when deciding how taxes should be spent, governments should prioritize health care. Other people believe that there are more important priorities for taxpayers' money. Discuss both views and give your opinion.",
+    "extraction": "doc",
+    "pointer": [
+      216
+    ]
+  },
+  {
+    "questionId": "qb_mock_culture_001",
+    "sourceExcerpt": "Many people believe that watching a live performance is more enjoyable than watching the same event on television. To what extent do you agree or disagree?",
+    "extraction": "band",
+    "pointer": [
+      4
+    ]
+  },
+  {
+    "questionId": "qb_mock_culture_002",
+    "sourceExcerpt": "In recent years, \"responsible tourists\" have paid attention to preserving both the culture and environment of the places they visit. However, some people say that it is impossible to be a \"responsible tourist\". To what extent do you agree or disagree?",
+    "extraction": "doc",
+    "pointer": [
+      390
+    ]
+  },
+  {
+    "questionId": "qb_mock_culture_003",
+    "sourceExcerpt": "Some people think that the government should establish free libraries in each town. Others, however, believe that it is a waste of money since the public can use the Internet at home to obtain information. Discuss both sides and give your own opinion.",
+    "extraction": "doc",
+    "pointer": [
+      332
+    ]
+  },
+  {
+    "questionId": "qb_mock_culture_004",
+    "sourceExcerpt": "政府应出资保存濒危语言。",
+    "extraction": "trans",
+    "pointer": [
+      "simply",
+      9
+    ]
+  },
+  {
+    "questionId": "qb_mock_work_005",
+    "sourceExcerpt": "It is a good idea for people to continue working in their old age if it is possible for them to do so. Do you agree or disagree?",
+    "extraction": "band",
+    "pointer": [
+      2
+    ]
+  },
+  {
+    "questionId": "qb_mock_tech_005",
+    "sourceExcerpt": "电脑日益比人类更聪明，有人认为这是消极发展。你在多大程度上同意？",
+    "extraction": "trans",
+    "pointer": [
+      "sohu",
+      3
+    ]
+  },
+  {
+    "questionId": "qb_mock_tech_006",
+    "sourceExcerpt": "Some people want governments to spend money looking for life on other planets. Others, however, think this is a waste of public money when there are so many problems on earth. Discuss both these views and give your own opinion.",
+    "extraction": "band",
+    "pointer": [
+      7
+    ]
+  },
+  {
+    "questionId": "qb_mock_soc_005",
+    "sourceExcerpt": "Some people think that in modern society individuals are becoming more dependent on each other, while others say that individuals are becoming more independent of each other. Discuss both these views and give your own opinion.",
+    "extraction": "band",
+    "pointer": [
+      8
+    ]
+  },
+  {
+    "questionId": "qb_mock_work_006",
+    "sourceExcerpt": "In many countries today, if people want to find work, they have to move away from their friends and their families. Do you think the advantages of this development outweigh the disadvantages?",
+    "extraction": "band",
+    "pointer": [
+      11
+    ]
+  },
+  {
+    "questionId": "qb_mock_soc_006",
+    "sourceExcerpt": "Most countries aim to improve their standard of living through economic development, but many important social values can be lost as a result. Do the advantages of economic development outweigh the disadvantages?",
+    "extraction": "band",
+    "pointer": [
+      13
+    ]
+  },
+  {
+    "questionId": "qb_mock_soc_007",
+    "sourceExcerpt": "Nowadays people use bicycles less as a form of transport. Why is this the case? What can we do to encourage people to use bicycles more?",
+    "extraction": "band",
+    "pointer": [
+      17
+    ]
+  },
+  {
+    "questionId": "qb_mock_edu_005",
+    "sourceExcerpt": "Parents are putting a lot of pressure on their children to succeed. What are the reasons for this? Is it a positive or negative development?",
+    "extraction": "band",
+    "pointer": [
+      18
+    ]
+  },
+  {
+    "questionId": "qb_mock_soc_008",
+    "sourceExcerpt": "Economic progress is often used to measure a country's success. However, some people believe that other factors are more important. What other factors should also be considered when measuring a country's success? Do you think one factor is more important than others?",
+    "extraction": "doc",
+    "pointer": [
+      477
+    ]
+  }
+]

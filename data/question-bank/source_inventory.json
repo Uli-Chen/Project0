@@ -1,0 +1,60 @@
+{
+  "scope": "Focused inspection of six local writing files; not a complete scan of listening, reading, speaking, image-only, or other archive files. No web calls.",
+  "sources": [
+    {
+      "path": "/Users/chen/Desktop/雅思/雅思大作文Top18_图片文字摘录.docx",
+      "sha256": "844e1a33f153856484b6d32f71b9e12883f696061d2f46b0bf1081dbd1c27e1d",
+      "usableCompleteTask2FamiliesWithinSource": 18,
+      "selected": 16,
+      "note": "18 English Task 2 paragraphs immediately following 原题; essays and idea chains excluded."
+    },
+    {
+      "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/band_verified.json",
+      "sha256": "2811e0809c34abe41c2ff331e6927285ae81eed3ecda04fb0cbaba7e86643d0c",
+      "usableCompleteTask2FamiliesWithinSource": 18,
+      "selected": 15,
+      "note": "19 complete English prompt rows, 18 question families: rows 11/12 are relocation wording variants. Two additional families overlap the Top18 document: healthcare-tax priority and modern interdependence."
+    },
+    {
+      "path": "/Users/chen/Desktop/雅思/雅思A类写作8分备考宝典.md",
+      "sha256": "a944e3eeaf348204131db11c9cf4c9297c7cf3fd10c2a2a2dd3069e1f8ae7d4e",
+      "usableCompleteTask2FamiliesWithinSource": 2,
+      "selected": 1,
+      "note": "Two explicit complete Task 2 prompts in sections 10.4/10.5; Task 1 and teaching examples excluded. Section 10.5 explicitly original."
+    },
+    {
+      "path": "/Users/chen/Desktop/雅思/tmp/1010-public-topics/writing_translations.json",
+      "sha256": "3bfdd6e6da2573ef0afdf3e228808c314deb63d8458029f78a3ec6dae7aaacb7",
+      "usableCompleteTask2FamiliesWithinSource": 26,
+      "selected": 3,
+      "note": "34 Task 2 rows: 1 duplicate/merged placeholder excluded; 26 complete Chinese prompts usable by adaptation, plus 7 incomplete topic statements requiring supplied instructions. 18 Task 1 rows excluded. Overlaps English JSON; counts are not additive."
+    },
+    {
+      "path": "/Users/chen/Desktop/雅思/雅思作文整理版.docx",
+      "sha256": "8a3c4bdad90c7086b31678a1d3683947a428dc6b7e85c7376b1c7ee9d865ee48",
+      "usableCompleteTask2FamiliesWithinSource": 0,
+      "selected": 0,
+      "note": "676 XML paragraphs, a Task 1 handbook including appended Task 1 items; excluded."
+    },
+    {
+      "path": "/Users/chen/Desktop/雅思/雅思作文.docx",
+      "sha256": "3bab31d7c42f781e645f287d6cde8a0437e5b8f00fd0bd2a667915d8187df642",
+      "usableCompleteTask2FamiliesWithinSource": 0,
+      "selected": 0,
+      "note": "142 XML paragraphs, Task 1 notes; excluded."
+    }
+  ],
+  "englishCompleteCandidateFamilyCountAcrossDocBandMd": 36,
+  "englishCountFormula": "18 + 18 + 2 - 2 overlapping families = 36",
+  "selectedBySourceKind": {
+    "local_excerpt": 32,
+    "adapted_local": 3,
+    "synthetic": 3
+  },
+  "selectedEnglishExcerpts": 32,
+  "newEnglishWording": 6,
+  "generatedBreakdown": {
+    "adapted_local": 3,
+    "synthetic": 3
+  }
+}

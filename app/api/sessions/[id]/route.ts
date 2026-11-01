@@ -1,0 +1,42 @@
+import { sessionApiError as apiError } from "@/lib/pipeline/http";
+import { requireApiUser } from "@/lib/auth/server";
+import { assertSameOrigin, readJson } from "@/lib/auth/http";
+import { deleteSession, getSession, saveSession } from "@/lib/db/queries/sessions";
+import { draftSchema } from "@/lib/pipeline/schemas";
+import { SessionError } from "@/lib/pipeline/engine";
+import { isSessionBusy, withSessionLock } from "@/lib/pipeline/lock";
+type Context = { params: Promise<{ id: string }> };
+export const runtime = "nodejs";
+export async function GET(_request: Request, { params }: Context) {
+  try {
+    const user = await requireApiUser(); const { id } = await params;
+    const session = getSession(user.id, id); if (!session) throw new SessionError("练习不存在。", 404);
+    return Response.json({ session, busy: isSessionBusy(`${user.id}:${id}`) }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) { return apiError(error); }
+}
+export async function PATCH(request: Request, { params }: Context) {
+  try {
+    assertSameOrigin(request); const user = await requireApiUser(); const { id } = await params;
+    const input = draftSchema.parse(await readJson(request));
+    return await withSessionLock(`${user.id}:${id}`, async () => {
+      const session = getSession(user.id, id); if (!session) throw new SessionError("练习不存在。", 404);
+      if (input.requestId && session.lastWriteId === input.requestId) return Response.json({ session });
+      if (session.version !== input.version) return Response.json({ error: "这份练习已在其他页面更新。请刷新后继续，你的当前文字仍保留在编辑器。", session }, { status: 409 });
+      if (input.drafts) {
+        if (["prewriting", "writing"].includes(session.stage)) session.drafts.original = input.drafts.original;
+        if (session.stage === "revising") session.drafts.revision = input.drafts.revision;
+      }
+      if (input.outline && ["prewriting", "writing", "revising"].includes(session.stage)) session.outline = input.outline;
+      if (input.nudgesEnabled !== undefined) session.nudgesEnabled = input.nudgesEnabled;
+      if (input.elapsed) session.elapsed = { original: Math.max(session.elapsed.original, input.elapsed.original), revision: Math.max(session.elapsed.revision, input.elapsed.revision) };
+      session.lastWriteId = input.requestId;
+      session.version++; session.updatedAt = session.savedAt = new Date().toISOString(); saveSession(user.id, session);
+      return Response.json({ session });
+    });
+  } catch (error) { return apiError(error); }
+}
+export async function DELETE(request: Request, { params }: Context) {
+  try { assertSameOrigin(request); const user = await requireApiUser(); const { id } = await params;
+    return await withSessionLock(`${user.id}:${id}`, async () => { if (!getSession(user.id, id)) throw new SessionError("练习不存在。", 404); deleteSession(user.id, id); return Response.json({ ok: true }); });
+  } catch (error) { return apiError(error); }
+}
