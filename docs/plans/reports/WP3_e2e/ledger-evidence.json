@@ -1,0 +1,142 @@
+{
+  "reserved": [
+    {
+      "id": "b9691cc6-cf1b-4f70-b529-c131c77de9db",
+      "user_id": "e2e",
+      "session_id": "230df2e3-4e12-4fdc-bc2d-79641fb828c5",
+      "purpose": "quick_check",
+      "operation_id": "check-v1",
+      "package_id": "initial",
+      "attempt": 1,
+      "model": "deepseek-flash",
+      "config_version": "coach-json-v1/quick-budget-20261101-v1/utf8-byte-v1",
+      "started_at": "2026-11-01T12:00:00.000Z",
+      "latency_ms": null,
+      "input_tokens": null,
+      "output_tokens": null,
+      "reserved_input": 1077,
+      "reserved_output": 768,
+      "reserved_ms": 25000,
+      "outcome": "reserved"
+    }
+  ],
+  "settled": [
+    {
+      "id": "b9691cc6-cf1b-4f70-b529-c131c77de9db",
+      "user_id": "e2e",
+      "session_id": "230df2e3-4e12-4fdc-bc2d-79641fb828c5",
+      "purpose": "quick_check",
+      "operation_id": "check-v1",
+      "package_id": "initial",
+      "attempt": 1,
+      "model": "deepseek-flash",
+      "config_version": "coach-json-v1/quick-budget-20261101-v1/utf8-byte-v1",
+      "started_at": "2026-11-01T12:00:00.000Z",
+      "latency_ms": 16,
+      "input_tokens": 80,
+      "output_tokens": 12,
+      "reserved_input": 1077,
+      "reserved_output": 768,
+      "reserved_ms": 25000,
+      "outcome": "ok"
+    }
+  ],
+  "actualOccupied": {
+    "calls": 1,
+    "inputTokens": 80,
+    "outputTokens": 12,
+    "waitMs": 16
+  },
+  "recovered": [
+    {
+      "id": "b9691cc6-cf1b-4f70-b529-c131c77de9db",
+      "user_id": "e2e",
+      "session_id": "230df2e3-4e12-4fdc-bc2d-79641fb828c5",
+      "purpose": "quick_check",
+      "operation_id": "check-v1",
+      "package_id": "initial",
+      "attempt": 1,
+      "model": "deepseek-flash",
+      "config_version": "coach-json-v1/quick-budget-20261101-v1/utf8-byte-v1",
+      "started_at": "2026-11-01T12:00:00.000Z",
+      "latency_ms": 16,
+      "input_tokens": 80,
+      "output_tokens": 12,
+      "reserved_input": 1077,
+      "reserved_output": 768,
+      "reserved_ms": 25000,
+      "outcome": "ok"
+    },
+    {
+      "id": "c5075875-113a-4a9e-a793-bf5ad52f2c69",
+      "user_id": "e2e",
+      "session_id": "230df2e3-4e12-4fdc-bc2d-79641fb828c5",
+      "purpose": "quick_check",
+      "operation_id": "check-v2",
+      "package_id": "initial",
+      "attempt": 1,
+      "model": "deepseek-flash",
+      "config_version": "coach-json-v1/quick-budget-20261101-v1/utf8-byte-v1",
+      "started_at": "2026-11-01T12:00:00.000Z",
+      "latency_ms": null,
+      "input_tokens": null,
+      "output_tokens": null,
+      "reserved_input": 1077,
+      "reserved_output": 768,
+      "reserved_ms": 25000,
+      "outcome": "indeterminate"
+    }
+  ],
+  "recoveryLogs": [
+    "llm_calls startup recovery failed; reservations retained"
+  ],
+  "afterPracticeDelete": [
+    {
+      "id": "b9691cc6-cf1b-4f70-b529-c131c77de9db",
+      "user_id": "e2e",
+      "session_id": "230df2e3-4e12-4fdc-bc2d-79641fb828c5",
+      "purpose": "quick_check",
+      "operation_id": "check-v1",
+      "package_id": "initial",
+      "attempt": 1,
+      "model": "deepseek-flash",
+      "config_version": "coach-json-v1/quick-budget-20261101-v1/utf8-byte-v1",
+      "started_at": "2026-11-01T12:00:00.000Z",
+      "latency_ms": 16,
+      "input_tokens": 80,
+      "output_tokens": 12,
+      "reserved_input": 1077,
+      "reserved_output": 768,
+      "reserved_ms": 25000,
+      "outcome": "ok"
+    },
+    {
+      "id": "c5075875-113a-4a9e-a793-bf5ad52f2c69",
+      "user_id": "e2e",
+      "session_id": "230df2e3-4e12-4fdc-bc2d-79641fb828c5",
+      "purpose": "quick_check",
+      "operation_id": "check-v2",
+      "package_id": "initial",
+      "attempt": 1,
+      "model": "deepseek-flash",
+      "config_version": "coach-json-v1/quick-budget-20261101-v1/utf8-byte-v1",
+      "started_at": "2026-11-01T12:00:00.000Z",
+      "latency_ms": null,
+      "input_tokens": null,
+      "output_tokens": null,
+      "reserved_input": 1077,
+      "reserved_output": 768,
+      "reserved_ms": 25000,
+      "outcome": "indeterminate"
+    }
+  ],
+  "retainedOccupied": {
+    "calls": 2,
+    "inputTokens": 1157,
+    "outputTokens": 780,
+    "waitMs": 25016
+  },
+  "afterAccountDelete": [],
+  "fakeFetchCount": 1,
+  "integrity": "ok"
+}

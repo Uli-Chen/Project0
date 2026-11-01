@@ -1,6 +1,22 @@
 import { sql } from "drizzle-orm";
 import { check, foreignKey, index, integer, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+export const llmCalls = sqliteTable("llm_calls", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  sessionId: text("session_id"), purpose: text("purpose").notNull(),
+  operationId: text("operation_id"), packageId: text("package_id"), attempt: integer("attempt").notNull(),
+  model: text("model").notNull(), configVersion: text("config_version").notNull(), startedAt: text("started_at").notNull(),
+  latencyMs: integer("latency_ms"), inputTokens: integer("input_tokens"), outputTokens: integer("output_tokens"),
+  reservedInput: integer("reserved_input").notNull(), reservedOutput: integer("reserved_output").notNull(), reservedMs: integer("reserved_ms").notNull(),
+  outcome: text("outcome", { enum: ["reserved", "ok", "timeout", "invalid_output", "provider_error", "indeterminate"] }).notNull(),
+}, t => [
+  index("llm_calls_user_started").on(t.userId, t.startedAt), index("llm_calls_package").on(t.userId, t.packageId),
+  index("llm_calls_operation").on(t.userId, t.operationId),
+  check("llm_calls_outcome", sql`${t.outcome} IN ('reserved','ok','timeout','invalid_output','provider_error','indeterminate')`),
+  check("llm_calls_nonnegative", sql`${t.attempt} > 0 AND ${t.reservedInput} >= 0 AND ${t.reservedOutput} >= 0 AND ${t.reservedMs} >= 0 AND (${t.inputTokens} IS NULL OR ${t.inputTokens} >= 0) AND (${t.outputTokens} IS NULL OR ${t.outputTokens} >= 0) AND (${t.latencyMs} IS NULL OR ${t.latencyMs} >= 0)`),
+]);
+
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),

@@ -1,0 +1,8 @@
+
+> project-0@0.1.0 test:db
+> node --conditions=react-server --import tsx scripts/test-db.ts
+
+PASS: empty database full migrations and migration replay.
+PASS: existing baseline database upgrades, preserving users, auth and session JSON byte-for-byte.
+PASS: WP2c upgrade preserves existing facts; deleting an attempt retains all seven metadata tables including llm_calls (users-only CASCADE).
+PASS: idempotent baseline/migrations, owner scoping, cascading deletion, stale model-save rejection, and foreign-key enforcement.

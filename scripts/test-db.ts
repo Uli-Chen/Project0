@@ -15,9 +15,11 @@ import { markNewUserScanned } from "../lib/db/migrate-0.4";
 import { writeRequestReceipt } from "../lib/db/request-receipts";
 import { importQuestions } from "../lib/db/import-questions";
 import { createSession } from "../lib/pipeline/initial";
+import { reserveCall } from "../lib/llm/calls";
+import { quickBudget } from "../lib/llm/budget";
 
 // This script never reads or mutates the configured application database.
-const retainedTables = ["attempt_markers", "completion_events", "familiarity", "legacy_scan", "default_continuations", "request_receipts"];
+const retainedTables = ["attempt_markers", "completion_events", "familiarity", "legacy_scan", "default_continuations", "request_receipts", "llm_calls"];
 const directory = mkdtempSync(join(tmpdir(), "opc-db-regression-"));
 // Empty SQLite file: no startup baseline, every table must come from migrations.
 const empty = new Database(join(directory, "empty.db"));
@@ -63,12 +65,21 @@ try {
   const catalog = JSON.parse(readFileSync(resolve("data/question-bank/question_bank.mock.json"), "utf8"));
   importQuestions(db.$client, catalog, JSON.parse(readFileSync(resolve("data/question-bank/requirements.mock.json"), "utf8")));
   const originalCatalog = db.$client.prepare("SELECT * FROM questions").all();
+  // Upgrade the actually shipped WP2b/WP2c schema before adding WP3.
+  writeFileSync(join(baselineFolder, "meta/_journal.json"), JSON.stringify({ ...journal, entries: journal.entries.slice(0, 3) }));
+  copyFileSync(resolve(`drizzle/${journal.entries[2].tag}.sql`), join(baselineFolder, `${journal.entries[2].tag}.sql`));
+  migrate(db, { migrationsFolder: baselineFolder });
+  assert.equal(db.$client.prepare("SELECT name FROM sqlite_master WHERE name = 'llm_calls'").get(), undefined);
+  db.$client.prepare("INSERT INTO default_continuations VALUES(?,?,?,?)").run("owner", "pre-upgrade-quick", "pre-upgrade-deep", now);
+  const preUpgradeFacts = db.$client.prepare("SELECT * FROM default_continuations").all();
   migrate(db, { migrationsFolder: resolve("drizzle") });
   migrate(db, { migrationsFolder: resolve("drizzle") });
   assert.deepEqual(db.$client.prepare("SELECT * FROM questions").all(), originalCatalog);
   assert.deepEqual(db.$client.prepare("SELECT * FROM writing_sessions").all(), originalRows);
   assert.deepEqual(db.$client.prepare("SELECT * FROM users").all(), originalUsers);
   assert.deepEqual(db.$client.prepare("SELECT * FROM auth_sessions").all(), originalAuth);
+  assert.deepEqual(db.$client.prepare("SELECT * FROM default_continuations").all(), preUpgradeFacts);
+  db.$client.prepare("DELETE FROM default_continuations WHERE quick_attempt_id = 'pre-upgrade-quick'").run();
   for (const table of ["questions", "question_aliases", "question_alias_candidates", ...retainedTables]) {
     assert.ok(db.$client.prepare("SELECT name FROM sqlite_master WHERE name = ?").get(table), table);
   }
@@ -86,6 +97,7 @@ try {
   commitPracticeCheckpoint(db.$client, "owner", state, "completeOriginal", s => saveSession("owner", s), now);
   db.$client.prepare("INSERT INTO default_continuations VALUES(?,?,?,?)").run("owner", "source-quick", state.id, now);
   writeRequestReceipt(db.$client, { userId: "owner", idempotencyKey: "request", attemptId: state.id, action: "create", paramsHash: "hash", resultRef: state.id, createdAt: now });
+  assert.equal(reserveCall({ userId: "owner", sessionId: state.id, operationId: "db-test-op", packageId: "db-test-pack", purpose: "quick_check", perCall: { inputTokens: 4000, maxOutputTokens: 768 }, packageLimits: quickBudget.initial.limits, now }, db.$client).ok, true);
   deleteSession("owner", state.id);
   assert.equal(db.select().from(writingSessions).all().length, 0, "正文会话随练习删除");
   for (const table of retainedTables) {
@@ -97,7 +109,7 @@ try {
   }
   assert.ok((db.$client.prepare("SELECT deleted_at FROM attempt_markers").get() as { deleted_at: string }).deleted_at);
   assert.equal((db.$client.prepare("SELECT evidence_deleted FROM completion_events").get() as { evidence_deleted: number }).evidence_deleted, 1);
-  console.log("PASS: deleting an attempt removes its content, retaining all six fact tables and deletion markers.");
+  console.log("PASS: WP2c upgrade preserves existing facts; deleting an attempt retains all seven metadata tables including llm_calls (users-only CASCADE).");
   db.delete(users).where(eq(users.id, "owner")).run();
   for (const table of retainedTables) assert.equal(db.$client.prepare(`SELECT * FROM ${table}`).all().length, 0, `${table} account cascade`);
   assert.equal(getSession("owner", state.id), null);

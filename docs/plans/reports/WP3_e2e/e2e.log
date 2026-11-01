@@ -1,0 +1,4 @@
+PASS: temp SQLite full migrations → reserve → fake provider → settle actual usage.
+PASS: startup recovery failure is nonfatal; next startup marks inflight indeterminate without redispatch.
+PASS: deleting practice retains quota ledger; deleting account cascades it; no private body in any column.
+PASS: integrity_check=ok; fake fetch count=1; evidence=docs/plans/reports/WP3_e2e/ledger-evidence.json
