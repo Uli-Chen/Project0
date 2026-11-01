@@ -100,6 +100,7 @@ artifacts/private/  本地测试账户与检查点，忽略整个目录
 | `npm run db:init` | 创建数据库并初始化当前基线业务表 |
 | `npm run db:generate` | 根据 Drizzle Schema 生成新的迁移 |
 | `npm run db:migrate` | 初始化文件并应用未执行迁移 |
+| `npm run db:import-questions` | 向 `DATABASE_PATH` 指定的已迁移数据库导入 mock 目录、每题要求与首版别名 |
 | `npm run db:studio` | 本地查看数据库 |
 | `npm run db:backup` | 使用 SQLite Backup API 创建一致快照 |
 | `npm run llm:ping` | 向已配置模型发出普通请求和 JSON 请求 |
@@ -125,6 +126,10 @@ SQLite 启用 WAL、外键检查与 5 秒锁等待。事务保持短小，模型
 4. 升级环境先备份，在维护窗口由单个进程执行迁移，再启动新应用。
 
 已经应用的迁移不要重写；追加迁移表达后续变更。不在有数据的环境用 `drizzle-kit push` 代替迁移历史。基线初始化只负责第一版 Schema；未来增加表或列时，不应把升级逻辑重复写进该初始化函数。
+
+题库导入先执行 `db:migrate`，再执行 `db:import-questions`，两条命令使用同一个 `DATABASE_PATH`。导入默认读取冻结的 `data/question-bank/question_bank.mock.json` 与新增的 `requirements.mock.json`；也可用 `npm run db:import-questions -- <目录路径> <要求路径>` 指定待验证文件。每次导入的校验、题目版本切换与别名写入在一个事务内，失败整体回滚。同一题目版本的内容（包含每题要求）不可覆盖；内容修改必须增加题目版本。负责人逐题审阅要求文件后才可导入非测试数据库。
+
+本地自测可用 `mktemp -d` 创建目录，把 `DATABASE_PATH` 指向该目录下的 `questions.db`；不要用真实数据验证失败或升级案例。导入脚本不自动执行迁移，也不会修改题库来源文件。`test:db` 自动使用临时库，覆盖空库全量迁移与保留旧用户、认证和会话数据的升级。
 
 ## 部署与备份
 

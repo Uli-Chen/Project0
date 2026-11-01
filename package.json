@@ -21,6 +21,7 @@
     "test:learning": "node scripts/test-learning.mjs",
     "db:init": "tsx scripts/db-init.ts",
     "db:generate": "drizzle-kit generate",
+    "db:import-questions": "node --import tsx scripts/import-questions.ts",
     "db:migrate": "npm run db:init && drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:backup": "tsx scripts/db-backup.ts",

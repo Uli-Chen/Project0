@@ -1,0 +1,626 @@
+[
+  {
+    "id": "qb_mock_edu_001",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "weigh",
+        "en": "Do you think the benefits of living away from home during university outweigh the disadvantages?",
+        "zh": "比较大学期间离家生活的好处与坏处，明确判断好处是否更大，并解释权衡依据；重点是离家求学，而非大学教育本身。"
+      }
+    ],
+    "layout": "weigh",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_edu_002",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "causes",
+        "en": "What are the causes?",
+        "zh": "解释为什么选择科学学科的学生不足。"
+      },
+      {
+        "key": "effects",
+        "en": "And what will be the effects on society?",
+        "zh": "说明科学学科生源不足会给社会带来什么影响，不能只谈学生个人或改写原因。"
+      }
+    ],
+    "layout": "two_questions",
+    "requiresOverallJudgement": false
+  },
+  {
+    "id": "qb_mock_edu_003",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "mathematics",
+        "en": "Some people think schools should spend more time teaching mathematics and numerical skills.",
+        "zh": "讨论学校应增加数学与数字技能教学时间的观点及其理由。"
+      },
+      {
+        "key": "communication",
+        "en": "Others believe communication skills, such as writing and speaking, are more important for students' futures.",
+        "zh": "讨论写作、口语等沟通技能对学生未来更重要的观点及其理由。"
+      },
+      {
+        "key": "opinion",
+        "en": "give your own opinion.",
+        "zh": "给出自己对两类技能教学侧重的看法，并说明理由。"
+      }
+    ],
+    "layout": "both_views_opinion",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_edu_004",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "position",
+        "en": "To what extent do you agree or disagree?",
+        "zh": "明确在多大程度上赞成所有中学强制学生穿校服，并围绕这一普遍要求解释理由。"
+      }
+    ],
+    "layout": "position_reasons",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_tech_001",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "decreases_crime",
+        "en": "Some people think technology development decreases crime",
+        "zh": "讨论技术发展减少犯罪的观点，解释其理由。"
+      },
+      {
+        "key": "encourages_crime",
+        "en": "others believe it actually encourages crime.",
+        "zh": "讨论技术发展反而助长犯罪的观点，解释其理由。"
+      },
+      {
+        "key": "opinion",
+        "en": "give your own opinion.",
+        "zh": "就技术发展对犯罪的影响给出自己的判断和理由。"
+      }
+    ],
+    "layout": "both_views_opinion",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_tech_002",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "weigh",
+        "en": "Do you think the advantages outweigh the disadvantages?",
+        "zh": "分析由私人公司而非政府资助并开展大部分科研的利弊，判断优势是否超过劣势并解释比较依据。"
+      }
+    ],
+    "layout": "weigh",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_tech_003",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "weigh",
+        "en": "Do you think the advantages of this outweigh the disadvantages?",
+        "zh": "比较大型互联网公司和组织持有个人信息的利弊，明确优势是否更大；不能只泛谈互联网的好坏。"
+      }
+    ],
+    "layout": "weigh",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_tech_004",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "weigh",
+        "en": "Do you think the advantages of this development outweigh the disadvantages?",
+        "zh": "结合用社交媒体保持联系与获取新闻这两种用途分析利弊，判断这一发展的优势是否超过劣势。"
+      }
+    ],
+    "layout": "weigh",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_env_001",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "position",
+        "en": "To what extent do you agree or disagree?",
+        "zh": "判断对野生动物和鸟类保护的关注与资源是否过多，说明同意程度和理由；不能只论证保护本身重要。"
+      }
+    ],
+    "layout": "position_reasons",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_env_002",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "position",
+        "en": "To what extent do you agree or disagree?",
+        "zh": "回应应适应气候变化而不是预防气候变化的主张，说明同意程度及理由；须回应两者的取舍关系。"
+      }
+    ],
+    "layout": "position_reasons",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_env_003",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "too_late",
+        "en": "Some people think it is too late to do anything about this problem",
+        "zh": "讨论人类活动损害动植物物种后，采取行动已经太迟的观点。"
+      },
+      {
+        "key": "effective_measures",
+        "en": "others believe that effective measures can still be taken to improve this situation.",
+        "zh": "讨论仍能采取有效措施改善物种受损状况的观点。"
+      },
+      {
+        "key": "opinion",
+        "en": "give your opinion.",
+        "zh": "就现在采取保护行动是否仍有效表明自己的看法并说明理由。"
+      }
+    ],
+    "layout": "both_views_opinion",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_env_004",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "unrestricted_use",
+        "en": "Some people think they have the right to use as much fresh water as they want",
+        "zh": "讨论个人有权按自己意愿不限量使用淡水的观点。"
+      },
+      {
+        "key": "government_control",
+        "en": "others believe that governments should strictly control the use of fresh water as it is a limited resource.",
+        "zh": "讨论因为淡水有限，政府应严格管制其使用的观点。"
+      },
+      {
+        "key": "opinion",
+        "en": "give your own opinion.",
+        "zh": "对个人用水自由与政府管制之间的取舍给出自己的意见和理由。"
+      }
+    ],
+    "layout": "both_views_opinion",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_soc_001",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "weigh",
+        "en": "Do you think the advantages of this policy outweigh the disadvantages for city residents?",
+        "zh": "从城市居民的角度比较商店、学校、办公和住宅分区且相距较远的利弊，并明确判断是否利大于弊。"
+      }
+    ],
+    "layout": "weigh",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_soc_002",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "position",
+        "en": "Do you agree or disagree with this statement?",
+        "zh": "表明是否赞成所有父母必须参加育儿培训，解释理由；回应强制性和所有父母的范围，而不只谈课程有用。"
+      }
+    ],
+    "layout": "position_reasons",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_soc_003",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "position",
+        "en": "To what extent do you agree or disagree?",
+        "zh": "回应报纸和电视详细描述犯罪会造成不良后果、因此应限制此类报道的主张，说明同意程度及理由。"
+      }
+    ],
+    "layout": "position_reasons",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_soc_004",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "position",
+        "en": "To what extent do you agree or disagree with this statement?",
+        "zh": "判断所有城镇和城市拥有广场、公园等大型公共户外空间是否重要，说明同意程度及理由。"
+      }
+    ],
+    "layout": "position_reasons",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_work_001",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "position",
+        "en": "To what extent do you agree or disagree?",
+        "zh": "比较早定职业道路并坚持的人与频繁换工作的人，判断前者是否更可能拥有满意的职业生活，并说明同意程度和理由。"
+      }
+    ],
+    "layout": "position_reasons",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_work_002",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "weigh",
+        "en": "Do the advantages of this development outweigh the disadvantages?",
+        "zh": "分析员工可以居家办公这一发展的好处与坏处，给出是否利大于弊的判断和比较理由。"
+      }
+    ],
+    "layout": "weigh",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_work_003",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "reasons",
+        "en": "Why are these laws introduced?",
+        "zh": "解释一些国家为何出台限制员工工时的法律。"
+      },
+      {
+        "key": "evaluation",
+        "en": "Do you think they are a positive or negative development?",
+        "zh": "评价这些工时限制法律总体上是积极还是消极的发展，并解释依据；不能只重复出台原因。"
+      }
+    ],
+    "layout": "two_questions",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_work_004",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "high_salaries",
+        "en": "Some people believe this is good for the country",
+        "zh": "讨论少数人获得极高薪酬对国家有益的观点。"
+      },
+      {
+        "key": "salary_cap",
+        "en": "others think governments should not allow salaries above a certain level.",
+        "zh": "讨论政府应禁止薪酬超过某一水平的观点。"
+      },
+      {
+        "key": "opinion",
+        "en": "give your own opinion.",
+        "zh": "就极高薪酬和政府是否应设上限表明自己的意见并说明理由。"
+      }
+    ],
+    "layout": "both_views_opinion",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_health_001",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "reasons",
+        "en": "What are the reasons for this trend?",
+        "zh": "解释肥胖和不健康饮食习惯日益增加的原因，兼顾题干中的两个现象。"
+      },
+      {
+        "key": "most_effective_prevention",
+        "en": "What is the most effective way to prevent it?",
+        "zh": "指出预防这一趋势最有效的方式，并说明为何有效、为何认为最有效；不能仅罗列无优先判断的措施。"
+      }
+    ],
+    "layout": "problem_solution",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_health_002",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "position",
+        "en": "To what extent do you agree or disagree?",
+        "zh": "判断政府为预防疾病是否应更侧重减少环境污染和住房问题，说明同意程度及理由，并回应这两个领域。"
+      }
+    ],
+    "layout": "position_reasons",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_health_003",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "healthcare_priority",
+        "en": "Some people say that when deciding how taxes should be spent, governments should prioritize health care.",
+        "zh": "讨论政府分配税收时应优先医疗保健的观点。"
+      },
+      {
+        "key": "other_priorities",
+        "en": "Other people believe that there are more important priorities for taxpayers' money.",
+        "zh": "讨论纳税人的钱还有更重要用途的观点，说明这些用途为何应优先。"
+      },
+      {
+        "key": "opinion",
+        "en": "give your opinion.",
+        "zh": "对医疗保健与其他公共支出的优先关系给出自己的看法和理由。"
+      }
+    ],
+    "layout": "both_views_opinion",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_health_004",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "causes",
+        "en": "Why is this happening?",
+        "zh": "解释为何许多社会中的成年人比过去睡得更少。"
+      },
+      {
+        "key": "effects",
+        "en": "How can a lack of sleep affect individuals and the people around them?",
+        "zh": "说明缺乏睡眠对本人以及其周围人的影响，不能漏掉任一对象；题目没有要求提出解决措施。"
+      }
+    ],
+    "layout": "two_questions",
+    "requiresOverallJudgement": false
+  },
+  {
+    "id": "qb_mock_culture_001",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "position",
+        "en": "To what extent do you agree or disagree?",
+        "zh": "比较现场观看与在电视上观看同一演出的愉悦程度，说明对现场更有趣这一主张的同意程度与理由。"
+      }
+    ],
+    "layout": "position_reasons",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_culture_002",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "position",
+        "en": "To what extent do you agree or disagree?",
+        "zh": "判断成为负责任的游客是否不可能，说明同意程度和理由；负责任在题干中涉及同时保护目的地的文化与环境。"
+      }
+    ],
+    "layout": "position_reasons",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_culture_003",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "free_libraries",
+        "en": "Some people think that the government should establish free libraries in each town.",
+        "zh": "讨论政府应在每个城镇建立免费图书馆的观点。"
+      },
+      {
+        "key": "internet_alternative",
+        "en": "Others, however, believe that it is a waste of money since the public can use the Internet at home to obtain information.",
+        "zh": "讨论人们可在家上网获取信息，因此建图书馆浪费资金的观点。"
+      },
+      {
+        "key": "opinion",
+        "en": "give your own opinion.",
+        "zh": "就免费公共图书馆在互联网可用时是否仍值得投入给出自己的意见和理由。"
+      }
+    ],
+    "layout": "both_views_opinion",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_culture_004",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "position",
+        "en": "To what extent do you agree or disagree?",
+        "zh": "表明在多大程度上赞成政府出资保护濒危语言，并解释理由；须回应政府资金的使用。"
+      }
+    ],
+    "layout": "position_reasons",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_work_005",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "position",
+        "en": "Do you agree or disagree?",
+        "zh": "判断老年人在条件允许时继续工作是否是好主意，解释立场；保留条件允许这一前提，不改成强制所有老人工作。"
+      }
+    ],
+    "layout": "position_reasons",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_tech_005",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "position",
+        "en": "To what extent do you agree or disagree?",
+        "zh": "评价电脑变得比人类更聪明是否是消极发展，说明同意程度及理由；重点是对这一发展的评价。"
+      }
+    ],
+    "layout": "position_reasons",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_tech_006",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "search_for_life",
+        "en": "Some people want governments to spend money looking for life on other planets.",
+        "zh": "讨论政府应花钱寻找其他星球生命的观点。"
+      },
+      {
+        "key": "earth_priorities",
+        "en": "Others, however, think this is a waste of public money when there are so many problems on earth.",
+        "zh": "讨论地球上尚有许多问题时，此项开支浪费公共资金的观点。"
+      },
+      {
+        "key": "opinion",
+        "en": "give your own opinion.",
+        "zh": "就寻找外星生命与解决地球问题的公共支出取舍表明自己的意见。"
+      }
+    ],
+    "layout": "both_views_opinion",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_soc_005",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "more_dependent",
+        "en": "Some people think that in modern society individuals are becoming more dependent on each other",
+        "zh": "讨论现代社会中个人越来越相互依赖的观点。"
+      },
+      {
+        "key": "more_independent",
+        "en": "others say that individuals are becoming more independent of each other.",
+        "zh": "讨论现代社会中个人越来越彼此独立的观点。"
+      },
+      {
+        "key": "opinion",
+        "en": "give your own opinion.",
+        "zh": "对现代社会个人依赖或独立的变化给出自己的看法与理由。"
+      }
+    ],
+    "layout": "both_views_opinion",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_work_006",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "weigh",
+        "en": "Do you think the advantages of this development outweigh the disadvantages?",
+        "zh": "分析为找工作而不得不远离亲友这一发展的利弊，明确是否利大于弊，并解释权衡依据。"
+      }
+    ],
+    "layout": "weigh",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_soc_006",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "weigh",
+        "en": "Do the advantages of economic development outweigh the disadvantages?",
+        "zh": "权衡经济发展改善生活水平的好处与包括重要社会价值流失在内的坏处，给出是否利大于弊的结论。"
+      }
+    ],
+    "layout": "weigh",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_soc_007",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "causes",
+        "en": "Why is this the case?",
+        "zh": "解释如今人们较少把自行车作为交通工具的原因。"
+      },
+      {
+        "key": "encouragement",
+        "en": "What can we do to encourage people to use bicycles more?",
+        "zh": "提出鼓励人们更多骑自行车出行的措施，解释措施怎样应对使用减少的原因。"
+      }
+    ],
+    "layout": "problem_solution",
+    "requiresOverallJudgement": false
+  },
+  {
+    "id": "qb_mock_culture_005",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "community_problems",
+        "en": "What problems can this cause for local communities?",
+        "zh": "说明历史建筑缺乏维护、逐渐失修会给当地社区造成什么问题；不是追问失修原因。"
+      },
+      {
+        "key": "measures",
+        "en": "What measures could be taken to address this situation?",
+        "zh": "提出处理历史建筑失修状况的措施，说明如何改善该状况及其社区问题。"
+      }
+    ],
+    "layout": "problem_solution",
+    "requiresOverallJudgement": false
+  },
+  {
+    "id": "qb_mock_edu_005",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "reasons",
+        "en": "What are the reasons for this?",
+        "zh": "解释父母为什么给孩子施加很大的成功压力。"
+      },
+      {
+        "key": "evaluation",
+        "en": "Is it a positive or negative development?",
+        "zh": "判断父母这样施压总体上是积极还是消极的发展，并给出理由。"
+      }
+    ],
+    "layout": "two_questions",
+    "requiresOverallJudgement": true
+  },
+  {
+    "id": "qb_mock_soc_008",
+    "version": 1,
+    "subquestions": [
+      {
+        "key": "other_factors",
+        "en": "What other factors should also be considered when measuring a country's success?",
+        "zh": "说明除了经济进步之外，还应考虑哪些衡量国家成功的因素及其意义。"
+      },
+      {
+        "key": "relative_importance",
+        "en": "Do you think one factor is more important than others?",
+        "zh": "判断是否有某一个因素比其他因素更重要，并解释判断；可以认为没有单一因素最重要，不强制选出一个。"
+      }
+    ],
+    "layout": "two_questions",
+    "requiresOverallJudgement": true
+  }
+]
