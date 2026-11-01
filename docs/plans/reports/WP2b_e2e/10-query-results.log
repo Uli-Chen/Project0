@@ -1,0 +1,90 @@
+SELECT user_id, alias_version, unresolved_count, scanned_at FROM legacy_scan;
+[
+  {
+    "user_id": "wp2b-e2e-user",
+    "alias_version": "legacy-20261101-v1",
+    "unresolved_count": 0,
+    "scanned_at": "2026-11-01T04:09:22.928Z"
+  }
+]
+SELECT attempt_id, exposure_key, legacy, completed_at, original_submitted_at, freshness FROM completion_events ORDER BY rowid;
+[
+  {
+    "attempt_id": "wp2b-legacy-finished",
+    "exposure_key": "qfamily_remote_work",
+    "legacy": 1,
+    "completed_at": null,
+    "original_submitted_at": null,
+    "freshness": "unknown"
+  },
+  {
+    "attempt_id": "2ee1c359-1fc7-4105-9079-d6b6e90c658c",
+    "exposure_key": "qfamily_university_living_away",
+    "legacy": 0,
+    "completed_at": "2026-11-01T04:09:23.912Z",
+    "original_submitted_at": "2026-11-01T04:09:23.908Z",
+    "freshness": "fresh"
+  },
+  {
+    "attempt_id": "d73e3e57-7eef-4849-8e0c-6e0156e65b54",
+    "exposure_key": "qfamily_science_subject_shortage",
+    "legacy": 0,
+    "completed_at": "2026-11-01T04:09:25.199Z",
+    "original_submitted_at": "2026-11-01T04:09:25.197Z",
+    "freshness": "fresh"
+  }
+]
+SELECT exposure_key, deep_original_submitted, first_deep_original_at, prior_feedback, fresh_attempt_id FROM familiarity ORDER BY rowid;
+[
+  {
+    "exposure_key": "qfamily_remote_work",
+    "deep_original_submitted": "unknown_time",
+    "first_deep_original_at": null,
+    "prior_feedback": "unknown_time",
+    "fresh_attempt_id": null
+  },
+  {
+    "exposure_key": "qfamily_university_living_away",
+    "deep_original_submitted": "known",
+    "first_deep_original_at": "2026-11-01T04:09:23.908Z",
+    "prior_feedback": "known",
+    "fresh_attempt_id": "2ee1c359-1fc7-4105-9079-d6b6e90c658c"
+  },
+  {
+    "exposure_key": "qfamily_science_subject_shortage",
+    "deep_original_submitted": "known",
+    "first_deep_original_at": "2026-11-01T04:09:25.197Z",
+    "prior_feedback": "known",
+    "fresh_attempt_id": "d73e3e57-7eef-4849-8e0c-6e0156e65b54"
+  }
+]
+SELECT id, json_extract(state_json, '$.stage') AS stage, json_extract(state_json, '$.reviewStatus') AS review_status, json_extract(state_json, '$.originalSubmittedAt') AS original_submitted_at, json_extract(state_json, '$.originalFreshness') AS original_freshness FROM writing_sessions ORDER BY rowid;
+[
+  {
+    "id": "wp2b-legacy-finished",
+    "stage": "finished",
+    "review_status": null,
+    "original_submitted_at": null,
+    "original_freshness": null
+  },
+  {
+    "id": "2ee1c359-1fc7-4105-9079-d6b6e90c658c",
+    "stage": "feedback",
+    "review_status": "failed",
+    "original_submitted_at": "2026-11-01T04:09:23.908Z",
+    "original_freshness": "fresh"
+  },
+  {
+    "id": "d73e3e57-7eef-4849-8e0c-6e0156e65b54",
+    "stage": "feedback",
+    "review_status": "none",
+    "original_submitted_at": "2026-11-01T04:09:25.197Z",
+    "original_freshness": "fresh"
+  }
+]
+PRAGMA integrity_check;
+[
+  {
+    "integrity_check": "ok"
+  }
+]

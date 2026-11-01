@@ -1,10 +1,12 @@
 import { assertSupportedSession, sessionApiError as apiError } from "@/lib/pipeline/http";
+import { isSupportedSession } from "@/lib/pipeline/read-session";
 import { mergeOutline } from "@/lib/pipeline/outline";
 import { requireApiUser } from "@/lib/auth/server";
 import { assertSameOrigin, readJson } from "@/lib/auth/http";
 import { deleteSession, getSession, saveSession } from "@/lib/db/queries/sessions";
 import { draftSchema } from "@/lib/pipeline/schemas";
 import { SessionError } from "@/lib/pipeline/engine";
+import { isReviewRunning } from "@/lib/pipeline/retry-review";
 import { isSessionBusy, withSessionLock } from "@/lib/pipeline/lock";
 type Context = { params: Promise<{ id: string }> };
 export const runtime = "nodejs";
@@ -12,7 +14,13 @@ export async function GET(_request: Request, { params }: Context) {
   try {
     const user = await requireApiUser(); const { id } = await params;
     const session = getSession(user.id, id); if (!session) throw new SessionError("练习不存在。", 404);
-    return Response.json({ session, busy: isSessionBusy(`${user.id}:${id}`) }, { headers: { "Cache-Control": "no-store" } });
+    const busy = isSessionBusy(`${user.id}:${id}`) || isReviewRunning(`${user.id}:${id}`);
+    // An interrupted optional call is recoverable without scoring again. Read-only projection.
+    if (isSupportedSession(session) && session.reviewStatus === "pending" && !busy) {
+      session.reviewStatus = "failed";
+      session.pendingAction = null;
+    }
+    return Response.json({ session, busy }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return apiError(error); }
 }
 export async function PATCH(request: Request, { params }: Context) {

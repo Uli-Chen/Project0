@@ -4,15 +4,17 @@ import type { SessionState } from "@/lib/pipeline/types";
 import { readSession } from "@/lib/pipeline/read-session";
 import { AuthError } from "@/lib/auth/http";
 import { getDb } from "../client";
+import { completedAtForSession, completedAtForSessions } from "../practice-facts";
 import { users, writingSessions } from "../schema";
 
 export function getSession(userId: string, id: string): SessionState | null {
   const row = getDb().select().from(writingSessions).where(and(eq(writingSessions.userId, userId), eq(writingSessions.id, id))).get();
-  return row ? readSession(row.stateJson) : null;
+  return row ? { ...readSession(row.stateJson), completedAt: completedAtForSession(getDb().$client, userId, id) } : null;
 }
 
 export function listSessions(userId: string): SessionState[] {
-  return getDb().select().from(writingSessions).where(eq(writingSessions.userId, userId)).orderBy(desc(writingSessions.updatedAt)).all().map((row) => readSession(row.stateJson));
+  const completed = completedAtForSessions(getDb().$client, userId);
+  return getDb().select().from(writingSessions).where(eq(writingSessions.userId, userId)).orderBy(desc(writingSessions.updatedAt)).all().map(row => ({ ...readSession(row.stateJson), completedAt: completed.get(row.id) ?? null }));
 }
 
 export function saveSession(userId: string, state: SessionState): void {

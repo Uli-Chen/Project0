@@ -1,0 +1,24 @@
+
+> project-0@0.1.0 db:init
+> tsx scripts/db-init.ts
+
+node:net:1986
+      const error = new UVExceptionWithHostPort(rval, 'listen', address, port);
+                    ^
+
+Error: listen EPERM: operation not permitted /var/folders/3b/tqst1c996ll9_k66vl3dwvgm0000gn/T/tsx-501/51201.pipe
+    at Server.setupListenHandle [as _listen2] (node:net:1986:21)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2187:5)
+    at file:///Users/chen/Desktop/opc/node_modules/tsx/dist/cli.mjs:53:32174
+    at new Promise (<anonymous>)
+    at createIpcServer (file:///Users/chen/Desktop/opc/node_modules/tsx/dist/cli.mjs:53:32152)
+    at async file:///Users/chen/Desktop/opc/node_modules/tsx/dist/cli.mjs:55:542 {
+  code: 'EPERM',
+  errno: -1,
+  syscall: 'listen',
+  address: '/var/folders/3b/tqst1c996ll9_k66vl3dwvgm0000gn/T/tsx-501/51201.pipe',
+  port: -1
+}
+
+Node.js v25.8.2

@@ -10,7 +10,7 @@ export function readSession(json: string): SessionState {
     lifecycle: state.stage === "finished" ? "closed" : "open",
     lastStudentActionAt: null, continuedFromQuickId: null, cardSnapshot: null,
     rewriteOfDeepId: null, originalSubmittedAt: null, completedAt: null,
-    feedbackUpdatedAt: null, checkpointId: null,
+    originalFreshness: null, reviewStatus: "none", feedbackUpdatedAt: null, checkpointId: null,
     ...state, schemaVersion,
   };
 }

@@ -1,0 +1,5 @@
+
+> project-0@0.1.0 db:import-questions
+> node --import tsx scripts/import-questions.ts
+
+{"bankVersion":"mock-20261101-v1","questions":38,"inserted":38,"aliasesInserted":7}

@@ -11,7 +11,8 @@ test("legacy reader adds only compatibility defaults and preserves all unknown f
   assert.equal(read.schemaVersion, 1);
   assert.equal(read.activity, "deep");
   assert.equal(read.lifecycle, "open");
-  for (const field of newSessionFields.filter(key => !["schemaVersion", "activity", "lifecycle"].includes(key))) assert.equal(read[field], null, field);
+  assert.equal(read.reviewStatus, "none");
+  for (const field of newSessionFields.filter(key => !["schemaVersion", "activity", "lifecycle", "reviewStatus"].includes(key))) assert.equal(read[field], null, field);
   for (const [key, value] of Object.entries(legacy)) assert.deepEqual((read as unknown as Record<string, unknown>)[key], value, key);
   assert.equal(JSON.stringify(legacy), json);
   assert.equal(readSession(JSON.stringify({ ...legacy, stage: "finished" })).lifecycle, "closed");
@@ -38,7 +39,8 @@ test("new sessions start at v2 Deep/open with null evidence and provenance", () 
   assert.equal(state.schemaVersion, 2);
   assert.equal(state.activity, "deep");
   assert.equal(state.lifecycle, "open");
-  for (const field of newSessionFields.filter(key => !["schemaVersion", "activity", "lifecycle"].includes(key))) assert.equal(state[field], null, field);
+  assert.equal(state.reviewStatus, "none");
+  for (const field of newSessionFields.filter(key => !["schemaVersion", "activity", "lifecycle", "reviewStatus"].includes(key))) assert.equal(state[field], null, field);
 });
 
 test("support requires Deep and an existing essay stage, never Quick or unknown values", () => {

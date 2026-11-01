@@ -1,0 +1,24 @@
+GET /api/sessions/wp2b-legacy-finished -> 401
+GET /api/sessions/wp2b-legacy-finished -> 200
+PASS /essays/wp2b-legacy-finished: original SessionProvider, score/issues present, failed=false, completedAt=null; legacy.html
+
+POST /api/sessions -> 201
+PATCH /api/sessions/2ee1c359-1fc7-4105-9079-d6b6e90c658c -> 200
+POST /api/sessions/2ee1c359-1fc7-4105-9079-d6b6e90c658c/actions -> 200
+POST /api/sessions/2ee1c359-1fc7-4105-9079-d6b6e90c658c/actions -> 200
+PASS /essays/2ee1c359-1fc7-4105-9079-d6b6e90c658c: original SessionProvider, score/issues present, failed=true, completedAt=2026-11-01T04:09:23.912Z; review-failed.html
+
+POST /api/sessions/2ee1c359-1fc7-4105-9079-d6b6e90c658c/actions -> 200
+PASS /essays/2ee1c359-1fc7-4105-9079-d6b6e90c658c: original SessionProvider, score/issues present, failed=false, completedAt=2026-11-01T04:09:23.912Z; review-ok.html
+
+POST /api/sessions/2ee1c359-1fc7-4105-9079-d6b6e90c658c/actions -> 200
+PASS /essays/2ee1c359-1fc7-4105-9079-d6b6e90c658c: original SessionProvider, score/issues present, failed=true, completedAt=2026-11-01T04:09:23.912Z; review-failed-again.html
+
+POST /api/sessions -> 201
+PATCH /api/sessions/d73e3e57-7eef-4849-8e0c-6e0156e65b54 -> 200
+POST /api/sessions/d73e3e57-7eef-4849-8e0c-6e0156e65b54/actions -> 200
+POST /api/sessions/d73e3e57-7eef-4849-8e0c-6e0156e65b54/actions -> 200
+PASS /essays/d73e3e57-7eef-4849-8e0c-6e0156e65b54: original SessionProvider, score/issues present, failed=false, completedAt=2026-11-01T04:09:25.199Z; new-original.html
+
+PASS all four scenarios: startup/restart, authenticated legacy page, failed/ok/failed review, fresh original feedback.
+PASS model calls: 5 total, 2 score, 3 review; every call intercepted in memory.

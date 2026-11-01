@@ -1,0 +1,14 @@
+
+> project-0@0.1.0 dev
+> next dev --hostname 127.0.0.1 --port 31404
+
+⨯ Failed to start server
+Error: listen EPERM: operation not permitted 127.0.0.1:31404
+    at ignore-listed frames {
+  code: 'EPERM',
+  errno: -1,
+  syscall: 'listen',
+  address: '127.0.0.1',
+  port: 31404
+}
+[?25h

@@ -1,0 +1,153 @@
+{
+  "start": "2026-11-01T04:09:25.196Z",
+  "end": "2026-11-01T04:09:25.200Z",
+  "acceptedBeforeModel": {
+    "stage": "evaluating",
+    "originalSubmittedAt": "2026-11-01T04:09:25.197Z",
+    "events": []
+  },
+  "session": {
+    "activity": "deep",
+    "question": null,
+    "lifecycle": "open",
+    "lastStudentActionAt": null,
+    "continuedFromQuickId": null,
+    "cardSnapshot": null,
+    "rewriteOfDeepId": null,
+    "originalSubmittedAt": "2026-11-01T04:09:25.197Z",
+    "completedAt": "2026-11-01T04:09:25.199Z",
+    "originalFreshness": "fresh",
+    "reviewStatus": "none",
+    "feedbackUpdatedAt": null,
+    "checkpointId": null,
+    "schemaVersion": 2,
+    "id": "d73e3e57-7eef-4849-8e0c-6e0156e65b54",
+    "kind": "free",
+    "mode": "practice",
+    "prompt": {
+      "id": "27a223ae-7b10-4aa5-8841-84c3d2d13977",
+      "text": "It is observed that in many countries not enough students are choosing to study science as a subject. What are the causes? And what will be the effects on society?",
+      "topicTags": [],
+      "questionType": "two_part"
+    },
+    "focus": null,
+    "stage": "feedback",
+    "createdAt": "2026-11-01T04:09:25.194Z",
+    "updatedAt": "2026-11-01T04:09:25.200Z",
+    "version": 7,
+    "outline": {
+      "stance": null,
+      "reasons": [
+        {
+          "claim": null,
+          "why": null,
+          "example": null
+        },
+        {
+          "claim": null,
+          "why": null,
+          "example": null
+        }
+      ],
+      "counter": {
+        "view": null,
+        "response": null
+      },
+      "userEdited": false
+    },
+    "prewriteTurns": 0,
+    "messages": [
+      {
+        "id": "ea40ce1f-fe48-49a1-bd78-57e8280400da",
+        "role": "coach",
+        "stage": "prewriting",
+        "action": "opening",
+        "content": "先读一遍题目。你的立场是什么？可以用中文或英文告诉我，我们一起把你的想法整理成提纲。"
+      }
+    ],
+    "suggestions": {},
+    "nudge": null,
+    "nudgedParagraphs": {},
+    "nudgesEnabled": true,
+    "drafts": {
+      "original": "Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.",
+      "revision": ""
+    },
+    "elapsed": {
+      "original": 0,
+      "revision": 0
+    },
+    "savedAt": "2026-11-01T04:09:25.200Z",
+    "submitted": {
+      "original": "Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.",
+      "revision": null
+    },
+    "evalStep": null,
+    "evalError": null,
+    "evaluation": {
+      "scores": {
+        "overall": 6,
+        "dims": {
+          "TR": 6,
+          "CC": 6,
+          "LR": 6,
+          "GRA": 6
+        },
+        "rationale": {
+          "TR": "回应题目",
+          "CC": "衔接清楚",
+          "LR": "词汇准确",
+          "GRA": "语法准确"
+        }
+      },
+      "issues": [
+        {
+          "rank": 1,
+          "code": "example",
+          "title": "展开例子",
+          "why": "例子还未解释后果",
+          "sentenceIds": [
+            2
+          ],
+          "hintL1": "节省开支带来什么影响？",
+          "recurring": false
+        }
+      ],
+      "review": {
+        "outlineCoverage": [],
+        "breakthrough": null,
+        "focusResult": null,
+        "selfReportContrast": null,
+        "aiRatio": 0
+      }
+    },
+    "revisionScores": null,
+    "comparison": null,
+    "issueLevels": {},
+    "activeIssue": 1,
+    "finish": null,
+    "rating": null,
+    "pendingAction": null,
+    "completedRequests": [
+      "b5ea1690-7555-4d87-a524-aa0b029ed60a",
+      "0e0dd2fc-afd3-45a6-94c1-bcd15f5453a6"
+    ]
+  },
+  "events": [
+    {
+      "user_id": "wp2b-e2e-user",
+      "attempt_id": "d73e3e57-7eef-4849-8e0c-6e0156e65b54",
+      "activity": "deep",
+      "exposure_key": "qfamily_science_subject_shortage",
+      "question_id": null,
+      "primary_topic": null,
+      "question_type": "two_part",
+      "completed_at": "2026-11-01T04:09:25.199Z",
+      "original_submitted_at": "2026-11-01T04:09:25.197Z",
+      "freshness": "fresh",
+      "relation": "none",
+      "legacy": 0,
+      "evidence_deleted": 0
+    }
+  ]
+}

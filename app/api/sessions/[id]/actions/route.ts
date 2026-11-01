@@ -5,7 +5,10 @@ import { requireApiUser } from "@/lib/auth/server";
 import { assertSameOrigin, readJson } from "@/lib/auth/http";
 import { getSession, listSessions, saveSession } from "@/lib/db/queries/sessions";
 import { actionSchema } from "@/lib/pipeline/schemas";
-import { runAction } from "@/lib/pipeline/engine";
+import { getDb } from "@/lib/db/client";
+import { commitPracticeCheckpoint } from "@/lib/db/practice-facts";
+import { retryReview, isReviewRunning } from "@/lib/pipeline/retry-review";
+import { assertOriginalEvaluationStage, runAction, SessionError } from "@/lib/pipeline/engine";
 import { withSessionLock } from "@/lib/pipeline/lock";
 import type { SessionState } from "@/lib/pipeline/types";
 export const runtime = "nodejs";
@@ -17,15 +20,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const body = await readJson(request);
     const input = actionSchema.parse(body);
     const requestId = z.object({ requestId: z.string().uuid().optional() }).parse(body).requestId ?? crypto.randomUUID();
+    if (input.action === "retryReview") return Response.json({ session: await retryReview(user.id, id, requestId) });
     return await withSessionLock(`${user.id}:${id}`, async () => {
+      if (isReviewRunning(`${user.id}:${id}`)) throw new SessionError("提纲回顾正在处理中。", 409);
       const current = getSession(user.id, id);
       assertSupportedSession(current);
       if (requestId && current.completedRequests?.includes(requestId)) return Response.json({ session: current });
+      // Reject original regrading before writing pendingAction or changing timestamps.
+      if (input.action === "evaluate" && input.kind === "original") assertOriginalEvaluationStage(current);
       const persist = (state: SessionState) => { state.version++; state.updatedAt = state.savedAt = new Date().toISOString(); saveSession(user.id, state); };
       current.pendingAction = { requestId, input, startedAt: new Date().toISOString() };
       persist(current);
       try {
-        const session = await withModelAdmission(user.id, () => runAction(current, input, persist, input.action === "finish" ? listSessions(user.id) : [], user.profile));
+        const session = await withModelAdmission(user.id, () => runAction(current, input, (state, event) => event ? commitPracticeCheckpoint(getDb().$client, user.id, state, event, persist) : persist(state), input.action === "finish" ? listSessions(user.id) : [], user.profile));
         session.completedRequests = [...(session.completedRequests ?? []), requestId].slice(-50);
         session.pendingAction = null;
         persist(session);

@@ -1,0 +1,27 @@
+
+> project-0@0.1.0 test:ui
+> node --import tsx --test tests/ui/*.test.ts
+
+✔ the reported coach reply renders Chinese bold labels and actual lists (28.125208ms)
+✔ preserves code and deliberately escaped Markdown when repairing emphasis (2.90075ms)
+✔ supports headings, quotes, numbered start, tables and GFM text formatting (4.07975ms)
+✔ does not execute model HTML, unsafe URLs, or load remote images (3.243625ms)
+✔ thread renders stored coach messages as Markdown while user evidence stays literal (3.740458ms)
+✔ Required feedback saved; optional review failed: score/issues remain visible and failure alone offers 重试 (11.924083ms)
+✔ Required feedback saved; optional review pending: score/issues remain visible and failure alone offers 重试 (13.741083ms)
+✔ Required feedback saved; optional review ok: score/issues remain visible and failure alone offers 重试 (18.572709ms)
+✔ Required feedback saved; optional review none: score/issues remain visible and failure alone offers 重试 (4.328834ms)
+✔ Quick activity renders stored content without mounting SessionProvider or essay controls (6.148875ms)
+✔ Quick stage renders stored content without mounting SessionProvider or essay controls (0.637292ms)
+✔ unknown activity renders stored content without mounting SessionProvider or essay controls (0.523708ms)
+✔ unknown stage renders stored content without mounting SessionProvider or essay controls (0.658167ms)
+✔ legacy and Deep sessions retain the original provider and EssayScreen (0.181625ms)
+✔ read-only view prefers the frozen question and tolerates absent essay-only fields (0.352834ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1111.680583

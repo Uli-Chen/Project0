@@ -1,0 +1,14 @@
+{
+  "path": "/essays/d73e3e57-7eef-4849-8e0c-6e0156e65b54",
+  "authenticated": true,
+  "renderer": "EssayPage -> SessionView -> SessionProvider -> EssayScreen; real React SSR",
+  "stage": "feedback",
+  "reviewStatus": "none",
+  "completedAt": "2026-11-01T04:09:25.199Z",
+  "byteLength": 16019,
+  "readonly": false,
+  "scoreVisible": true,
+  "issueVisible": true,
+  "failedMessage": false,
+  "retryButton": false
+}

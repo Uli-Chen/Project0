@@ -1,6 +1,6 @@
 import { createSession } from "../../lib/pipeline/initial";
 
-export const newSessionFields = ["schemaVersion", "activity", "question", "lifecycle", "lastStudentActionAt", "continuedFromQuickId", "cardSnapshot", "rewriteOfDeepId", "originalSubmittedAt", "completedAt", "feedbackUpdatedAt", "checkpointId"] as const;
+export const newSessionFields = ["schemaVersion", "activity", "question", "lifecycle", "lastStudentActionAt", "continuedFromQuickId", "cardSnapshot", "rewriteOfDeepId", "originalSubmittedAt", "originalFreshness", "reviewStatus", "completedAt", "feedbackUpdatedAt", "checkpointId"] as const;
 
 export function legacySession() {
   const state = createSession({ kind: "free", mode: "practice", prompt: "Should cities provide free public transport?" });

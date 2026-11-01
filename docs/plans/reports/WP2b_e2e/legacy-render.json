@@ -1,0 +1,14 @@
+{
+  "path": "/essays/wp2b-legacy-finished",
+  "authenticated": true,
+  "renderer": "EssayPage -> SessionView -> SessionProvider -> EssayScreen; real React SSR",
+  "stage": "finished",
+  "reviewStatus": "none",
+  "completedAt": null,
+  "byteLength": 18952,
+  "readonly": false,
+  "scoreVisible": true,
+  "issueVisible": true,
+  "failedMessage": false,
+  "retryButton": false
+}

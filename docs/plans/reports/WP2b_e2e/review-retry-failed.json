@@ -1,0 +1,192 @@
+{
+  "fixtureReset": "reviewStatus: ok -> failed only; events unchanged",
+  "session": {
+    "activity": "deep",
+    "question": null,
+    "lifecycle": "open",
+    "lastStudentActionAt": null,
+    "continuedFromQuickId": null,
+    "cardSnapshot": null,
+    "rewriteOfDeepId": null,
+    "originalSubmittedAt": "2026-11-01T04:09:23.908Z",
+    "completedAt": "2026-11-01T04:09:23.912Z",
+    "originalFreshness": "fresh",
+    "reviewStatus": "failed",
+    "feedbackUpdatedAt": null,
+    "checkpointId": null,
+    "schemaVersion": 2,
+    "id": "2ee1c359-1fc7-4105-9079-d6b6e90c658c",
+    "kind": "free",
+    "mode": "practice",
+    "prompt": {
+      "id": "26aa2b27-25d0-48ad-a8bb-2953842a21ba",
+      "text": "In some countries, university students live at home with their families while they study, whereas in other countries students attend university in another city. Do you think the benefits of living away from home during university outweigh the disadvantages?",
+      "topicTags": [],
+      "questionType": "agree_disagree"
+    },
+    "focus": null,
+    "stage": "feedback",
+    "createdAt": "2026-11-01T04:09:23.900Z",
+    "updatedAt": "2026-11-01T04:09:24.774Z",
+    "version": 13,
+    "outline": {
+      "stance": {
+        "text": "支持公共交通",
+        "sources": [
+          "学生输入"
+        ]
+      },
+      "reasons": [
+        {
+          "claim": null,
+          "why": null,
+          "example": null
+        },
+        {
+          "claim": null,
+          "why": null,
+          "example": null
+        }
+      ],
+      "counter": {
+        "view": null,
+        "response": null
+      },
+      "userEdited": false
+    },
+    "prewriteTurns": 0,
+    "messages": [
+      {
+        "id": "e56f4b34-f241-44c2-a031-04408578b04d",
+        "role": "coach",
+        "stage": "prewriting",
+        "action": "opening",
+        "content": "先读一遍题目。你的立场是什么？可以用中文或英文告诉我，我们一起把你的想法整理成提纲。"
+      }
+    ],
+    "suggestions": {},
+    "nudge": null,
+    "nudgedParagraphs": {},
+    "nudgesEnabled": true,
+    "drafts": {
+      "original": "Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.",
+      "revision": ""
+    },
+    "elapsed": {
+      "original": 0,
+      "revision": 0
+    },
+    "savedAt": "2026-11-01T04:09:24.774Z",
+    "submitted": {
+      "original": "Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.",
+      "revision": null
+    },
+    "evalStep": null,
+    "evalError": null,
+    "evaluation": {
+      "scores": {
+        "overall": 6,
+        "dims": {
+          "TR": 6,
+          "CC": 6,
+          "LR": 6,
+          "GRA": 6
+        },
+        "rationale": {
+          "TR": "回应题目",
+          "CC": "衔接清楚",
+          "LR": "词汇准确",
+          "GRA": "语法准确"
+        }
+      },
+      "issues": [
+        {
+          "rank": 1,
+          "code": "example",
+          "title": "展开例子",
+          "why": "例子还未解释后果",
+          "sentenceIds": [
+            2
+          ],
+          "hintL1": "节省开支带来什么影响？",
+          "recurring": false
+        }
+      ],
+      "review": {
+        "outlineCoverage": [],
+        "breakthrough": "离线回顾成功标记",
+        "focusResult": null,
+        "selfReportContrast": null,
+        "aiRatio": 0
+      }
+    },
+    "revisionScores": null,
+    "comparison": null,
+    "issueLevels": {},
+    "activeIssue": 1,
+    "finish": null,
+    "rating": null,
+    "pendingAction": null,
+    "completedRequests": [
+      "f8dd7840-1e59-4ce1-89d5-9df831c79d00",
+      "3fa41331-b9f5-4395-9a2d-ab218f968e11",
+      "a6ccde7b-9940-4d40-9942-54fe3d7c05ff",
+      "1bbbd9ff-d786-426e-bf45-264d99a4e287"
+    ]
+  },
+  "events": [
+    {
+      "user_id": "wp2b-e2e-user",
+      "attempt_id": "2ee1c359-1fc7-4105-9079-d6b6e90c658c",
+      "activity": "deep",
+      "exposure_key": "qfamily_university_living_away",
+      "question_id": null,
+      "primary_topic": null,
+      "question_type": "agree_disagree",
+      "completed_at": "2026-11-01T04:09:23.912Z",
+      "original_submitted_at": "2026-11-01T04:09:23.908Z",
+      "freshness": "fresh",
+      "relation": "none",
+      "legacy": 0,
+      "evidence_deleted": 0
+    }
+  ],
+  "modelCalls": [
+    {
+      "sequence": 4,
+      "kind": "review",
+      "responseStatus": 503,
+      "model": "wp2b-offline-fixture",
+      "context": {
+        "task": "In some countries, university students live at home with their families while they study, whereas in other countries students attend university in another city. Do you think the benefits of living away from home during university outweigh the disadvantages?",
+        "essay": "Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.",
+        "outline": {
+          "stance": {
+            "text": "支持公共交通",
+            "sources": [
+              "学生输入"
+            ]
+          },
+          "reasons": [
+            {
+              "claim": null,
+              "why": null,
+              "example": null
+            },
+            {
+              "claim": null,
+              "why": null,
+              "example": null
+            }
+          ],
+          "counter": {
+            "view": null,
+            "response": null
+          },
+          "userEdited": false
+        },
+        "focus": null
+      }
+    }
+  ]
+}

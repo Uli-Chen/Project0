@@ -136,7 +136,7 @@ function useSessionController(initialState: SessionState) {
     window.addEventListener("beforeunload", warn);
     return () => { window.removeEventListener("beforeunload", warn); if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, []);
-  const needsSync = Boolean(state.pendingAction && (!state.pendingAction.error || coachBusy)) || (["evaluating", "re_evaluating"].includes(state.stage) && (!state.evalError || coachBusy));
+  const needsSync = state.reviewStatus === "pending" || Boolean(state.pendingAction && (!state.pendingAction.error || coachBusy)) || (["evaluating", "re_evaluating"].includes(state.stage) && (!state.evalError || coachBusy));
   useEffect(() => {
     if (!needsSync) return;
     let alive = true;
@@ -148,7 +148,7 @@ function useSessionController(initialState: SessionState) {
         const data = await requestJson(`/api/sessions/${initialState.id}`, { cache: "no-store" }, 10000);
         if (!alive || !data.session) return;
         const next = data.session;
-        if (actionController.current && !next.pendingAction && !next.completedRequests?.includes(lastRequestId.current ?? "") && !data.busy) return;
+        if (actionController.current && !next.pendingAction && !next.completedRequests?.includes(lastRequestId.current ?? "") && !data.busy && next.reviewStatus !== "failed") return;
         if (next.version < ref.current.version) return;
         const evaluating = ["evaluating", "re_evaluating"].includes(next.stage);
         if (!data.busy) {
@@ -193,6 +193,7 @@ function useSessionController(initialState: SessionState) {
       setNudgesEnabled: (on: boolean) => edit("nudgesEnabled", s => ({ ...s, nudgesEnabled: on })),
       submit: (kind: EssayKind) => perform({ action: "evaluate", kind }),
       retryEvaluation: () => perform({ action: "evaluate", kind: ref.current.stage === "re_evaluating" ? "revision" : "original" }, lastAction.current?.action === "evaluate" ? lastRequestId.current ?? undefined : undefined),
+      retryReview: () => perform({ action: "retryReview" }),
       startRevision: () => perform({ action: "startRevision" }),
       setActiveIssue: (rank: number) => update(s => ({ ...s, activeIssue: rank })),
       issueAction: (rank: number, intent: "more" | "attempt" | "ask", text?: string) => perform({ action: "issue", rank, intent, text }),

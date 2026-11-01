@@ -10,6 +10,7 @@ export type SessionState = {
   // Opaque until WP4 defines the frozen card's serialized contract (13 §7).
   cardSnapshot: Record<string, unknown> | null;
   rewriteOfDeepId: string | null; originalSubmittedAt: string | null; completedAt: string | null;
+  originalFreshness: "fresh" | "repeat" | "unknown" | null; reviewStatus: "none" | "pending" | "ok" | "failed";
   feedbackUpdatedAt: string | null; checkpointId: string | null;
   id: string; kind: SessionKind; mode: Mode; prompt: Prompt; focus: Focus | null; stage: Stage;
   createdAt: string; updatedAt: string; version: number; completedRequests?: string[];

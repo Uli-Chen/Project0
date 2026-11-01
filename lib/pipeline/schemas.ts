@@ -16,6 +16,7 @@ export const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("nudge"), kind: z.enum(["original", "revision"]), paragraphIndex: z.number().int().min(0).max(100) }),
   z.object({ action: z.literal("dismissNudge") }),
   z.object({ action: z.literal("evaluate"), kind: z.enum(["original", "revision"]) }),
+  z.object({ action: z.literal("retryReview") }),
   z.object({ action: z.literal("startRevision") }),
   z.object({ action: z.literal("issue"), rank: z.number().int().min(1).max(10), intent: z.enum(["more", "attempt", "ask"]), text: text.optional() }),
   z.object({ action: z.literal("finish") }),

@@ -71,7 +71,7 @@ const actions: AgentAction[] = [
   { action: "express", text: "my idea" }, { action: "chat", text: "my idea" },
   { action: "suggestion", id: "s", status: "accepted" }, { action: "nudge", kind: "original", paragraphIndex: 0 },
   { action: "dismissNudge" }, { action: "evaluate", kind: "original" }, { action: "evaluate", kind: "revision" },
-  { action: "startRevision" }, { action: "issue", rank: 1, intent: "more" }, { action: "finish" },
+  { action: "retryReview" }, { action: "startRevision" }, { action: "issue", rank: 1, intent: "more" }, { action: "finish" },
   { action: "rating", useful: 5, mine: "yes", comment: "saved" },
 ];
 for (const [name, activity, stage] of [["Quick activity", "quick", "writing"], ["Quick stage", "deep", "quick"], ["unknown activity", "future", "writing"], ["unknown stage", "deep", "future"]]) {

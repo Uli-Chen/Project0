@@ -1,0 +1,190 @@
+[
+  {
+    "sequence": 1,
+    "kind": "score",
+    "responseStatus": 200,
+    "model": "wp2b-offline-fixture",
+    "context": {
+      "task": "In some countries, university students live at home with their families while they study, whereas in other countries students attend university in another city. Do you think the benefits of living away from home during university outweigh the disadvantages?",
+      "essay": "Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.",
+      "sentences": [
+        {
+          "id": 1,
+          "para": 0,
+          "start": 0,
+          "end": 110,
+          "text": "Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper."
+        },
+        {
+          "id": 2,
+          "para": 0,
+          "start": 111,
+          "end": 207,
+          "text": "For example, a reliable bus network allows students to reach their classes without buying a car."
+        },
+        {
+          "id": 3,
+          "para": 0,
+          "start": 208,
+          "end": 289,
+          "text": "Local authorities should therefore invest in frequent services and safe stations."
+        },
+        {
+          "id": 4,
+          "para": 0,
+          "start": 290,
+          "end": 368,
+          "text": "These investments also support shops by making neighbourhoods easier to visit."
+        }
+      ]
+    }
+  },
+  {
+    "sequence": 2,
+    "kind": "review",
+    "responseStatus": 503,
+    "model": "wp2b-offline-fixture",
+    "context": {
+      "task": "In some countries, university students live at home with their families while they study, whereas in other countries students attend university in another city. Do you think the benefits of living away from home during university outweigh the disadvantages?",
+      "essay": "Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.",
+      "outline": {
+        "stance": {
+          "text": "支持公共交通",
+          "sources": [
+            "学生输入"
+          ]
+        },
+        "reasons": [
+          {
+            "claim": null,
+            "why": null,
+            "example": null
+          },
+          {
+            "claim": null,
+            "why": null,
+            "example": null
+          }
+        ],
+        "counter": {
+          "view": null,
+          "response": null
+        },
+        "userEdited": false
+      },
+      "focus": null
+    }
+  },
+  {
+    "sequence": 3,
+    "kind": "review",
+    "responseStatus": 200,
+    "model": "wp2b-offline-fixture",
+    "context": {
+      "task": "In some countries, university students live at home with their families while they study, whereas in other countries students attend university in another city. Do you think the benefits of living away from home during university outweigh the disadvantages?",
+      "essay": "Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.",
+      "outline": {
+        "stance": {
+          "text": "支持公共交通",
+          "sources": [
+            "学生输入"
+          ]
+        },
+        "reasons": [
+          {
+            "claim": null,
+            "why": null,
+            "example": null
+          },
+          {
+            "claim": null,
+            "why": null,
+            "example": null
+          }
+        ],
+        "counter": {
+          "view": null,
+          "response": null
+        },
+        "userEdited": false
+      },
+      "focus": null
+    }
+  },
+  {
+    "sequence": 4,
+    "kind": "review",
+    "responseStatus": 503,
+    "model": "wp2b-offline-fixture",
+    "context": {
+      "task": "In some countries, university students live at home with their families while they study, whereas in other countries students attend university in another city. Do you think the benefits of living away from home during university outweigh the disadvantages?",
+      "essay": "Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.",
+      "outline": {
+        "stance": {
+          "text": "支持公共交通",
+          "sources": [
+            "学生输入"
+          ]
+        },
+        "reasons": [
+          {
+            "claim": null,
+            "why": null,
+            "example": null
+          },
+          {
+            "claim": null,
+            "why": null,
+            "example": null
+          }
+        ],
+        "counter": {
+          "view": null,
+          "response": null
+        },
+        "userEdited": false
+      },
+      "focus": null
+    }
+  },
+  {
+    "sequence": 5,
+    "kind": "score",
+    "responseStatus": 200,
+    "model": "wp2b-offline-fixture",
+    "context": {
+      "task": "It is observed that in many countries not enough students are choosing to study science as a subject. What are the causes? And what will be the effects on society?",
+      "essay": "Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.",
+      "sentences": [
+        {
+          "id": 1,
+          "para": 0,
+          "start": 0,
+          "end": 110,
+          "text": "Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper."
+        },
+        {
+          "id": 2,
+          "para": 0,
+          "start": 111,
+          "end": 207,
+          "text": "For example, a reliable bus network allows students to reach their classes without buying a car."
+        },
+        {
+          "id": 3,
+          "para": 0,
+          "start": 208,
+          "end": 289,
+          "text": "Local authorities should therefore invest in frequent services and safe stations."
+        },
+        {
+          "id": 4,
+          "para": 0,
+          "start": 290,
+          "end": 368,
+          "text": "These investments also support shops by making neighbourhoods easier to visit."
+        }
+      ]
+    }
+  }
+]

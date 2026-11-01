@@ -1,0 +1,163 @@
+{
+  "writing_sessions": [
+    {
+      "id": "wp2b-legacy-finished",
+      "user_id": "wp2b-e2e-user",
+      "state_json": "{\n  \"id\": \"wp2b-legacy-finished\",\n  \"kind\": \"free\",\n  \"mode\": \"practice\",\n  \"prompt\": {\n    \"id\": \"technology\",\n    \"text\": \"Many people now work from home using modern technology. Do the advantages of this trend outweigh the disadvantages?\",\n    \"topicTags\": [\n      \"technology\",\n      \"work\"\n    ],\n    \"questionType\": \"adv_disadv\"\n  },\n  \"focus\": null,\n  \"stage\": \"finished\",\n  \"createdAt\": \"2025-01-02T03:04:05.000Z\",\n  \"updatedAt\": \"2025-02-03T04:05:06.000Z\",\n  \"version\": 0,\n  \"outline\": {\n    \"stance\": {\n      \"text\": \"I agree\",\n      \"sources\": [\n        \"user\"\n      ],\n      \"futureSlot\": {\n        \"keep\": 7\n      }\n    },\n    \"reasons\": [\n      {\n        \"claim\": null,\n        \"why\": null,\n        \"example\": null,\n        \"futureReason\": \"keep\"\n      },\n      {\n        \"claim\": null,\n        \"why\": null,\n        \"example\": null,\n        \"futureReason\": \"keep\"\n      }\n    ],\n    \"counter\": {\n      \"view\": null,\n      \"response\": null,\n      \"futureCounter\": true\n    },\n    \"userEdited\": false,\n    \"futureOutline\": [\n      1,\n      {\n        \"keep\": true\n      }\n    ]\n  },\n  \"prewriteTurns\": 0,\n  \"messages\": [\n    {\n      \"id\": \"f3d07efb-95bb-4a13-b4c8-dfbd5e023a80\",\n      \"role\": \"coach\",\n      \"stage\": \"prewriting\",\n      \"action\": \"opening\",\n      \"content\": \"先读一遍题目。你的立场是什么？可以用中文或英文告诉我，我们一起把你的想法整理成提纲。\"\n    }\n  ],\n  \"suggestions\": {},\n  \"nudge\": null,\n  \"nudgedParagraphs\": {},\n  \"nudgesEnabled\": true,\n  \"drafts\": {\n    \"original\": \"Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.\",\n    \"revision\": \"\",\n    \"futureDraft\": {\n      \"text\": \"保留草稿\"\n    }\n  },\n  \"elapsed\": {\n    \"original\": 0,\n    \"revision\": 0,\n    \"futureElapsed\": 17\n  },\n  \"savedAt\": \"2025-02-03T04:05:06.000Z\",\n  \"submitted\": {\n    \"original\": \"Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.\",\n    \"revision\": null\n  },\n  \"evalStep\": null,\n  \"evalError\": null,\n  \"evaluation\": {\n    \"scores\": {\n      \"overall\": 6,\n      \"dims\": {\n        \"TR\": 6,\n        \"CC\": 6,\n        \"LR\": 6,\n        \"GRA\": 6\n      },\n      \"rationale\": {\n        \"TR\": \"回应题目\",\n        \"CC\": \"衔接清楚\",\n        \"LR\": \"词汇准确\",\n        \"GRA\": \"语法准确\"\n      }\n    },\n    \"issues\": [\n      {\n        \"rank\": 1,\n        \"code\": \"example\",\n        \"title\": \"展开例子\",\n        \"why\": \"例子还未解释后果\",\n        \"sentenceIds\": [\n          2\n        ],\n        \"hintL1\": \"节省开支带来什么影响？\",\n        \"recurring\": false\n      }\n    ],\n    \"review\": {\n      \"outlineCoverage\": [],\n      \"breakthrough\": null,\n      \"focusResult\": null,\n      \"selfReportContrast\": null,\n      \"aiRatio\": 0\n    }\n  },\n  \"revisionScores\": null,\n  \"comparison\": null,\n  \"issueLevels\": {},\n  \"activeIssue\": 1,\n  \"finish\": null,\n  \"rating\": null,\n  \"futureFlag\": false,\n  \"futureData\": {\n    \"nested\": [\n      {\n        \"text\": \"保留\",\n        \"n\": 0,\n        \"missing\": null\n      }\n    ]\n  }\n}\n",
+      "created_at": "2025-01-02T03:04:05.000Z",
+      "updated_at": "2025-02-03T04:05:06.000Z"
+    },
+    {
+      "id": "2ee1c359-1fc7-4105-9079-d6b6e90c658c",
+      "user_id": "wp2b-e2e-user",
+      "state_json": "{\"activity\":\"deep\",\"question\":null,\"lifecycle\":\"open\",\"lastStudentActionAt\":null,\"continuedFromQuickId\":null,\"cardSnapshot\":null,\"rewriteOfDeepId\":null,\"originalSubmittedAt\":\"2026-11-01T04:09:23.908Z\",\"completedAt\":\"2026-11-01T04:09:23.912Z\",\"originalFreshness\":\"fresh\",\"reviewStatus\":\"failed\",\"feedbackUpdatedAt\":null,\"checkpointId\":null,\"schemaVersion\":2,\"id\":\"2ee1c359-1fc7-4105-9079-d6b6e90c658c\",\"kind\":\"free\",\"mode\":\"practice\",\"prompt\":{\"id\":\"26aa2b27-25d0-48ad-a8bb-2953842a21ba\",\"text\":\"In some countries, university students live at home with their families while they study, whereas in other countries students attend university in another city. Do you think the benefits of living away from home during university outweigh the disadvantages?\",\"topicTags\":[],\"questionType\":\"agree_disagree\"},\"focus\":null,\"stage\":\"feedback\",\"createdAt\":\"2026-11-01T04:09:23.900Z\",\"updatedAt\":\"2026-11-01T04:09:24.774Z\",\"version\":13,\"outline\":{\"stance\":{\"text\":\"支持公共交通\",\"sources\":[\"学生输入\"]},\"reasons\":[{\"claim\":null,\"why\":null,\"example\":null},{\"claim\":null,\"why\":null,\"example\":null}],\"counter\":{\"view\":null,\"response\":null},\"userEdited\":false},\"prewriteTurns\":0,\"messages\":[{\"id\":\"e56f4b34-f241-44c2-a031-04408578b04d\",\"role\":\"coach\",\"stage\":\"prewriting\",\"action\":\"opening\",\"content\":\"先读一遍题目。你的立场是什么？可以用中文或英文告诉我，我们一起把你的想法整理成提纲。\"}],\"suggestions\":{},\"nudge\":null,\"nudgedParagraphs\":{},\"nudgesEnabled\":true,\"drafts\":{\"original\":\"Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.\",\"revision\":\"\"},\"elapsed\":{\"original\":0,\"revision\":0},\"savedAt\":\"2026-11-01T04:09:24.774Z\",\"submitted\":{\"original\":\"Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.\",\"revision\":null},\"evalStep\":null,\"evalError\":null,\"evaluation\":{\"scores\":{\"overall\":6,\"dims\":{\"TR\":6,\"CC\":6,\"LR\":6,\"GRA\":6},\"rationale\":{\"TR\":\"回应题目\",\"CC\":\"衔接清楚\",\"LR\":\"词汇准确\",\"GRA\":\"语法准确\"}},\"issues\":[{\"rank\":1,\"code\":\"example\",\"title\":\"展开例子\",\"why\":\"例子还未解释后果\",\"sentenceIds\":[2],\"hintL1\":\"节省开支带来什么影响？\",\"recurring\":false}],\"review\":{\"outlineCoverage\":[],\"breakthrough\":\"离线回顾成功标记\",\"focusResult\":null,\"selfReportContrast\":null,\"aiRatio\":0}},\"revisionScores\":null,\"comparison\":null,\"issueLevels\":{},\"activeIssue\":1,\"finish\":null,\"rating\":null,\"pendingAction\":null,\"completedRequests\":[\"f8dd7840-1e59-4ce1-89d5-9df831c79d00\",\"3fa41331-b9f5-4395-9a2d-ab218f968e11\",\"a6ccde7b-9940-4d40-9942-54fe3d7c05ff\",\"1bbbd9ff-d786-426e-bf45-264d99a4e287\"]}",
+      "created_at": "2026-11-01T04:09:23.901Z",
+      "updated_at": "2026-11-01T04:09:24.774Z"
+    },
+    {
+      "id": "d73e3e57-7eef-4849-8e0c-6e0156e65b54",
+      "user_id": "wp2b-e2e-user",
+      "state_json": "{\"activity\":\"deep\",\"question\":null,\"lifecycle\":\"open\",\"lastStudentActionAt\":null,\"continuedFromQuickId\":null,\"cardSnapshot\":null,\"rewriteOfDeepId\":null,\"originalSubmittedAt\":\"2026-11-01T04:09:25.197Z\",\"completedAt\":\"2026-11-01T04:09:25.199Z\",\"originalFreshness\":\"fresh\",\"reviewStatus\":\"none\",\"feedbackUpdatedAt\":null,\"checkpointId\":null,\"schemaVersion\":2,\"id\":\"d73e3e57-7eef-4849-8e0c-6e0156e65b54\",\"kind\":\"free\",\"mode\":\"practice\",\"prompt\":{\"id\":\"27a223ae-7b10-4aa5-8841-84c3d2d13977\",\"text\":\"It is observed that in many countries not enough students are choosing to study science as a subject. What are the causes? And what will be the effects on society?\",\"topicTags\":[],\"questionType\":\"two_part\"},\"focus\":null,\"stage\":\"feedback\",\"createdAt\":\"2026-11-01T04:09:25.194Z\",\"updatedAt\":\"2026-11-01T04:09:25.200Z\",\"version\":7,\"outline\":{\"stance\":null,\"reasons\":[{\"claim\":null,\"why\":null,\"example\":null},{\"claim\":null,\"why\":null,\"example\":null}],\"counter\":{\"view\":null,\"response\":null},\"userEdited\":false},\"prewriteTurns\":0,\"messages\":[{\"id\":\"ea40ce1f-fe48-49a1-bd78-57e8280400da\",\"role\":\"coach\",\"stage\":\"prewriting\",\"action\":\"opening\",\"content\":\"先读一遍题目。你的立场是什么？可以用中文或英文告诉我，我们一起把你的想法整理成提纲。\"}],\"suggestions\":{},\"nudge\":null,\"nudgedParagraphs\":{},\"nudgesEnabled\":true,\"drafts\":{\"original\":\"Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.\",\"revision\":\"\"},\"elapsed\":{\"original\":0,\"revision\":0},\"savedAt\":\"2026-11-01T04:09:25.200Z\",\"submitted\":{\"original\":\"Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.\",\"revision\":null},\"evalStep\":null,\"evalError\":null,\"evaluation\":{\"scores\":{\"overall\":6,\"dims\":{\"TR\":6,\"CC\":6,\"LR\":6,\"GRA\":6},\"rationale\":{\"TR\":\"回应题目\",\"CC\":\"衔接清楚\",\"LR\":\"词汇准确\",\"GRA\":\"语法准确\"}},\"issues\":[{\"rank\":1,\"code\":\"example\",\"title\":\"展开例子\",\"why\":\"例子还未解释后果\",\"sentenceIds\":[2],\"hintL1\":\"节省开支带来什么影响？\",\"recurring\":false}],\"review\":{\"outlineCoverage\":[],\"breakthrough\":null,\"focusResult\":null,\"selfReportContrast\":null,\"aiRatio\":0}},\"revisionScores\":null,\"comparison\":null,\"issueLevels\":{},\"activeIssue\":1,\"finish\":null,\"rating\":null,\"pendingAction\":null,\"completedRequests\":[\"b5ea1690-7555-4d87-a524-aa0b029ed60a\",\"0e0dd2fc-afd3-45a6-94c1-bcd15f5453a6\"]}",
+      "created_at": "2026-11-01T04:09:25.195Z",
+      "updated_at": "2026-11-01T04:09:25.200Z"
+    }
+  ],
+  "legacy_scan": [
+    {
+      "user_id": "wp2b-e2e-user",
+      "cutoff_bank_version": "mock-20261101-v1",
+      "alias_version": "legacy-20261101-v1",
+      "cutoff_exposure_keys_json": "[\"qfamily_adults_sleep_loss_effects\",\"qfamily_alien_life_public_spending\",\"qfamily_biodiversity_action_too_late\",\"qfamily_career_stability_changes\",\"qfamily_city_functional_zoning\",\"qfamily_city_public_outdoor_spaces\",\"qfamily_climate_adaptation_vs_prevention\",\"qfamily_computers_smarter_than_humans\",\"qfamily_corporate_personal_data\",\"qfamily_crime_reporting_restriction\",\"qfamily_declining_bicycle_transport\",\"qfamily_economic_development_social_values\",\"qfamily_endangered_language_public_funding\",\"qfamily_freshwater_use_control\",\"qfamily_healthcare_tax_spending_priority\",\"qfamily_historic_building_neglect\",\"qfamily_illness_pollution_housing_prevention\",\"qfamily_legal_working_hours_limits\",\"qfamily_live_vs_televised_performance\",\"qfamily_mandatory_parent_training\",\"qfamily_math_vs_communication_curriculum\",\"qfamily_modern_independence_dependence\",\"qfamily_national_salary_cap\",\"qfamily_national_success_non_economic_measures\",\"qfamily_obesity_unhealthy_eating_prevention\",\"qfamily_parental_success_pressure\",\"qfamily_private_scientific_research\",\"qfamily_public_libraries_vs_internet\",\"qfamily_remote_work\",\"qfamily_responsible_tourism_possible\",\"qfamily_school_uniform_requirement\",\"qfamily_science_subject_shortage\",\"qfamily_social_media_contact_news\",\"qfamily_technology_crime_effect\",\"qfamily_university_living_away\",\"qfamily_wildlife_resource_allocation\",\"qfamily_work_relocation_family_friends\",\"qfamily_working_in_old_age\"]",
+      "unresolved_count": 0,
+      "scanned_at": "2026-11-01T04:09:22.928Z"
+    }
+  ],
+  "attempt_markers": [
+    {
+      "user_id": "wp2b-e2e-user",
+      "attempt_id": "wp2b-legacy-finished",
+      "activity": "deep",
+      "mode": "practice",
+      "question_id": null,
+      "question_version": null,
+      "exposure_key": "qfamily_remote_work",
+      "primary_topic": null,
+      "question_type": "adv_disadv",
+      "created_at": "2025-01-02T03:04:05.000Z",
+      "deleted_at": null,
+      "resolution": "matched"
+    },
+    {
+      "user_id": "wp2b-e2e-user",
+      "attempt_id": "2ee1c359-1fc7-4105-9079-d6b6e90c658c",
+      "activity": "deep",
+      "mode": "practice",
+      "question_id": null,
+      "question_version": null,
+      "exposure_key": "qfamily_university_living_away",
+      "primary_topic": null,
+      "question_type": "agree_disagree",
+      "created_at": "2026-11-01T04:09:23.900Z",
+      "deleted_at": null,
+      "resolution": "matched"
+    },
+    {
+      "user_id": "wp2b-e2e-user",
+      "attempt_id": "d73e3e57-7eef-4849-8e0c-6e0156e65b54",
+      "activity": "deep",
+      "mode": "practice",
+      "question_id": null,
+      "question_version": null,
+      "exposure_key": "qfamily_science_subject_shortage",
+      "primary_topic": null,
+      "question_type": "two_part",
+      "created_at": "2026-11-01T04:09:25.194Z",
+      "deleted_at": null,
+      "resolution": "matched"
+    }
+  ],
+  "completion_events": [
+    {
+      "user_id": "wp2b-e2e-user",
+      "attempt_id": "wp2b-legacy-finished",
+      "activity": "deep",
+      "exposure_key": "qfamily_remote_work",
+      "question_id": null,
+      "primary_topic": null,
+      "question_type": "adv_disadv",
+      "completed_at": null,
+      "original_submitted_at": null,
+      "freshness": "unknown",
+      "relation": "none",
+      "legacy": 1,
+      "evidence_deleted": 0
+    },
+    {
+      "user_id": "wp2b-e2e-user",
+      "attempt_id": "2ee1c359-1fc7-4105-9079-d6b6e90c658c",
+      "activity": "deep",
+      "exposure_key": "qfamily_university_living_away",
+      "question_id": null,
+      "primary_topic": null,
+      "question_type": "agree_disagree",
+      "completed_at": "2026-11-01T04:09:23.912Z",
+      "original_submitted_at": "2026-11-01T04:09:23.908Z",
+      "freshness": "fresh",
+      "relation": "none",
+      "legacy": 0,
+      "evidence_deleted": 0
+    },
+    {
+      "user_id": "wp2b-e2e-user",
+      "attempt_id": "d73e3e57-7eef-4849-8e0c-6e0156e65b54",
+      "activity": "deep",
+      "exposure_key": "qfamily_science_subject_shortage",
+      "question_id": null,
+      "primary_topic": null,
+      "question_type": "two_part",
+      "completed_at": "2026-11-01T04:09:25.199Z",
+      "original_submitted_at": "2026-11-01T04:09:25.197Z",
+      "freshness": "fresh",
+      "relation": "none",
+      "legacy": 0,
+      "evidence_deleted": 0
+    }
+  ],
+  "familiarity": [
+    {
+      "user_id": "wp2b-e2e-user",
+      "exposure_key": "qfamily_remote_work",
+      "first_attempt_id": "wp2b-legacy-finished",
+      "first_attempt_at": "2025-01-02T03:04:05.000Z",
+      "deep_original_submitted": "unknown_time",
+      "first_deep_original_at": null,
+      "fresh_attempt_id": null,
+      "prior_feedback": "unknown_time",
+      "external_practice": null
+    },
+    {
+      "user_id": "wp2b-e2e-user",
+      "exposure_key": "qfamily_university_living_away",
+      "first_attempt_id": "2ee1c359-1fc7-4105-9079-d6b6e90c658c",
+      "first_attempt_at": "2026-11-01T04:09:23.900Z",
+      "deep_original_submitted": "known",
+      "first_deep_original_at": "2026-11-01T04:09:23.908Z",
+      "fresh_attempt_id": "2ee1c359-1fc7-4105-9079-d6b6e90c658c",
+      "prior_feedback": "known",
+      "external_practice": null
+    },
+    {
+      "user_id": "wp2b-e2e-user",
+      "exposure_key": "qfamily_science_subject_shortage",
+      "first_attempt_id": "d73e3e57-7eef-4849-8e0c-6e0156e65b54",
+      "first_attempt_at": "2026-11-01T04:09:25.194Z",
+      "deep_original_submitted": "known",
+      "first_deep_original_at": "2026-11-01T04:09:25.197Z",
+      "fresh_attempt_id": "d73e3e57-7eef-4849-8e0c-6e0156e65b54",
+      "prior_feedback": "known",
+      "external_practice": null
+    }
+  ],
+  "default_continuations": [],
+  "request_receipts": []
+}

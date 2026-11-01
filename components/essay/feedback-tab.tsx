@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, CircleDashed, CircleDot } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { IssueList } from "@/components/feedback/issue-list";
 import { ScoreCard } from "@/components/feedback/score-card";
 import { coachCapabilities } from "@/lib/learning/essay-view";
@@ -12,7 +13,7 @@ import { FinishSummary } from "./finish-summary";
 const ACHIEVED = { yes: "做到了", partial: "部分做到", no: "还没做到" } as const;
 
 export function FeedbackTab() {
-  const { state, actions } = useSession();
+  const { state, actions, coachBusy } = useSession();
   const ui = useEssayUi();
   const evaluation = state.evaluation;
   if (!evaluation) return null;
@@ -38,9 +39,14 @@ export function FeedbackTab() {
         )}
       </section>
 
-      {(review.focusResult || review.breakthrough || state.mode === "practice") && (
+      {(state.reviewStatus !== "none" || review.focusResult || review.breakthrough || state.mode === "practice") && (
         <section className="mt-8">
           <h2 className="text-xs text-muted-foreground">回顾</h2>
+          {state.reviewStatus === "pending" && <p className="mt-3 text-sm text-muted-foreground">提纲回顾处理中，评分与问题反馈已保存。</p>}
+          {state.reviewStatus === "failed" && <div className="mt-3 flex items-center gap-3 text-sm">
+            <p>提纲回顾失败，评分与问题反馈已保存。</p>
+            <Button variant="outline" size="sm" disabled={coachBusy} onClick={() => void actions.retryReview()}>重试</Button>
+          </div>}
           <dl className="mt-3 flex flex-col gap-4 text-[13px] leading-relaxed">
             {state.focus && review.focusResult && (
               <div>

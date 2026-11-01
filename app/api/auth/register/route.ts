@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getDb } from "@/lib/db/client";
+import { markNewUserScanned } from "@/lib/db/migrate-0.4";
 import { users } from "@/lib/db/schema";
 import { publicUser, userByEmail } from "@/lib/db/queries/users";
 import { apiError, assertSameOrigin, AuthError, readJson } from "@/lib/auth/http";
@@ -19,8 +20,12 @@ export async function POST(request: Request) {
     if (userByEmail(data.email)) throw new AuthError("这个邮箱已经注册，请直接登录。", 409);
     const now = new Date().toISOString();
     const passwordHash = await hashPassword(data.password);
-    const inserted = getDb().insert(users).values({ id: randomUUID(), email: data.email, name: data.name, passwordHash, createdAt: now, updatedAt: now }).onConflictDoNothing({ target: users.email }).returning().get();
-    if (!inserted) throw new AuthError("这个邮箱已经注册，请直接登录。", 409);
+    const inserted = getDb().transaction(() => {
+      const user = getDb().insert(users).values({ id: randomUUID(), email: data.email, name: data.name, passwordHash, createdAt: now, updatedAt: now }).onConflictDoNothing({ target: users.email }).returning().get();
+      if (!user) throw new AuthError("这个邮箱已经注册，请直接登录。", 409);
+      markNewUserScanned(getDb().$client, user.id, now);
+      return user;
+    });
     await createAuthSession(inserted.id, passwordHash);
     return Response.json({ user: publicUser(inserted) }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) { return apiError(error); }

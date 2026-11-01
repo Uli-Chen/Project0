@@ -1,0 +1,11 @@
+
+> project-0@0.1.0 lint
+> eslint . --max-warnings=0
+
+
+/Users/chen/Desktop/opc/docs/plans/reports/WP2b_e2e/verify.mjs
+  9:10  warning  'createSession' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (0 errors, 1 warning)
+
+ESLint found too many warnings (maximum: 0).

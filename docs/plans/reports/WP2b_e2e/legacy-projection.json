@@ -1,0 +1,156 @@
+{
+  "activity": "deep",
+  "question": null,
+  "lifecycle": "closed",
+  "lastStudentActionAt": null,
+  "continuedFromQuickId": null,
+  "cardSnapshot": null,
+  "rewriteOfDeepId": null,
+  "originalSubmittedAt": null,
+  "completedAt": null,
+  "originalFreshness": null,
+  "reviewStatus": "none",
+  "feedbackUpdatedAt": null,
+  "checkpointId": null,
+  "id": "wp2b-legacy-finished",
+  "kind": "free",
+  "mode": "practice",
+  "prompt": {
+    "id": "technology",
+    "text": "Many people now work from home using modern technology. Do the advantages of this trend outweigh the disadvantages?",
+    "topicTags": [
+      "technology",
+      "work"
+    ],
+    "questionType": "adv_disadv"
+  },
+  "focus": null,
+  "stage": "finished",
+  "createdAt": "2025-01-02T03:04:05.000Z",
+  "updatedAt": "2025-02-03T04:05:06.000Z",
+  "version": 0,
+  "outline": {
+    "stance": {
+      "text": "I agree",
+      "sources": [
+        "user"
+      ],
+      "futureSlot": {
+        "keep": 7
+      }
+    },
+    "reasons": [
+      {
+        "claim": null,
+        "why": null,
+        "example": null,
+        "futureReason": "keep"
+      },
+      {
+        "claim": null,
+        "why": null,
+        "example": null,
+        "futureReason": "keep"
+      }
+    ],
+    "counter": {
+      "view": null,
+      "response": null,
+      "futureCounter": true
+    },
+    "userEdited": false,
+    "futureOutline": [
+      1,
+      {
+        "keep": true
+      }
+    ]
+  },
+  "prewriteTurns": 0,
+  "messages": [
+    {
+      "id": "f3d07efb-95bb-4a13-b4c8-dfbd5e023a80",
+      "role": "coach",
+      "stage": "prewriting",
+      "action": "opening",
+      "content": "先读一遍题目。你的立场是什么？可以用中文或英文告诉我，我们一起把你的想法整理成提纲。"
+    }
+  ],
+  "suggestions": {},
+  "nudge": null,
+  "nudgedParagraphs": {},
+  "nudgesEnabled": true,
+  "drafts": {
+    "original": "Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.",
+    "revision": "",
+    "futureDraft": {
+      "text": "保留草稿"
+    }
+  },
+  "elapsed": {
+    "original": 0,
+    "revision": 0,
+    "futureElapsed": 17
+  },
+  "savedAt": "2025-02-03T04:05:06.000Z",
+  "submitted": {
+    "original": "Public transport can improve the lives of residents because it reduces traffic and makes daily travel cheaper. For example, a reliable bus network allows students to reach their classes without buying a car. Local authorities should therefore invest in frequent services and safe stations. These investments also support shops by making neighbourhoods easier to visit.",
+    "revision": null
+  },
+  "evalStep": null,
+  "evalError": null,
+  "evaluation": {
+    "scores": {
+      "overall": 6,
+      "dims": {
+        "TR": 6,
+        "CC": 6,
+        "LR": 6,
+        "GRA": 6
+      },
+      "rationale": {
+        "TR": "回应题目",
+        "CC": "衔接清楚",
+        "LR": "词汇准确",
+        "GRA": "语法准确"
+      }
+    },
+    "issues": [
+      {
+        "rank": 1,
+        "code": "example",
+        "title": "展开例子",
+        "why": "例子还未解释后果",
+        "sentenceIds": [
+          2
+        ],
+        "hintL1": "节省开支带来什么影响？",
+        "recurring": false
+      }
+    ],
+    "review": {
+      "outlineCoverage": [],
+      "breakthrough": null,
+      "focusResult": null,
+      "selfReportContrast": null,
+      "aiRatio": 0
+    }
+  },
+  "revisionScores": null,
+  "comparison": null,
+  "issueLevels": {},
+  "activeIssue": 1,
+  "finish": null,
+  "rating": null,
+  "futureFlag": false,
+  "futureData": {
+    "nested": [
+      {
+        "text": "保留",
+        "n": 0,
+        "missing": null
+      }
+    ]
+  },
+  "schemaVersion": 1
+}
