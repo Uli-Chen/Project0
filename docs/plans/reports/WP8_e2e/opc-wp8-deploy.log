@@ -1,0 +1,28 @@
+
+> project-0@0.1.0 db:backup
+> tsx scripts/db-backup.ts
+
+SQLite backup complete: /home/squareofchen/opc-data/backups/2026-11-01T06-40-00.345Z-addcfc59-8275-47f9-9a28-74347e292e74.db
+
+> project-0@0.1.0 db:migrate
+> npm run db:init && drizzle-kit migrate
+
+
+> project-0@0.1.0 db:init
+> tsx scripts/db-init.ts
+
+SQLite ready: /home/squareofchen/opc-data/app.db
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/home/squareofchen/opc-release-20261101-wp8/drizzle.config.ts'
+[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!
+> project-0@0.1.0 db:import-questions
+> node --import tsx scripts/import-questions.ts
+
+{"bankVersion":"mock-20261101-v1","questions":38,"inserted":38,"aliasesInserted":7}
+
+> project-0@0.1.0 db:migrate-0.4
+> node --conditions=react-server --import tsx scripts/migrate-0.4.ts
+
+{"succeeded":1,"failed":0}
+curl: (7) Failed to connect to 127.0.0.1 port 3000 after 0 ms: Could not connect to server
+Compatible reader active; previous code: /home/squareofchen/opc-before-wp8-20261101T063959Z

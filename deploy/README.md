@@ -1,5 +1,13 @@
 # project0.auglearn.org 部署
 
+## 0.4 当前发布（2026-11-01）
+
+已发布 `53c52b4`，题库、速刷与检查点已开启，`FOCUS_ENABLED=false`；注册继续关闭。服务器 Node 24 全量检查、生产构建、逐项开关 HTTP 冒烟及 SQLite 完整性检查通过。详见 [WP8 发布记录](../docs/plans/reports/WP8.md)。
+
+新版本已写入数据后的兼容回退：在应用目录运行 `bash deploy/enable-wp8.sh reader`，关闭新功能并保留全部新表和正文。不要恢复旧数据库覆盖后续用户工作。历史程序的只读回滚演练记录位于 `docs/plans/reports/WP8_rollback/`。
+
+以后追加迁移时，应用 schema 后还须按需导入已审阅题库并运行 `db:migrate-0.4`；先准备和构建独立发布目录，再备份、停服务、迁移和切换，避免原地构建影响正在运行的程序。`release-wp8.sh` 固定指向本次发布目录，仅作本次可复现记录；未来发布需使用新的目录名。
+
 - 服务器：`squareofchen@35.201.196.43`（本机 SSH 别名 `auglearn` / `augleran`）。
 - 代码：`/home/squareofchen/opc`。
 - Node.js 24：`/home/squareofchen/.local/node/bin`。

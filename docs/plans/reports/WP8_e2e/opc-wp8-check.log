@@ -1,0 +1,299 @@
+
+> project-0@0.1.0 check
+> npm run lint && npm run typecheck && npm test && npm run test:ui && npm run test:db && npm run build
+
+
+> project-0@0.1.0 lint
+> eslint . --max-warnings=0
+
+
+> project-0@0.1.0 typecheck
+> next typegen && tsc --noEmit
+
+Generating route types...
+✓ Types generated successfully
+
+> project-0@0.1.0 test
+> node --conditions=react-server --import tsx --test tests/*.test.ts
+
+✔ model output rejects truncated JSON and wrong types (5.229729ms)
+✔ schemas reject forged state fields and invalid scores (5.683327ms)
+✔ new sessions have unique ids and assessment cannot enable coaching (2.994317ms)
+✔ selection must belong to persisted draft (0.525693ms)
+✔ model client repairs malformed output once and keeps authentication errors private (51.039658ms)
+✔ evaluation failure checkpoints the submitted essay for recovery (14.755778ms)
+✔ prewriting only accepts outline updates grounded in the student's own words (4.428694ms)
+✔ provider billing denial becomes actionable text without upstream details (12.309068ms)
+✔ late responses cannot replace newer server state or local unsaved text (20.345692ms)
+✔ manual outline edits are preserved without discarding server draft changes (1.690057ms)
+✔ checkpoint due clock, deferral, reserved pool and type ranking (1.885897ms)
+✔ duplicate start is idempotent; second tab and family creation rejected; deleting releases occupancy but never unseen (219.075097ms)
+✔ external yes and unsure persist despite rejected start and cannot be erased by no (91.360525ms)
+✔ on-time original remains eligible when scoring completes late; immutable baseline survives delete (66.311464ms)
+✔ late acceptance never becomes eligible through retry, close frees active slot, defer lasts seven days (115.545478ms)
+✔ unknown legacy exposure refuses candidate; deleted account cascades checkpoint metadata (58.988289ms)
+✔ assisted original is excluded even with on-time submission (55.438286ms)
+✔ checkpoint HTTP cookie auth, start, refresh deadline, skip and feature gates (462.777301ms)
+✔ external declaration during active checkpoint disqualifies completion; frozen start evidence retained (61.658181ms)
+✔ features default off and only literal true enables a flag (4.448834ms)
+✔ Quick and checkpoints require the question bank; focus is independent (0.515961ms)
+✔ feature reader reads the runtime environment (0.291097ms)
+✔ complete practice retains work, checks evidence, compares both drafts and saves feedback (99.255321ms)
+✔ revisiting an older essay does not rewrite original-score chronology (17.593757ms)
+✔ memory counts essays once per issue and exclusions remove recommendation input (115.608982ms)
+✔ empty profile has no invented score goal or progress; expired dates reach zero (0.543477ms)
+✔ 预算常量完整对应 RFC §8 初始包、补充包、单次和用户四项上限 (2.594189ms)
+✔ 核销按实际；单项未知按预留；reserved 和 indeterminate 三项均保留预留 (0.576971ms)
+✔ 包 calls 上限独立生效 (0.521748ms)
+✔ 用户 calls 上限独立生效且换包/操作/练习不能重置 (0.788467ms)
+✔ 包 inputTokens 上限独立生效 (0.176944ms)
+✔ 用户 inputTokens 上限独立生效且换包/操作/练习不能重置 (0.213733ms)
+✔ 包 outputTokens 上限独立生效 (0.35034ms)
+✔ 用户 outputTokens 上限独立生效且换包/操作/练习不能重置 (0.263414ms)
+✔ 包 waitMs 上限独立生效 (0.417826ms)
+✔ 用户 waitMs 上限独立生效且换包/操作/练习不能重置 (0.581011ms)
+✔ 24 小时左开右闭；精练不占用户额度；过期包仍按生命周期计费 (0.566749ms)
+✔ 等待时间取单次/包/用户剩余最小值；输入超长拒绝而不截断 (0.33522ms)
+✔ 成功：完整消息与估算一致，一行 ok 记录实际用量，额度按实际计 (65.116164ms)
+✔ 超时：延迟假 fetch 与可控时钟触发 timeout，预留时间仍占额度 (9.212903ms)
+✔ 不合格输出：带预留即使 retries=9 也不自动重试；显式重试重新预留并计 attempt (9.526586ms)
+✔ usage 未知或仅单项已知：NULL 不伪造 0，未知项按预留计 (8.151018ms)
+✔ 核销写库失败：业务仍得到模型结果，原子更新不泄漏实际用量，预留完整保留 (5.580571ms)
+✔ 响应丢失：连接或响应体中断为 indeterminate，绝不自动重发 (7.107219ms)
+✔ 启动恢复：reserved 变 indeterminate，用量和预留不变，晚到结果不能释放额度 (3.23432ms)
+✔ 预留写库失败抛错且 fake fetch 从未调用；外层 IMMEDIATE 回滚也不能 dispatch (3.287807ms)
+✔ 输入超长不建行不调模型；预留后的完整消息若超估算也拒绝 (3.233527ms)
+✔ 日志全表任何列均不含独特提示词、上下文、模型输出正文 (4.213105ms)
+✔ 无 options 保持 16000 输出、120 秒、两次尝试且不写日志 (4.942965ms)
+✔ 精练观测每次 provider 尝试一行且 package_id 为空，不占速刷额度 (6.297795ms)
+✔ 观测日志插入失败不影响调用；HTTP 错误为 provider_error，日志不含上游正文 (6.385493ms)
+✔ 包用满拒绝；新 operationId/sessionId/packageId 仍受用户限额，滚出窗口后恢复 (20.379459ms)
+✔ 并发：真实 SQLite 两进程两连接，两张卡片争抢用户最后一次额度只有一个成功 (1593.046404ms)
+✔ 预留令牌不可复制或重复派发，事务内调用与不同用户/用途均在 fetch 前拒绝 (9.179452ms)
+✔ 另一个用户的相同 packageId/operationId 不占本用户额度 (20.79845ms)
+✔ 响应中断报 AbortError 但本地时限未到：记 indeterminate，不错误释放预留 (4.88779ms)
+✔ 非预留 options 的输出/超时/retries 参数生效；reserved 始终采用持久化限额 (8.543081ms)
+✔ official DeepSeek Quick disables thinking only; scoring and compatible providers retain existing body (9.118534ms)
+✔ one model workflow per user, released after completion and failure (42.756138ms)
+✔ global admission is capped at eight and all slots are released (13.089053ms)
+✔ rate limit counts paid workflows, not deterministic operations or additional model steps (39.114915ms)
+✔ Required feedback API commit is visible before optional call; projection overrides stale JSON and lost response replay calls no model (119.166685ms)
+✔ original evaluate rejects feedback/compared/finished with 409, no model call and byte-for-byte unchanged records (94.127452ms)
+✔ optional review retry releases its lock during model call, preserves concurrent saves, and never repeats scoring or completion (62.6759ms)
+✔ deleting an attempt during optional review retry never recreates content or changes completion (58.51135ms)
+✔ interrupted optional review is a read-only failed projection and retries only review (42.046301ms)
+Request failed: test scan write failure
+✔ registration atomically writes legacy_scan unresolved_count=0; scan write failure rolls back the user (390.061867ms)
+✔ startup hook logs scan failure and returns; missing scan remains absent for conservative exposure checks (57.427443ms)
+✔ student review retry stamps recency before calling model; automatic review completion preserves later lifecycle time and state (78.797788ms)
+✔ automatic paragraph nudge updates its result without changing latest student action time (22.077315ms)
+✔ fresh-original pure rule: rewrite, prior submission or feedback precede unknown; Quick alone does not disqualify (2.550723ms)
+✔ 1 Required feedback saved; optional review fails or response is lost: one completion; retry/refresh/finish never moves it (187.542567ms)
+✔ 1b 原稿评估第一次调用失败: accepted time/freshness survive and scoring retry never recalculates (74.953362ms)
+✔ 1c 旧会话原稿已提交、评分一直失败；迁移后重试成功: current completion with null historical submission time (37.936053ms)
+✔ 1d 家族曝光未知时提交原稿，之后历史解析为已知: frozen unknown then repeat (62.922497ms)
+✔ 1e 家族已有反馈记录 prior_feedback=known 但没有提交记录: repeat and unconditional submission marker (28.181493ms)
+✔ 2 两个标签页同时提交同一家族: two processes and connections on a real temporary SQLite grant exactly one fresh (1369.238236ms)
+✔ 5 Old finished record saved or regraded after upgrade: unknown-date event stays immutable and only feedbackUpdatedAt changes (28.725845ms)
+✔ Free-entry repeat of a question family or alias: same family cannot become fresh through pasted normalized text (39.858351ms)
+✔ feedback save failure rolls back the event, feedback and familiarity together; error checkpoint cannot leak feedback (29.269118ms)
+✔ original acceptance rollback leaves no marker or fresh claim; missing/deleted attempt cannot be recreated (22.874016ms)
+✔ migration scan is idempotent, preserves entire session table byte-for-byte, and marks all cutoff families unknown on unresolved history (52.236796ms)
+✔ alias ID/text conflict remains ambiguous even with one candidate and poisons cutoff exposure (17.223976ms)
+✔ new user has unresolved_count=0; unscanned or failed startup scan stays unknown and logs without blocking other users (22.396998ms)
+✔ missing catalog cannot finalize legacy scan; unscanned acceptance is unknown then repeat (19.492729ms)
+✔ retained receipts are owner-scoped and immutable; conflicting parameters return 409; deletion markers are idempotent (28.794001ms)
+✔ invalid partial scoring output cannot satisfy the required-feedback contract or create a completion (26.365361ms)
+✔ unknown_time prior submission survives a new repeat; explicit rewrite records time and never claims freshness (23.905475ms)
+✔ deleted unresolved legacy evidence remains unknown on rescan; reviewed surviving aliases add positive facts without rewriting JSON (22.008497ms)
+✔ old finished regrade stays unknown-date even when startup scanning has not succeeded (21.927546ms)
+✔ old accepted original retry before successful scan retains unknown time and blocks later fresh claims even if scoring fails (19.392818ms)
+✔ student recency: actual draft/outline text and student actions count; reads, automatic nudge/review and metadata do not (3.175965ms)
+✔ lifecycle matrix: open/set-aside close, closed resume, same-state idempotence, closed cannot set aside (1.293306ms)
+✔ creation schema distinguishes strict question and legacy bodies; finish strips retired planChange (7.068438ms)
+✔ catalog import is idempotent and installs precisely the seven confirmed legacy aliases (73.61193ms)
+✔ v2 retains frozen v1, switches current version, and an old catalog replay cannot downgrade it (30.107219ms)
+✔ missing requirements rejects the entire import on empty and populated databases (18.140415ms)
+✔ same id/version rejects every frozen field change, including requirements alone (51.777496ms)
+✔ late question conflict rolls back earlier inserts; late alias conflict rolls back version switches and alias writes (22.305933ms)
+✔ requirements must match catalog one-to-one and have unique nonempty subquestions (21.702191ms)
+✔ partial unique indexes allow historical orders but reject duplicate current IDs and orders (21.660929ms)
+✔ ambiguous candidates persist, are versioned and immutable, and reject invalid states (35.99832ms)
+✔ alias normalization: NFKC, lowercase, whitespace; preserve punctuation and non-equivalent letters (0.904501ms)
+✔ resolver returns matched, not_in_catalog, ambiguous and unmatched without fuzzy matching (3.033195ms)
+✔ same idempotencyKey concurrent/repeated creates one session, same parameters with reordered keys replay 200; changed parameters 409; users isolated (121.607415ms)
+✔ current question snapshot is frozen across v2 import/current switch; new attempts use v2; missing/noncurrent question 404; reserved allowed (68.692867ms)
+✔ rewriteOfDeepId: owned same family accepted, other user/missing 404, different family/non-deep 409; deleted source marker still supports blank rewrite (94.780245ms)
+✔ lifecycle all transitions and same-state idempotence preserve stage, completion and family facts; owner/origin/auth/unsupported guards (87.647787ms)
+✔ lastStudentActionAt changes on real draft/outline edits and actions, never GET/list, identical PATCH, timer/preferences, ignored draft or replay (65.635802ms)
+✔ deleting completed practice retains exposure/completion with deleted evidence; resubmission is repeat, receipt cannot resurrect; transactional deletion rollback (67.665938ms)
+✔ question-bank switch: disabled question create 403, legacy task keeps focus and pasted marker; enabled task focus null; quick follows its feature flag; mock requires checkpoint (57.960548ms)
+✔ creation receipt failure rolls back session, marker and exposure together (12.341616ms)
+✔ account deletion clears every user table including six facts and hashed user auth limits; catalog and another user's data survive (368.099235ms)
+✔ Delayed GET before save cannot roll back saved card; same-version operation results invalidate pending reads (2.285062ms)
+✔ Double-click synchronous intent latch and edits during pending save prevent duplicate dispatch/navigation (0.558614ms)
+✔ Explicit-new lost response followed by refresh reuses persisted intent; storage denial has memory fallback (0.590277ms)
+✔ empty requirements use deterministic gaps without model or package; passing writes exactly one event and unchanged check is free (163.895674ms)
+✔ saving while check is in flight yields stale without completion or overwriting newer card (95.907641ms)
+✔ invalid English example notes consume one shared automatic retry; frozen manual retry cannot gain another (61.932441ms)
+✔ followup logical slot deduplicates until user answer; never writes model text into card; maximum two (102.002073ms)
+✔ supplemental package closes old allowance, cooldown and unchanged cards cannot reset budget (92.570808ms)
+✔ startup recovers operations without calls; manual retry uses frozen input and becomes stale after edit (75.154485ms)
+✔ input ceiling refuses dispatch with no reservation; deletion in flight cannot resurrect body or completion (85.192326ms)
+✔ supplemental check can recover a technically failed unchanged version using its existing frozen operation (72.370358ms)
+✔ missing a question requirement is a deterministic gap; model sees only populated requirements (36.993235ms)
+✔ user rolling budget survives deletion and creation; quota rejection leaves manual saves available (79.221773ms)
+✔ all supplied receipt aliases are checked before replay; combining keys from different operations returns 409 (78.674245ms)
+✔ result persistence failure rolls back completion and exposes indeterminate for an explicit frozen retry (73.240236ms)
+✔ followup rejects multiple questions and retries once; missing requirements and reasoning-quality instructions reach the model (89.731191ms)
+✔ 38 道题的每组槽位与本题 subquestions 一一对应；原因与对策分别成组，未添加反方模板 (6.955113ms)
+✔ 创建速刷同一事务保存空卡片、题目快照、marker、学生时间与回执；重复创建不增卡 (60.493489ms)
+✔ cardSave 版本冲突为 409 card_conflict，卡片、会话与所有回执完全不变 (57.512856ms)
+✔ Directly typed card; selected user excerpt：来源真实；编辑摘取变 direct；未改文字保留来源 (92.333847ms)
+✔ 摘取教练、他人、别的会话、未知作者、越界或切开代理对均拒绝，正文不变 (90.922288ms)
+✔ Passed card edited：保存后 unchecked、同一卡片 ID、历史完成事件与检查版本不变 (24.626358ms)
+✔ 卡片部分保存、空串清空、600 字边界、非法槽位与重复槽位；no-op 不增加会话或卡片版本 (49.917104ms)
+✔ quickAnswer 仅可回答待答教练追问；重复答案拒绝、请求重放不重复插入、参数冲突 409 (38.510043ms)
+✔ 默认子练习唯一：重复点击、刷新请求 ID、并发两次与明确另开幂等；空卡片允许继续 (83.262931ms)
+✔ 真实两进程 SQLite 并发 continueDeep 只能分配一个默认子练习 (1568.924696ms)
+✔ 默认子练习删除或 closed 未完成返回 default_child_gone；已完成 closed 可打开；explicitNew 不覆盖映射 (148.816006ms)
+✔ 源卡片修改与删除不改变精练的冻结 cardSnapshot，删除后晚到保存不能重建源会话 (53.178674ms)
+✔ 开关：速刷关闭与题库关闭均创建 403、已有速刷 GET 和全部动作 409；开关打开恢复正常 (61.042701ms)
+✔ 活动分派、所有者隔离与 Same Origin：速刷拒绝精练/PATCH，精练拒绝全部速刷动作，他人资源 404 (43.94225ms)
+✔ 短事务：回执写失败时卡片、学生时间与新建精练全部回滚，不会二次 persist (40.405935ms)
+✔ Quick Sunday, continued Deep Monday：周日完成夹具与周一精练各归其周，只有精练自身反馈合同成功才新增精练事件 (129.204565ms)
+✔ 原题版本冻结：目录出现 v2 新要求后旧速刷仍用 v1 槽位且精练复制 v1 题干 (34.680787ms)
+✔ closed Quick material can continue to Deep without reopening or permitting card edits (35.992556ms)
+✔ 删除速刷只删卡片、检查正文和冻结输入；保留操作/包/映射；账户删除清空全部用户表并隔离他人 (321.59409ms)
+✔ Untouched topic: Quick enabled recommends Quick, disabled recommends Deep and excludes readonly Quick (2.231584ms)
+✔ Passed card edited and two drafts on one question resume latest student-edited attempt (15.351269ms)
+✔ Set aside and active optional revision block all new-work branches; reserved work excluded (0.638161ms)
+✔ Exhausted topic rotates oldest latest completion and retains deleted source link (0.489357ms)
+✔ Type breadth counts family once across activities and rewrites, tie by bank order (0.453769ms)
+✔ Deleted default child requires explicit new; closed passed card remains reusable (0.486309ms)
+✔ Quick Sunday, continued Deep Monday: Taipei event weeks, unknown dates and deleted evidence (0.445087ms)
+✔ all release flags off: legacy create/read/save/evaluate work, new entrypoints reject, Quick stays read-only (166.587875ms)
+✔ legacy get/list are read-only; real save upgrades to v2 and round-trips nested unknown fields (23.147706ms)
+✔ Quick activity: GET succeeds; PATCH and every action reject with 409 and zero database changes (125.90299ms)
+✔ Quick stage: GET succeeds; PATCH and every action reject with 409 and zero database changes (74.122962ms)
+✔ unknown activity: GET succeeds; PATCH and every action reject with 409 and zero database changes (75.866029ms)
+✔ unknown stage: GET succeeds; PATCH and every action reject with 409 and zero database changes (66.568695ms)
+✔ legacy and Deep GET, editing, actions and idempotency retain existing behavior (66.354397ms)
+✔ unsupported guard preserves authentication, origin checking and owner isolation (10.330666ms)
+✔ legacy reader adds only compatibility defaults and preserves all unknown fields without inventing times (5.045245ms)
+✔ v2 reading is idempotent and preserves recorded snapshots, lifecycle and timestamps (1.119138ms)
+✔ new sessions start at v2 Deep/open with null evidence and provenance (0.386672ms)
+✔ support requires Deep and an existing essay stage, never Quick or unknown values (0.853544ms)
+✔ Topics API authenticates, respects flag and isolates retained completed evidence (88.768236ms)
+✔ pasted ordinary task retains family blocking without gaining bank topic identity (28.69112ms)
+ℹ tests 169
+ℹ suites 0
+ℹ pass 169
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 30974.514981
+
+> project-0@0.1.0 test:ui
+> node --import tsx --test tests/ui/*.test.ts
+
+✔ the reported coach reply renders Chinese bold labels and actual lists (44.354527ms)
+✔ preserves code and deliberately escaped Markdown when repairing emphasis (6.838599ms)
+✔ supports headings, quotes, numbered start, tables and GFM text formatting (10.702212ms)
+✔ does not execute model HTML, unsafe URLs, or load remote images (11.06251ms)
+✔ thread renders stored coach messages as Markdown while user evidence stays literal (5.966593ms)
+✔ finish 下一步: bank=true, question=true, links to topic only when both; old plan never displayed (18.804194ms)
+✔ finish 下一步: bank=true, question=false, links to topic only when both; old plan never displayed (2.655149ms)
+✔ finish 下一步: bank=false, question=true, links to topic only when both; old plan never displayed (1.569837ms)
+✔ finish 下一步: bank=false, question=false, links to topic only when both; old plan never displayed (1.34301ms)
+✔ Required feedback saved; optional review failed: score/issues remain visible and failure alone offers 重试 (34.523203ms)
+✔ Required feedback saved; optional review pending: score/issues remain visible and failure alone offers 重试 (7.694577ms)
+✔ Required feedback saved; optional review ok: score/issues remain visible and failure alone offers 重试 (5.28183ms)
+✔ Required feedback saved; optional review none: score/issues remain visible and failure alone offers 重试 (5.763004ms)
+✔ 精练 prewriting 左栏只读显示冻结卡片；无快照时原界面不变 (152.042169ms)
+✔ 精练 writing 左栏只读显示冻结卡片；无快照时原界面不变 (139.507327ms)
+✔ 速刷页面始终只读显示卡片，包含直接输入和摘取文字且不挂载精练控制器 (5.083287ms)
+✔ Quick in-page leave confirmation preserves a clear continue-editing choice (answerOnly=false) (22.849516ms)
+✔ Quick in-page leave confirmation preserves a clear continue-editing choice (answerOnly=true) (3.690559ms)
+✔ Quick leave confirmation cannot dispatch navigation during a pending save (5.338085ms)
+✔ Quick editor exposes each requirement, current check only, honest quota and safe model text (72.643954ms)
+✔ passed cards expose Deep continuation and interrupted operations remain explicit (29.905296ms)
+✔ Quick activity renders stored content without mounting SessionProvider or essay controls (17.921787ms)
+✔ Quick stage renders stored content without mounting SessionProvider or essay controls (2.861844ms)
+✔ unknown activity renders stored content without mounting SessionProvider or essay controls (2.258033ms)
+✔ unknown stage renders stored content without mounting SessionProvider or essay controls (1.971226ms)
+✔ legacy and Deep sessions retain the original provider and EssayScreen (0.757319ms)
+✔ read-only view prefers the frozen question and tolerates absent essay-only fields (1.364341ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11603.736031
+
+> project-0@0.1.0 test:db
+> node --conditions=react-server --import tsx scripts/test-db.ts
+
+PASS: empty database full migrations and migration replay.
+PASS: existing baseline database upgrades, preserving users, auth and session JSON byte-for-byte.
+PASS: WP4a→WP7 migration preserves Quick data; deletion retains ten metadata tables including checkpoint qualification and releases occupancy (users-only CASCADE).
+PASS: idempotent baseline/migrations, owner scoping, cascading deletion, stale model-save rejection, and foreign-key enforcement.
+
+> project-0@0.1.0 build
+> next build
+
+▲ Next.js 16.4.2 (Turbopack)
+✓ Running next.config.ts took 79ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 30.9s
+  Running TypeScript ...
+  Finished TypeScript in 30.5s ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/24) ...
+  Generating static pages using 1 worker (6/24) 
+  Generating static pages using 1 worker (12/24) 
+  Generating static pages using 1 worker (18/24) 
+✓ Generating static pages using 1 worker (24/24) in 768ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /account
+├ ƒ /api/auth/account
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/me
+├ ƒ /api/auth/password
+├ ƒ /api/auth/register
+├ ƒ /api/checkpoints
+├ ƒ /api/checkpoints/skip
+├ ƒ /api/checkpoints/start
+├ ƒ /api/profile
+├ ƒ /api/sessions
+├ ƒ /api/sessions/[id]
+├ ƒ /api/sessions/[id]/actions
+├ ƒ /api/sessions/[id]/lifecycle
+├ ƒ /api/sessions/[id]/quick
+├ ƒ /api/topics
+├ ƒ /api/topics/[topic]
+├ ƒ /cards
+├ ƒ /essays
+├ ƒ /essays/[id]
+├ ƒ /login
+├ ƒ /memory
+├ ƒ /onboarding
+├ ƒ /plan
+├ ƒ /progress
+├ ƒ /register
+├ ƒ /sessions/[id]
+└ ƒ /topics/[topic]
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

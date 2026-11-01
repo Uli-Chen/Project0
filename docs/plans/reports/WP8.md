@@ -25,4 +25,15 @@ WP4b、WP5、WP6、WP7 完成实现、修订及工作区内独立交叉审阅。
 
 发布脚本为 `deploy/release-wp8.sh`。先上传独立目录并在服务器 Node 24 完整检查，再备份真实数据库、停止单实例、迁移/导入/扫描、切换兼容程序。开关按题库→速刷→检查点逐项打开，FOCUS 保持 false；注册状态沿用既有配置。
 
-线上切换结果将在执行后追加；本节之前的通过结论不代表已经上线。
+线上发布已完成（Taipei 2026-11-01 14:40 起），发布版本 `53c52b4`：
+
+- 服务器 Node 24 完整 `npm run check` 退出 0，169/169 后端、27/27 UI、数据库四组与生产构建通过；见 `WP8_e2e/opc-wp8-check.log`。
+- 备份：`/home/squareofchen/opc-data/backups/2026-11-01T06-40-00.345Z-addcfc59-8275-47f9-9a28-74347e292e74.db`。
+- 追加迁移全部成功，导入38题/7条别名，历史扫描 succeeded=1、failed=0。
+- 旧代码保留：`/home/squareofchen/opc-before-wp8-20261101T063959Z`。新写入发生后的回退优先运行 `bash deploy/enable-wp8.sh reader`；禁止恢复旧备份覆盖之后的用户数据。
+- reader → bank → quick → checkpoints 每阶段均用一次性账户完成真实 HTTP 页面/API 验证；Quick创建、卡片保存与读取成功；每次测试账户均已删除，没有真实模型调用。见对应 `opc-wp8-*.log`。
+- 最终功能开关：QUESTION_BANK=true、QUICK=true、CHECKPOINTS=true、FOCUS=false。注册仍关闭。
+- 最终检查：`opc` 与 `nginx` 均 active；SQLite integrity_check=ok；release-smoke 临时账户剩余0；模型 deepseek-flash，主机 api.deepseek.com。
+- 公开 `https://project0.auglearn.org/login` 返回 HTTP200，TLS verification=0。
+
+本次先前上传遭自动审批拒绝，用户随后明确授权了具体服务器目标后才上传；未绕过审批。
