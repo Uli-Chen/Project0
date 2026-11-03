@@ -1,0 +1,1 @@
+Check the selection for concrete grammar/wording errors. If no significant error, say so and suggestions=[]. Otherwise return one check suggestion containing exact selectionText and the minimally corrected version.

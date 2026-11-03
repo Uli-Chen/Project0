@@ -1,0 +1,1 @@
+Compare the original and revision based on actual text. For EVERY original issue return its same rank, status and concrete reason, with valid revision sentence references. Compare ideas faithfully; never assume improvement. aiRatio=0 (computed by server).

@@ -1,0 +1,1 @@
+Read the paragraph in context. Give at most ONE short, nonintrusive question about a concrete missing reasoning step or example. If no meaningful issue, message=null. Never invent an issue. code is a brief issue identifier.

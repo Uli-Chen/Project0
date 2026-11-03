@@ -1,0 +1,1 @@
+Previous response was invalid or incomplete. Ensure every required field is present and types match exactly.

@@ -14,6 +14,7 @@ import { quickBudget, callConfigVersion } from "../llm/budget";
 import { reserveCall, type Reservation } from "../llm/calls";
 import { generateJson, buildMessages, estimateInputTokens } from "../llm/client";
 import { getLlmConfig } from "../llm/config";
+import { prompt } from "../llm/prompts";
 import { assertQuickSession } from "./http";
 import { SessionError } from "./engine";
 import type { SessionState } from "./types";
@@ -23,8 +24,8 @@ type Result = z.infer<typeof checkSchema>["results"][number];
 type Operation = typeof quickOperations.$inferSelect;
 type Frozen = { kind: "followup" | "check"; context: { task: string; requirements: ReturnType<typeof quickRequirements>; parts: { key: string; text: string }[]; messages?: { role: string; content: string }[]; coachingFocus?: "explain_reason" | "develop" }; empty: Result[]; configVersion: string };
 const instruction = {
-  followup: "Ask exactly one focused Chinese question (one terminal question mark, <=80 characters). Use the task, filled parts, missing requirements and latest student answer. If a stance is already stated, do not ask them to choose a stance again. If reasons are missing, guide them to examine a cause, consequence, comparison or personal observation without supplying any claim, example or conclusion. If coachingFocus=explain_reason, accept the stated stance provisionally and ask ONLY about an observation, mechanism or consequence supporting it; do not ask about stance, degree of agreement or scope again. When the student does not know why, preserve their stated opinion and guide one reasoning step; NEVER offer stance choices or repeat the previous question. Never write text to copy into the card, evaluate the position or supply an argument. targetKey must be a slot key from the supplied requirements or null.",
-  check: "For each supplied requirement, verify BOTH a direct answer and a relevant explanatory reason. A reason must explain how or why the claim follows: a mechanism, consequence, contrast or relevant observation connecting it to the answer. Merely repeating the conclusion, saying it is good/important/necessary without explanation, or circular reasoning is a gap even if the reason field is filled. Do not demand sophisticated, novel or agreeable opinions: ordinary clear explanations suffice. Check only the student's actual text; do not invent missing links. Return every supplied id exactly once. Gap notes in Chinese describe the missing reasoning step only; never supply claims, examples, conclusions or copyable sentences. No scores or position judgments. met requires note=null."
+  followup: prompt("quick/followup"),
+  check: prompt("quick/check")
 };
 function scope(userId: string, id: string) { return and(eq(quickOperations.userId, userId), eq(quickOperations.attemptId, id)); }
 function pack(userId: string, id: string) { return getDb().select().from(quickPackages).where(and(eq(quickPackages.userId, userId), eq(quickPackages.attemptId, id))).all().filter(p => !p.closedAt).at(-1); }

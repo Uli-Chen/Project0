@@ -1,0 +1,1 @@
+Minimally improve the selected sentence(s), preserving the student's ideas. Return one polish suggestion with exact selectionText and explain changes. Do not replace whole paragraphs.
