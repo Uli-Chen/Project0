@@ -59,7 +59,7 @@ export function EssayReader({
                     onKeyDown={(e) => e.key === "Enter" && onMarkClick?.(rank)}
                     onMouseEnter={() => onMarkHover?.(rank)}
                     onMouseLeave={() => onMarkHover?.(null)}
-                    className={cn("rounded-[3px] transition-[background-size,opacity] duration-300", onMarkClick && "cursor-pointer", dim && "opacity-55")}
+                    className={cn("rounded-[3px] transition-[background-size,opacity,box-shadow] duration-(--dur-layout) ease-(--ease-soft)", onMarkClick && "cursor-pointer", dim && "opacity-55")}
                     style={{
                       backgroundImage: `linear-gradient(${ISSUE_TONES[(rank - 1) % 3]}, ${ISSUE_TONES[(rank - 1) % 3]})`,
                       backgroundRepeat: "no-repeat",

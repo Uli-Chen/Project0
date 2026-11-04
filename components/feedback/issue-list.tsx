@@ -60,7 +60,7 @@ export function IssueList({
             key={issue.rank}
             onMouseEnter={() => onHover(issue.rank)}
             onMouseLeave={() => onHover(null)}
-            className={cn("group relative rounded-[10px] border bg-sheet transition-[border-color,box-shadow]", active && "border-input shadow-[var(--shadow-float)]")}
+            className={cn("group relative rounded-[10px] border bg-sheet transition-[border-color,box-shadow] duration-(--dur-layout) ease-(--ease-soft)", active && "border-input shadow-[var(--shadow-float)]")}
           >
             <button type="button" onClick={() => { onSelect(issue.rank); if (issue.sentenceIds[0]) onJump(issue.sentenceIds[0]); }} className="flex w-full items-start gap-2.5 rounded-[10px] px-3.5 pt-3 text-left">
               <IssueBadge rank={issue.rank} className="mt-px size-[22px] text-xs" />

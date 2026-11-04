@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { StatusButton } from "@/components/ui/status-button";
 import { Segmented } from "@/components/ui/segmented";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/lib/auth/types";
@@ -146,9 +147,9 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
 
         {error && <p role="alert" className="mt-6 rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
         <div className="mt-8 flex flex-wrap items-center gap-3 border-t pt-6">
-          <Button type="submit" variant="default" size="lg" disabled={missing.length > 0 || busy}>
-            {busy ? "正在保存…" : "保存"}
-          </Button>
+          <StatusButton type="submit" variant="default" size="lg" status={busy ? "pending" : "idle"} pendingLabel="正在保存" disabled={missing.length > 0}>
+            保存
+          </StatusButton>
           <Link href="/" className={buttonVariants({ variant: "ghost", size: "lg" })}>
             {initial.onboardingCompleted ? "取消" : "稍后"}
           </Link>

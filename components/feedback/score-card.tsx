@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { Dim, Scores } from "@/lib/prototype/types";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ export const DIMS: Dim[] = ["TR", "CC", "LR", "GRA"];
 
 export function ScoreCard({ scores, label }: { scores: Scores; label: string }) {
   const [open, setOpen] = useState(false);
+  const rationaleId = useId();
   const weakest = DIMS.reduce((low, d) => (scores.dims[d] < scores.dims[low] ? d : low), DIMS[0]);
   const spread = DIMS.some((d) => scores.dims[d] !== scores.dims[weakest]);
   return (
@@ -32,13 +33,14 @@ export function ScoreCard({ scores, label }: { scores: Scores; label: string }) 
       </dl>
       <div className="mt-3 flex items-center justify-between gap-3">
         <p className="text-xs text-faint">AI 实验性预估，非官方成绩</p>
-        <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+        <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls={rationaleId} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
           评分依据
-          <ChevronDown className={cn("size-3.5 transition-transform", open && "rotate-180")} />
+          <ChevronDown className={cn("size-3.5 transition-transform duration-(--dur-layout) ease-(--ease-soft)", open && "rotate-180")} />
         </button>
       </div>
       {open && (
-        <dl className="mt-3 flex flex-col gap-3 rounded-lg bg-sunk p-3.5 text-[13px] shadow-[inset_0_0_0_1px_var(--border)] animate-in fade-in-0">
+        <div id={rationaleId} className="motion-expand"><div>
+        <dl className="mt-3 flex flex-col gap-3 rounded-lg bg-sunk p-3.5 text-[13px] shadow-[inset_0_0_0_1px_var(--border)]">
           {DIMS.map((d) => (
             <div key={d}>
               <dt className="font-medium">{DIM_LABEL[d]}</dt>
@@ -46,6 +48,7 @@ export function ScoreCard({ scores, label }: { scores: Scores; label: string }) 
             </div>
           ))}
         </dl>
+        </div></div>
       )}
     </section>
   );

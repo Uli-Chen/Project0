@@ -71,8 +71,15 @@ function useEssayUiState({ centerRef }: { centerRef: RefObject<HTMLDivElement | 
     setTimeout(() => {
       const el = centerRef.current?.querySelector<HTMLElement>(`[data-sentence="${id}"]`);
       if (!el) return;
-      el.scrollIntoView({ block: "center", behavior: "smooth" });
-      el.animate([{ outline: "2px solid var(--foreground)" }, { outline: "2px solid transparent" }], { duration: 1200 });
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
+      if (reduced) return;
+      // 到位后在句子外围亮起一圈问题色，再慢慢退掉；正文本身不动
+      const ring = getComputedStyle(el).backgroundImage.match(/rgba?\([^)]*\)/)?.[0] ?? (getComputedStyle(el).getPropertyValue("--coach-line").trim() || "rgb(185 199 234)");
+      el.animate(
+        [{ boxShadow: `0 0 0 0 ${ring}` }, { boxShadow: `0 0 0 5px ${ring}`, offset: 0.25 }, { boxShadow: "0 0 0 5px transparent" }],
+        { duration: 1100, delay: 280, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+      );
     }, wide ? 0 : 320);
   }, [wide, centerRef]);
 

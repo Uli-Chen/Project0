@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
+import { DrawnCheck } from "@/components/ui/status-button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSession } from "@/lib/prototype/session-store";
 import type { MemoryChange } from "@/lib/prototype/types";
@@ -17,15 +18,15 @@ const TONE: Record<MemoryChange["kind"], string> = {
 };
 
 /** 本篇小结：完成后常驻在反馈或对比面板顶部 */
-export function FinishSummary() {
+export function FinishSummary({ animate = false }: { animate?: boolean } = {}) {
   const { state, questionBankEnabled } = useSession();
   if (!state.finish) return null;
   return (
     <section className="rounded-xl bg-good-soft p-4">
-      <h2 className="text-[15px] font-semibold">本篇小结</h2>
+      <h2 className="flex items-center gap-1.5 text-[15px] font-semibold">{animate && <DrawnCheck className="text-good" />}本篇小结</h2>
       <ul className="mt-2.5 flex flex-col gap-2">
-        {state.finish.memoryChanges.map((change) => (
-          <li key={change.text} className="flex items-baseline gap-2.5 text-[13px] leading-relaxed">
+        {state.finish.memoryChanges.map((change, i) => (
+          <li key={change.text} className={cn("flex items-baseline gap-2.5 text-[13px] leading-relaxed", animate && "motion-reveal")} style={animate ? { "--i": i + 1 } as React.CSSProperties : undefined}>
             <span className={cn("size-1.5 shrink-0 translate-y-[-2px] rounded-full", TONE[change.kind])} aria-hidden />
             {change.text}
           </li>
@@ -50,7 +51,7 @@ export function FinishDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader><DialogTitle>{assessment ? "入门测试完成" : "完成"}</DialogTitle></DialogHeader>
-        <FinishSummary />
+        <FinishSummary animate />
         <DialogFooter>
           <button type="button" onClick={() => setOpen(false)} className={buttonVariants({ variant: "ghost" })}>留在此页</button>
           <Link href={assessment ? "/progress" : "/essays"} className={buttonVariants()}>{assessment ? "查看进展" : "回到作文"}</Link>

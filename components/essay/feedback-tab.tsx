@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { splitSentences } from "@/lib/rules";
 import { Check, CircleDashed, CircleDot } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,12 +18,21 @@ export function FeedbackTab() {
   const { state, actions, coachBusy, lifecycleBusy, tutorV2Enabled } = useSession();
   const ui = useEssayUi();
   const [expanded, setExpanded] = useState(false);
+  const othersId = useId();
   const evaluation = state.evaluation;
   if (!evaluation) return null;
   const { scores, issues, review } = evaluation;
   const can = coachCapabilities(state);
   const primary = issues.find(i => i.rank === 1) ?? issues[0];
-  const visibleIssues = tutorV2Enabled && !expanded && primary ? [primary] : issues;
+  const folded = tutorV2Enabled && primary ? [primary] : issues;
+  const others = tutorV2Enabled && primary ? issues.filter((i) => i !== primary) : [];
+  const listProps = {
+    activeRank: ui.hoverRank ?? (ui.version === "original" ? state.activeIssue : null),
+    onSelect: (rank: number) => { actions.setActiveIssue(rank); ui.setVersion("original"); },
+    onHover: ui.setHoverRank,
+    onJump: (id: number) => { ui.setVersion("original"); ui.jumpToSentence(id); },
+    onDiscuss: can.issue && state.lifecycle === "open" ? (tutorV2Enabled ? (rank: number) => void discuss(rank) : ui.discussIssue) : undefined,
+  };
   async function discuss(rank: number) {
     if (coachBusy || lifecycleBusy || state.lifecycle !== "open") return;
     if (state.stage === "feedback" && !await actions.startRevision({ openIssue: rank })) return;
@@ -39,19 +48,17 @@ export function FeedbackTab() {
       <section className="mt-7">
         <h2 className="mb-2.5 flex items-baseline justify-between text-[15px] font-semibold">{tutorV2Enabled ? "先推进一个问题" : `先改这 ${issues.length} 处`}{!tutorV2Enabled && issues.length > 1 && <span className="text-xs font-normal text-faint">按影响排序</span>}</h2>
         {issues.length === 0 ? <p className="py-3 text-sm text-muted-foreground">没有需要优先改的问题</p> : (
-          <IssueList
-            issues={visibleIssues}
-            activeRank={ui.hoverRank ?? (ui.version === "original" ? state.activeIssue : null)}
-            onSelect={(rank) => { actions.setActiveIssue(rank); ui.setVersion("original"); }}
-            onHover={ui.setHoverRank}
-            onJump={(id) => { ui.setVersion("original"); ui.jumpToSentence(id); }}
-            onDiscuss={can.issue && state.lifecycle === "open" ? (tutorV2Enabled ? (rank) => void discuss(rank) : ui.discussIssue) : undefined}
-          />
+          <>
+            <IssueList issues={folded} {...listProps} />
+            {expanded && others.length > 0 && (
+              <div id={othersId} className="motion-expand"><div><div className="pt-2"><IssueList issues={others} {...listProps} /></div></div></div>
+            )}
+          </>
         )}
         {tutorV2Enabled && primary && <>
           <blockquote className="my-3 border-l-2 border-coach-line pl-3 font-serif text-[15px] leading-relaxed text-muted-foreground italic">{splitSentences(state.submitted.original ?? "").filter(s => primary.sentenceIds.includes(s.id)).map(s => s.text).join(" ")}</blockquote>
           <Button disabled={coachBusy || lifecycleBusy || state.lifecycle !== "open" || !["feedback", "revising"].includes(state.stage)} onClick={() => void discuss(primary.rank)}>改这个问题</Button>
-          {issues.length > 1 && <button className="ml-3 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground" onClick={() => setExpanded(!expanded)}>{expanded ? "收起其他问题" : `还有 ${issues.length - 1} 个问题`}</button>}
+          {issues.length > 1 && <button type="button" aria-expanded={expanded} aria-controls={othersId} className="ml-3 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground" onClick={() => setExpanded(!expanded)}>{expanded ? "收起其他问题" : `还有 ${issues.length - 1} 个问题`}</button>}
         </>}
       </section>
 

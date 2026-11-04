@@ -107,6 +107,13 @@
   --shadow-panel: 0 1px 2px rgb(20 28 45 / 0.05);
   --shadow-paper: 0 1px 2px rgb(20 28 45 / 0.06), 0 12px 32px -8px rgb(20 28 45 / 0.16);
   --shadow-float: 0 4px 14px -6px rgb(20 28 45 / 0.18);
+
+  /* 动效：时长与曲线全站统一；系统减少动态效果时由底部规则归零 */
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur-standard: 180ms;
+  --dur-layout: 240ms;
+  --dur-reveal: 320ms;
 }
 
 .dark {
@@ -332,11 +339,74 @@
   }
 }
 
+@layer components {
+  /* 新出现的内容：淡入并上移 4px，只用于新增内容；--i 控制错峰，最多 5 级 */
+  .motion-reveal {
+    animation: motion-reveal var(--dur-standard) var(--ease-soft) both;
+    animation-delay: calc(min(var(--i, 0), 5) * 35ms);
+  }
+
+  /* 原地换状态：只淡入，不位移 */
+  .motion-swap {
+    animation: motion-fade var(--dur-standard) var(--ease-soft) both;
+  }
+
+  /* 展开：高度从 0 到内容高度；内层需要 min-h-0 overflow-hidden */
+  .motion-expand {
+    display: grid;
+    animation: motion-expand var(--dur-layout) var(--ease-soft) both;
+  }
+
+  .motion-expand > * {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* 勾号一笔画出 */
+  .motion-check path {
+    stroke-dasharray: 24;
+    animation: motion-draw var(--dur-reveal) var(--ease-soft) both;
+  }
+
+  /* 进度格从左到右填上 */
+  .motion-fill {
+    transform-origin: left center;
+    animation: motion-fill var(--dur-reveal) var(--ease-soft) both;
+    animation-delay: calc(240ms + min(var(--i, 0), 5) * 90ms);
+  }
+}
+
+@keyframes motion-reveal {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes motion-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes motion-expand {
+  from { grid-template-rows: 0fr; opacity: 0; }
+  to { grid-template-rows: 1fr; opacity: 1; }
+}
+
+@keyframes motion-draw {
+  from { stroke-dashoffset: 24; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes motion-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
   }
 }

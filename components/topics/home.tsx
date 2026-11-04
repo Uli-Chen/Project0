@@ -9,6 +9,15 @@ import { CheckpointInvitation } from '@/components/checkpoints/checkpoint-invita
 import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { WeekPips } from '@/components/topics/week-pips';
+
+/** 本周一的日期，用来区分不同周的进度记录 */
+function weekKey() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
 
 export function TopicHome({ userId, onboardingCompleted, quickEnabled, perWeek, target }: { userId: string; onboardingCompleted: boolean; quickEnabled: boolean; perWeek: number; target: string | null }) {
   const data = getTopicData(userId);
@@ -24,11 +33,7 @@ export function TopicHome({ userId, onboardingCompleted, quickEnabled, perWeek, 
         </div>
         <div className="text-right">
           <p className="text-[13px] text-muted-foreground">本周已练 <span className="text-[15px] font-semibold text-foreground tabular-nums">{week}</span>{perWeek > 0 && <> / {perWeek} 次</>}{perWeek === 0 && ' 次'}</p>
-          {perWeek > 0 && (
-            <div className="mt-2 flex justify-end gap-1" aria-hidden>
-              {Array.from({ length: Math.min(perWeek, 14) }, (_, i) => <span key={i} className={cn('h-1.5 w-6 rounded-full', i < week ? 'bg-primary' : 'bg-input')} />)}
-            </div>
-          )}
+          {perWeek > 0 && <WeekPips week={week} perWeek={perWeek} weekKey={weekKey()} />}
           {data.counts.unknownDate > 0 && <p className="meta mt-1.5">另有 {data.counts.unknownDate} 次日期未知</p>}
         </div>
       </header>
