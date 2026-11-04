@@ -18,7 +18,7 @@ export function getTopicData(userId: string, topic?: string, now = new Date()) {
   const completed = new Set(events.map(c=>c.exposureKey));
   const started = markers.filter(m=>m.primaryTopic===name && m.questionId);
   const currentCards = cards.filter(c=>bank.some(q=>q.id===c.questionId && q.primaryTopic===name));
-  return { topic:name, completed:completed.size, startedOnly:new Set(started.filter(m=>!completed.has(m.exposureKey)).map(m=>m.exposureKey)).size, passedCards:currentCards.filter(c=>c.state==='passed').length, draftCards:currentCards.filter(c=>c.state!=='passed').length, lastPractisedAt:[...started.map(m=>m.createdAt), ...attempts.filter(a=>bank.some(q=>q.id===a.questionId && q.primaryTopic===name)).map(a=>a.lastStudentActionAt)].filter((date): date is string => !!date).sort().at(-1) ?? null };
+  return { topic:name, total:new Set(bank.filter(q=>q.primaryTopic===name).map(q=>q.exposureKey)).size, completed:completed.size, startedOnly:new Set(started.filter(m=>!completed.has(m.exposureKey)).map(m=>m.exposureKey)).size, passedCards:currentCards.filter(c=>c.state==='passed').length, draftCards:currentCards.filter(c=>c.state!=='passed').length, lastPractisedAt:[...started.map(m=>m.createdAt), ...attempts.filter(a=>bank.some(q=>q.id===a.questionId && q.primaryTopic===name)).map(a=>a.lastStudentActionAt)].filter((date): date is string => !!date).sort().at(-1) ?? null };
  });
  const flags = readFeatures();
  // A return visit/edit is practice too; creation-only ordering points users back

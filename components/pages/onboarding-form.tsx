@@ -111,7 +111,7 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
                     onClick={() => setDifficulties((list) => (on ? list.filter((x) => x !== d) : [...list, d]))}
                     className={cn(
                       "h-8 rounded-full border px-3.5 text-[13px] transition-colors",
-                      on ? "border-foreground bg-foreground text-background" : "bg-sheet text-foreground/80 hover:border-foreground/40",
+                      on ? "border-primary bg-primary text-primary-foreground" : "bg-sheet text-foreground/80 hover:border-faint",
                     )}
                   >
                     {d}
@@ -159,7 +159,7 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
   );
 }
 
-const inputClass = "h-8 rounded-lg border border-input bg-sheet px-3 font-mono text-[13px] outline-none focus:border-foreground/40";
+const inputClass = "h-8 rounded-lg border border-input bg-sheet px-3 text-[13px] tabular-nums outline-none focus:border-primary/60";
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (

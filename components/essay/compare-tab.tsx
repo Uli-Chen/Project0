@@ -36,20 +36,20 @@ export function CompareTab() {
   const issues = state.evaluation?.issues ?? [];
 
   return (
-    <div className="h-full overflow-y-auto px-5 pt-5 pb-10">
+    <div className="h-full overflow-y-auto px-4 pt-5 pb-10">
       {state.finish && <div className="mb-8"><FinishSummary /></div>}
 
       <section>
-        <p className="text-xs text-muted-foreground">原稿 → 改写稿</p>
-        <p className="mt-1.5 flex items-center gap-2.5 font-mono text-[40px] leading-none tracking-tighter tabular-nums">
+        <p className="text-[13px] text-muted-foreground">原稿到改写稿</p>
+        <p className="mt-1.5 flex items-center gap-2.5 font-serif text-[48px] leading-none font-medium tracking-tight tabular-nums">
           <span className="text-muted-foreground">{before.overall.toFixed(1)}</span>
           <ArrowRight className="size-5 text-muted-foreground/60" />
           {after.overall.toFixed(1)}
         </p>
         <dl className="mt-5 flex flex-col divide-y border-y text-[13px]">
           {DIMS.map((d) => (
-            <div key={d} className="flex items-center justify-between py-1.5 font-mono tabular-nums">
-              <dt className="font-sans text-muted-foreground">{DIM_LABEL[d]}</dt>
+            <div key={d} className="flex items-center justify-between py-2 tabular-nums">
+              <dt className="text-muted-foreground">{DIM_LABEL[d]}</dt>
               <dd>
                 {before.dims[d].toFixed(1)} → {after.dims[d].toFixed(1)}
                 <span className={cn("ml-2 inline-block w-8 text-right text-xs", after.dims[d] > before.dims[d] ? "text-good" : after.dims[d] < before.dims[d] ? "text-destructive" : "text-muted-foreground")}>{delta(before.dims[d], after.dims[d])}</span>
@@ -57,7 +57,7 @@ export function CompareTab() {
             </div>
           ))}
         </dl>
-        <p className="meta mt-2.5 text-[11px]">AI 实验性预估，非官方成绩</p>
+        <p className="mt-2.5 text-xs text-faint">AI 实验性预估，非官方成绩</p>
       </section>
 
       <section className="mt-8">
@@ -103,7 +103,7 @@ export function CompareTab() {
           </div>
         ))}
         {comparison.idea.changed.length > 0 && <ul className="mt-4 text-[13px] text-muted-foreground">{comparison.idea.changed.map((c) => <li key={c}>{c}</li>)}</ul>}
-        <div className="mt-4 flex items-baseline justify-between gap-3 text-[13px]"><span className="text-xs text-muted-foreground">站内已采用建议文本占比</span><span className="font-mono tabular-nums">{Math.round(comparison.aiRatio * 100)}%</span></div>
+        <div className="mt-4 flex items-baseline justify-between gap-3 text-[13px]"><span className="text-xs text-muted-foreground">站内已采用建议文本占比</span><span className="font-medium tabular-nums">{Math.round(comparison.aiRatio * 100)}%</span></div>
         <p className="mt-1 text-xs text-muted-foreground">按已采用且仍完整保留的站内建议文本词数估算；不检测 AI 生成，也不识别外部来源。</p>
       </section>
 
@@ -119,12 +119,12 @@ function Rating() {
   const [comment, setComment] = useState("");
   if (state.rating) return <p className="mt-8 text-xs text-muted-foreground">评价已提交</p>;
   return (
-    <section className="mt-8 flex flex-col gap-3 rounded-xl border p-4">
-      <h2 className="text-xs text-muted-foreground">评价这次练习</h2>
+    <section className="mt-8 flex flex-col gap-3 rounded-xl bg-sunk p-4 shadow-[inset_0_0_0_1px_var(--border)]">
+      <h2 className="text-[15px] font-semibold">评价这次练习</h2>
       <div className="flex items-center justify-between gap-3 text-[13px]">
         <span>有用吗</span>
         <ToggleGroup disabled={state.lifecycle !== "open" || lifecycleBusy} size="sm" spacing={0} variant="outline" value={useful ? [useful] : []} onValueChange={(value) => setUseful(value[0] ?? null)} aria-label="有用程度">
-          {["1", "2", "3", "4", "5"].map((v) => <ToggleGroupItem key={v} value={v} className="h-6 w-7 px-0 font-mono text-xs">{v}</ToggleGroupItem>)}
+          {["1", "2", "3", "4", "5"].map((v) => <ToggleGroupItem key={v} value={v} className="h-7 w-8 px-0 text-xs tabular-nums">{v}</ToggleGroupItem>)}
         </ToggleGroup>
       </div>
       <div className="flex items-center justify-between gap-3 text-[13px]">

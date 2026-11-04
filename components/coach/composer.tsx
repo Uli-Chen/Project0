@@ -46,7 +46,7 @@ export function Composer({
   };
 
   return (
-    <div className="rounded-xl border bg-sheet transition-colors focus-within:border-foreground/30">
+    <div className="rounded-xl border border-input bg-sunk transition-colors focus-within:border-primary/60 focus-within:bg-sheet">
       {top && <div className="flex flex-wrap gap-1.5 px-2.5 pt-2.5">{top}</div>}
       <textarea
         ref={ref}
@@ -62,7 +62,7 @@ export function Composer({
             send();
           }
         }}
-        className="block max-h-[180px] w-full resize-none bg-transparent px-3 pt-2.5 text-sm leading-relaxed outline-none placeholder:text-muted-foreground/70"
+        className="block max-h-[180px] w-full resize-none bg-transparent px-3 pt-2.5 text-sm leading-relaxed outline-none placeholder:text-faint"
       />
       <div className="flex items-center gap-2 px-2 pb-2">
         <div className="min-w-0 flex-1">{toolbar}</div>
@@ -72,7 +72,7 @@ export function Composer({
           onClick={send}
           disabled={!text.trim() || disabled}
           aria-label="发送"
-          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-opacity disabled:opacity-20"
+          className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-opacity disabled:opacity-25"
         >
           <ArrowUp className="size-4" />
         </button>

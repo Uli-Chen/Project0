@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Download, LoaderCircle, MoreHorizontal, PanelLeft, PanelRight, PenLine, RotateCcw } from "lucide-react";
+import { Check, ChevronLeft, Download, LoaderCircle, MoreHorizontal, PanelLeft, PanelRight, PenLine, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -56,20 +56,20 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
   };
 
   return (
-    <header className="relative z-30 flex h-12 shrink-0 items-center gap-3 border-b bg-background px-3">
+    <header className="relative z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-sheet px-3">
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <Link href="/essays" onClick={leave} className="shrink-0 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
-          {leaving ? "正在保存…" : "作文"}
+        <Link href="/essays" onClick={leave} className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
+          {!leaving && <ChevronLeft className="size-4" />}{leaving ? "正在保存…" : "作文"}
         </Link>
-        <span className="text-muted-foreground/50" aria-hidden>/</span>
+        <span className="text-input" aria-hidden>/</span>
         <Popover>
-          <PopoverTrigger className="min-w-0 truncate rounded-md px-2 py-1 text-left font-serif text-[15px] hover:bg-secondary">{state.prompt.text}</PopoverTrigger>
+          <PopoverTrigger className="min-w-0 truncate rounded-md px-2 py-1 text-left font-serif text-[16px] hover:bg-secondary">{state.prompt.text}</PopoverTrigger>
           <PopoverContent align="start" className="w-[520px] max-w-[calc(100vw-2rem)] p-5">
             <p className="prose-prompt not-italic">{state.prompt.text}</p>
             <p className="meta mt-3">Write at least 250 words.</p>
           </PopoverContent>
         </Popover>
-        <Badge variant="outline" className="hidden shrink-0 font-normal text-muted-foreground sm:inline-flex">{essayKindLabel(state)}</Badge>
+        <Badge variant="outline" className="hidden shrink-0 sm:inline-flex">{essayKindLabel(state)}</Badge>
       </div>
 
       {hasRevision(state) && (
@@ -77,7 +77,7 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
           {(["original", "revision"] as const).map((kind) => (
             <ToggleGroupItem key={kind} value={kind} className="gap-1.5 px-2.5 text-xs">
               {kind === "original" ? "原稿" : "改写稿"}
-              {scores[kind] !== undefined && <span className="font-mono text-muted-foreground">{scores[kind]!.toFixed(1)}</span>}
+              {scores[kind] !== undefined && <span className="text-muted-foreground tabular-nums">{scores[kind]!.toFixed(1)}</span>}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
@@ -85,10 +85,10 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
 
       <div className="flex flex-1 items-center justify-end gap-1.5">
         {editing && (
-          <div className="meta mr-2 hidden items-center gap-3 sm:flex">
-            <span className={cn(overtime && "text-warn")} title={essayKind === "revision" ? "改写用时" : "考场建议 40 分钟"}>{overtime ? "超过 40 分钟 · " : ""}{formatClock(elapsed)}</span>
+          <div className="meta mr-2 hidden items-center gap-3.5 sm:flex">
+            <span className={cn(overtime && "text-warn")} title={essayKind === "revision" ? "改写用时" : "考场建议 40 分钟"}>{overtime ? "超过 40 分钟，" : ""}{formatClock(elapsed)}</span>
             <span>{countWords(state.drafts[essayKind])} 词</span>
-            <span className={cn(saveStatus === "error" && "text-destructive")}>{saveStatus === "saving" ? "保存中" : saveStatus === "unsaved" ? "未保存" : saveStatus === "error" ? "保存失败" : "已保存"}</span>
+            <span className={cn("inline-flex items-center gap-1", saveStatus === "error" ? "text-destructive" : saveStatus === "saved" && "text-good")}>{saveStatus === "saved" && <Check className="size-3.5" />}{saveStatus === "saving" ? "保存中" : saveStatus === "unsaved" ? "未保存" : saveStatus === "error" ? "保存失败" : "已保存"}</span>
           </div>
         )}
         {hasLeft && <IconButton label="提纲" onClick={() => togglePanel("left")} active={ui.wide ? ui.leftOpen : ui.sheet === "left"}><PanelLeft /></IconButton>}
@@ -160,7 +160,7 @@ function PrimaryAction({ onSubmit, assessment }: { onSubmit: () => void; assessm
   if (state.lifecycle !== "open") return null;
   switch (state.stage) {
     case "prewriting":
-      return <Button size="sm" disabled={busy} onClick={actions.startWriting}>开始写作<ArrowRight /></Button>;
+      return <Button size="sm" disabled={busy} onClick={actions.startWriting}>开始写作</Button>;
     case "writing":
     case "revising": {
       const revision = state.stage === "revising";
@@ -185,7 +185,7 @@ function PrimaryAction({ onSubmit, assessment }: { onSubmit: () => void; assessm
     case "feedback":
       return assessment
         ? <Button size="sm" disabled={busy} onClick={actions.finish}>{busy ? <LoaderCircle className="animate-spin" /> : null}完成</Button>
-        : <Button size="sm" disabled={busy} onClick={() => void actions.startRevision()}>开始改写<ArrowRight /></Button>;
+        : <Button size="sm" disabled={busy} onClick={() => void actions.startRevision()}>开始改写</Button>;
     case "compared":
       return <Button size="sm" disabled={busy} onClick={actions.finish}>{busy ? <LoaderCircle className="animate-spin" /> : null}完成</Button>;
     default:

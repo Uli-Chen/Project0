@@ -54,7 +54,7 @@ export function IssueMemory({ initial, excludedMemoryIds }: { initial: MemoryIte
                     <p className="font-medium">{item.summary}</p>
                     {item.evidence && <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{item.evidence.sentence}</p>}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-[13px] tabular-nums">{item.seen}<span className="text-muted-foreground"> / {item.checked}</span></TableCell>
+                  <TableCell className="text-right text-[13px] tabular-nums">{item.seen}<span className="text-muted-foreground"> / {item.checked}</span></TableCell>
                   <TableCell className="meta hidden text-right sm:table-cell">{item.evidence?.date}</TableCell>
                   <TableCell className="pr-0 text-right">
                     <Tooltip>

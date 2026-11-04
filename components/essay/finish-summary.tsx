@@ -21,8 +21,8 @@ export function FinishSummary() {
   const { state, questionBankEnabled } = useSession();
   if (!state.finish) return null;
   return (
-    <section className="rounded-xl border bg-background p-4">
-      <h2 className="text-xs text-muted-foreground">本篇小结</h2>
+    <section className="rounded-xl bg-good-soft p-4">
+      <h2 className="text-[15px] font-semibold">本篇小结</h2>
       <ul className="mt-2.5 flex flex-col gap-2">
         {state.finish.memoryChanges.map((change) => (
           <li key={change.text} className="flex items-baseline gap-2.5 text-[13px] leading-relaxed">

@@ -26,9 +26,9 @@ export default async function LibraryPage() {
   });
 
   return (
-    <div className={user.profile.onboardingCompleted ? "grid gap-10 xl:grid-cols-[minmax(0,1fr)_240px]" : undefined}>
+    <div className={user.profile.onboardingCompleted ? "grid gap-8 xl:grid-cols-[minmax(0,1fr)_256px]" : undefined}>
       <div className="min-w-0">
-        <header className="flex items-center justify-between gap-4">
+        <header className="flex items-end justify-between gap-4">
           <h1 className="page-heading">作文</h1>
           <div className="flex flex-wrap justify-end gap-2">{bankEnabled && <NewEssayDialog pasteOnly trigger={<Button variant="outline">粘贴题目</Button>} />}<NewEssayButton bankEnabled={bankEnabled} focus={summary.focus?.title} /></div>
         </header>
@@ -41,8 +41,9 @@ export default async function LibraryPage() {
 
         <div className="mt-8">
           {rows.length ? <EssayTable rows={rows} /> : (
-            <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed py-20">
-              <p className="font-serif text-xl">写第一篇</p>
+            <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-input bg-sunk py-20">
+              <p className="text-[19px] font-semibold">写第一篇</p>
+              <p className="-mt-2 text-sm text-muted-foreground">选一道题，从提纲写到完整作文。</p>
               <NewEssayButton bankEnabled={bankEnabled} focus={summary.focus?.title} variant="outline" />
             </div>
           )}
@@ -50,23 +51,23 @@ export default async function LibraryPage() {
       </div>
 
       {user.profile.onboardingCompleted && (
-        <aside className="flex flex-col gap-8 xl:pt-14">
-          <section>
-            <div className="flex items-baseline justify-between"><h2 className="text-xs text-muted-foreground">本周</h2><span className="font-mono text-sm tabular-nums">{summary.weekCompleted}<span className="text-muted-foreground"> / {perWeek}</span></span></div>
+        <aside className="surface flex h-fit flex-col divide-y self-start xl:mt-[60px]">
+          <section className="px-5 py-4">
+            <div className="flex items-baseline justify-between"><h2 className="text-[13px] text-muted-foreground">本周已练</h2><span className="text-[15px] font-semibold tabular-nums">{summary.weekCompleted}<span className="font-normal text-muted-foreground"> / {perWeek} 次</span></span></div>
             <Progress value={perWeek ? Math.min(100, (summary.weekCompleted / perWeek) * 100) : 0} className="mt-2.5" aria-label="本周完成进度" />
           </section>
-          <section>
-            <h2 className="text-xs text-muted-foreground">目标</h2>
-            <p className="mt-1 font-mono text-3xl tracking-tight tabular-nums">{summary.target?.toFixed(1) ?? "—"}</p>
-            <p className="meta mt-1">{summary.examPassed ? <Link href="/onboarding" className="text-warn underline underline-offset-4">考试日期已过</Link> : `${summary.weeks} 周 · 每周 ${perWeek} 次`}</p>
+          <section className="px-5 py-4">
+            <h2 className="text-[13px] text-muted-foreground">目标分数</h2>
+            <p className="mt-1 font-serif text-[40px] leading-none font-medium tracking-tight tabular-nums">{summary.target?.toFixed(1) ?? "—"}</p>
+            <p className="meta mt-1">{summary.examPassed ? <Link href="/onboarding" className="text-warn underline underline-offset-4">考试日期已过</Link> : `还有 ${summary.weeks} 周，每周 ${perWeek} 次`}</p>
           </section>
           {issues.length > 0 && (
-            <section>
-              <h2 className="text-xs text-muted-foreground">常见问题</h2>
+            <section className="px-5 py-4">
+              <h2 className="text-[13px] text-muted-foreground">常见问题</h2>
               <ul className="mt-2.5 flex flex-col gap-2">
-                {issues.map((issue) => <li key={issue.id} className="flex items-baseline justify-between gap-3 text-[13px]"><span className="min-w-0 truncate">{issue.summary}</span><span className="meta">×{issue.seen}</span></li>)}
+                {issues.map((issue) => <li key={issue.id} className="flex items-baseline justify-between gap-3 text-[13px]"><span className="min-w-0 truncate">{issue.summary}</span><span className="meta shrink-0">{issue.seen} 次</span></li>)}
               </ul>
-              <Link href="/progress" className="mt-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">进展<ArrowUpRight className="size-3" /></Link>
+              <Link href="/progress" className="mt-3 inline-flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground">查看进展<ArrowUpRight className="size-3" /></Link>
             </section>
           )}
         </aside>
@@ -77,8 +78,8 @@ export default async function LibraryPage() {
 
 function Banner({ title, meta, action }: { title: string; meta?: string; action: React.ReactNode }) {
   return (
-    <div className="mt-6 flex items-center justify-between gap-4 rounded-xl border bg-sheet px-5 py-4">
-      <div><p className="text-sm font-medium">{title}</p>{meta && <p className="meta mt-0.5">{meta}</p>}</div>
+    <div className="lead mt-6 flex items-center justify-between gap-4 py-5 pr-6 pl-8">
+      <div><p className="text-[17px] font-semibold">{title}</p>{meta && <p className="meta mt-0.5">{meta}</p>}</div>
       {action}
     </div>
   );

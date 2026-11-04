@@ -35,6 +35,12 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sheet: var(--sheet);
+  --color-paper: var(--paper);
+  --color-sunk: var(--sunk);
+  --color-faint: var(--faint);
+  --color-coach-line: var(--coach-line);
+  --color-warn-soft: var(--warn-soft);
+  --color-good-soft: var(--good-soft);
   --color-ink: var(--ink);
   --color-coach: var(--coach);
   --color-coach-soft: var(--coach-soft);
@@ -50,75 +56,92 @@
 }
 
 /*
- * 单色、细线、暖中性：界面像精密仪器，纸面像纸。
- * 唯一的彩色是教练（陶土色）和问题高亮（琥珀、玫瑰、鼠尾草）。
+ * 书桌与试卷：页面是桌面，分组是面板，用户正在写的东西是一张纸。
+ * 唯一的强调色是钢笔蓝（主操作与教练），问题高亮用琥珀、玫瑰、鼠尾草。
+ * 层次：background（桌面）< sheet（面板）< paper（试卷）；sunk 是往里收的输入与次要块。
  */
 :root {
   color-scheme: light;
   --radius: 0.5rem;
-  --background: #faf9f7;
-  --foreground: #141413;
+  --background: #eceef1;
+  --foreground: #1a1d23;
   --sheet: #ffffff;
-  --ink: #141413;
+  --paper: #ffffff;
+  --sunk: #f3f4f6;
+  --ink: #1a1d23;
   --card: var(--sheet);
   --card-foreground: var(--foreground);
   --popover: #ffffff;
   --popover-foreground: var(--foreground);
-  --primary: var(--ink);
-  --primary-foreground: #faf9f7;
-  --secondary: #f1efeb;
+  --primary: #2f4fa8;
+  --primary-foreground: #ffffff;
+  --secondary: var(--sunk);
   --secondary-foreground: var(--foreground);
-  --muted: #f1efeb;
-  --muted-foreground: #6f6e69;
-  --accent: #efede8;
+  --muted: var(--sunk);
+  --muted-foreground: #576070;
+  --faint: #858c98;
+  --accent: #e6e9ee;
   --accent-foreground: var(--foreground);
   --destructive: #b42318;
-  --border: #e8e6e1;
-  --input: #dedbd5;
-  --ring: #a8a59d;
-  --sidebar: #f5f4f0;
+  --border: #dde1e6;
+  --input: #c4cad3;
+  --ring: #6f86c9;
+  --sidebar: var(--background);
   --sidebar-foreground: var(--foreground);
-  --sidebar-primary: var(--ink);
-  --sidebar-primary-foreground: #faf9f7;
-  --sidebar-accent: #eae8e3;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgb(26 29 35 / 0.05);
   --sidebar-accent-foreground: var(--foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
-  --coach: #b8532f;
-  --coach-soft: #f8ece6;
-  --warn: #a15c07;
+  --coach: #2f4fa8;
+  --coach-soft: #e7ecf8;
+  --coach-line: #b9c7ea;
+  --warn: #9a5a0a;
+  --warn-soft: #f8ecd6;
   --good: #2f7a4f;
-  --hl-1: rgb(233 185 73 / 0.32);
+  --good-soft: #e2f0e7;
+  --hl-1: rgb(233 185 73 / 0.34);
   --hl-2: rgb(229 140 138 / 0.3);
   --hl-3: rgb(127 182 133 / 0.32);
+  --shadow-panel: 0 1px 2px rgb(20 28 45 / 0.05);
+  --shadow-paper: 0 1px 2px rgb(20 28 45 / 0.06), 0 12px 32px -8px rgb(20 28 45 / 0.16);
+  --shadow-float: 0 4px 14px -6px rgb(20 28 45 / 0.18);
 }
 
 .dark {
   color-scheme: dark;
-  --background: #0c0c0b;
-  --foreground: #ecebe6;
-  --sheet: #151514;
-  --ink: #ecebe6;
-  --popover: #1a1a19;
-  --primary-foreground: #0c0c0b;
-  --secondary: #1f1f1d;
-  --muted: #1f1f1d;
-  --muted-foreground: #9c9a93;
-  --accent: #222220;
+  --background: #111317;
+  --foreground: #e8eaee;
+  --sheet: #191c22;
+  --paper: #21252c;
+  --sunk: #15171c;
+  --ink: #e8eaee;
+  --popover: #1f232a;
+  --primary: #8ea7ec;
+  --primary-foreground: #0f1424;
+  --muted-foreground: #a4abb6;
+  --faint: #737b87;
+  --accent: #232730;
   --destructive: #f97066;
-  --border: #262624;
-  --input: #34342f;
-  --ring: #5f5d57;
-  --sidebar: #0f0f0e;
-  --sidebar-primary-foreground: #0c0c0b;
-  --sidebar-accent: #1d1d1b;
-  --coach: #e2845f;
-  --coach-soft: #2a1a13;
+  --border: #2a2f38;
+  --input: #3a414c;
+  --ring: #6f86c9;
+  --sidebar-primary-foreground: #0f1424;
+  --sidebar-accent: rgb(255 255 255 / 0.05);
+  --coach: #8ea7ec;
+  --coach-soft: #1e2741;
+  --coach-line: #34426b;
   --warn: #e3b25c;
+  --warn-soft: #2b2114;
   --good: #7cc495;
-  --hl-1: rgb(233 185 73 / 0.24);
-  --hl-2: rgb(229 140 138 / 0.24);
-  --hl-3: rgb(127 182 133 / 0.24);
+  --good-soft: #17281e;
+  --hl-1: rgb(233 185 73 / 0.26);
+  --hl-2: rgb(229 140 138 / 0.26);
+  --hl-3: rgb(127 182 133 / 0.26);
+  --shadow-panel: 0 0 0 1px rgb(0 0 0 / 0.2);
+  --shadow-paper: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -10px rgb(0 0 0 / 0.6);
+  --shadow-float: 0 6px 18px -8px rgb(0 0 0 / 0.7);
 }
 
 @layer base {
@@ -131,7 +154,7 @@
   }
 
   body {
-    @apply bg-background font-sans text-sm text-foreground antialiased;
+    @apply bg-background font-sans text-[15px] leading-relaxed text-foreground antialiased;
     font-feature-settings: "kern", "ss01";
     min-width: 320px;
   }
@@ -141,7 +164,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--ring);
+    outline: 2px solid var(--primary);
     outline-offset: 2px;
   }
 }
@@ -225,23 +248,61 @@
   .coach-markdown th { background: var(--secondary); font-weight: 600; }
 
   .page-heading {
-    font-size: 1.375rem;
-    font-weight: 600;
+    font-size: 1.875rem;
+    font-weight: 650;
     letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .section-heading {
+    font-size: 1.1875rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
     line-height: 1.3;
   }
 
+  /* 面板：分组用，白底、细边、几乎没有投影 */
   .surface {
-    border: 1px solid var(--border);
     border-radius: 0.75rem;
     background: var(--sheet);
+    box-shadow: var(--shadow-panel), 0 0 0 1px var(--border);
+  }
+
+  /* 试卷：只给用户正在写或读的正文 */
+  .paper {
+    border-radius: 0.25rem;
+    background: var(--paper);
+    box-shadow: var(--shadow-paper);
+  }
+
+  /* 凹陷：提示条、次要信息块 */
+  .sunk {
+    border-radius: 0.75rem;
+    background: var(--sunk);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+
+  /* 主角：页面里唯一需要先看的那一块 */
+  .lead {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.875rem;
+    background: var(--sheet);
+    box-shadow: var(--shadow-panel), 0 0 0 1px var(--border);
+  }
+
+  .lead::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    background: var(--primary);
   }
 
   .meta {
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.01em;
+    line-height: 1.5;
     color: var(--muted-foreground);
   }
 
@@ -250,7 +311,7 @@
     width: 100%;
     border: 1px solid var(--input);
     border-radius: 0.5rem;
-    background: var(--sheet);
+    background: var(--sunk);
     padding: 0.65rem 0.8rem;
     font-size: 0.875rem;
   }

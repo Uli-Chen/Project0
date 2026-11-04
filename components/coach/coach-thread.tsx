@@ -7,8 +7,8 @@ import { SuggestionCard } from "./suggestion-card";
 
 export function CoachMark() {
   return (
-    <span className="flex items-center gap-1.5 text-xs font-medium text-coach">
-      <span className="font-serif text-[15px] italic leading-none" aria-hidden>0</span>
+    <span className="flex items-center gap-2 text-xs font-semibold text-coach">
+      <span className="grid size-6 place-items-center rounded-full bg-coach-soft font-serif text-[15px] font-normal italic leading-none" aria-hidden>0</span>
       教练
     </span>
   );
@@ -55,15 +55,15 @@ export function CoachThread({
             <div key={m.id} className="flex flex-col items-end gap-1.5">
               {renderTag?.(m)}
               {m.quote && (
-                <p className="line-clamp-3 max-w-[90%] border-r-2 border-border pr-3 text-right font-serif text-[14px] italic leading-relaxed text-muted-foreground">
+                <p className="line-clamp-3 max-w-[90%] border-r-2 border-coach-line pr-3 text-right font-serif text-[14.5px] italic leading-relaxed text-muted-foreground">
                   {m.quote}
                 </p>
               )}
-              <p className="max-w-[88%] rounded-2xl rounded-br-sm bg-secondary px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap">{m.content}</p>
+              <p className="max-w-[88%] rounded-[14px] rounded-br-[4px] border bg-sunk px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap">{m.content}</p>
             </div>];
         }
         return [divider,
-          <div key={m.id} className="flex min-w-0 flex-col gap-2 animate-in fade-in-0 duration-300">
+          <div key={m.id} className="flex min-w-0 flex-col gap-2 text-sm leading-[1.7] animate-in fade-in-0 duration-300">
             {(startsRun || renderTag) && (
               <div className="flex items-center gap-2">
                 {startsRun && <CoachMark />}
@@ -71,7 +71,7 @@ export function CoachThread({
               </div>
             )}
             <CoachMarkdown content={m.content} />
-            {m.demoSentence && <p className="border-l-2 border-coach/40 pl-3 font-serif text-[15px] italic">{m.demoSentence}</p>}
+            {m.demoSentence && <p className="border-l-2 border-coach-line pl-3 font-serif text-[15.5px] italic">{m.demoSentence}</p>}
             {m.suggestionIds?.map((sid) => {
               const s = suggestions[sid];
               if (!s) return null;

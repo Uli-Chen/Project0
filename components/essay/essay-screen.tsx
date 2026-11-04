@@ -22,6 +22,7 @@ import { EssayTopbar } from "./essay-topbar";
 import { EssayUiProvider, useEssayRefs, useEssayUi } from "./essay-ui";
 import { FeedbackTab } from "./feedback-tab";
 import { FinishDialog } from "./finish-summary";
+import { cn } from "@/lib/utils";
 
 const PANEL_LABEL: Record<Panel, string> = { coach: "教练", feedback: "反馈", compare: "对比" };
 
@@ -81,11 +82,12 @@ function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements 
 
   const outline = (
     <div className="flex h-full flex-col">
-      <div className="flex h-11 shrink-0 items-center justify-between px-5">
-        <h2 className="text-xs font-medium">提纲</h2>
-        {!state.evaluation && <span className="meta">{outlineProgress(state.outline).filled} / {outlineProgress(state.outline).total}</span>}
+      <div className="flex h-12 shrink-0 items-center justify-between border-b px-4">
+        <h2 className="text-sm font-semibold">提纲</h2>
+        {!state.evaluation ? <span className="meta tabular-nums">想好了 {outlineProgress(state.outline).filled} / {outlineProgress(state.outline).total}</span>
+          : state.evaluation.review.outlineCoverage?.length ? <span className="meta tabular-nums">写进文章 {state.evaluation.review.outlineCoverage.filter((c) => c.status === "written").length} / {state.evaluation.review.outlineCoverage.length}</span> : null}
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-1 pb-8">
         {state.cardSnapshot && ["prewriting", "writing"].includes(stage) && <CardSnapshotView snapshot={state.cardSnapshot} requirements={cardRequirements} />}
         <OutlineBoard
           questionType={state.prompt.questionType}
@@ -109,9 +111,9 @@ function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements 
 
   const inspector = ui.panel && (
     <Tabs value={ui.panel} onValueChange={(value) => ui.setPanel(value as Panel)} className="flex h-full min-h-0 flex-col gap-0">
-      <div className="flex h-11 shrink-0 items-center border-b px-5">
-        <TabsList variant="line" className="h-11 gap-5 p-0">
-          {ui.panels.map((panel) => <TabsTrigger key={panel} value={panel} className="flex-none px-0 text-[13px] after:bg-foreground">{PANEL_LABEL[panel]}</TabsTrigger>)}
+      <div className="flex h-12 shrink-0 items-center border-b px-4">
+        <TabsList variant="line" className="gap-5 p-0 group-data-horizontal/tabs:h-12">
+          {ui.panels.map((panel) => <TabsTrigger key={panel} value={panel} className="flex-none px-0 text-sm data-active:font-semibold group-data-horizontal/tabs:after:bottom-[-1px] after:bg-foreground">{PANEL_LABEL[panel]}</TabsTrigger>)}
         </TabsList>
       </div>
       {!ui.wide && errorNotice}
@@ -129,12 +131,12 @@ function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements 
       <DeepLeaveGuard />
       <DeepLifecycleBar lifecycle={state.lifecycle} checkpoint={Boolean(state.checkpointId)} busy={coachBusy || lifecycleBusy} onResume={() => void actions.changeLifecycle("resume")} />
       {(ui.wide || ui.sheet !== "right") && errorNotice}
-      <div className="flex min-h-0 flex-1">
-        {ui.wide && hasLeft && ui.leftOpen && <aside aria-label="提纲" className="w-[264px] shrink-0 border-r bg-background">{outline}</aside>}
+      <div className={cn("flex min-h-0 flex-1", ui.wide && "gap-3 p-3")}>
+        {ui.wide && hasLeft && ui.leftOpen && <aside aria-label="提纲" className="surface w-[260px] shrink-0 overflow-hidden">{outline}</aside>}
         <main ref={centerRef} id="main-content" className="min-w-0 flex-1 overflow-y-auto">
           <EssayBody />
         </main>
-        {ui.wide && hasRight && ui.rightOpen && <aside aria-label="检查面板" className="w-[384px] shrink-0 border-l bg-background">{inspector}</aside>}
+        {ui.wide && hasRight && ui.rightOpen && <aside aria-label="检查面板" className="surface w-[384px] shrink-0 overflow-hidden">{inspector}</aside>}
       </div>
 
       {!ui.wide && (

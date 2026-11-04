@@ -75,7 +75,7 @@ export function NewEssayDialog({ trigger, focus, pasteOnly = false }: { trigger:
         <div role="radiogroup" aria-label="类型" className="grid grid-cols-2 gap-2">
           {([["practice", "练习", "有教练"], ["mock", "模考", "40 分钟 · 独立完成"]] as const).map(([value, label, meta]) => (
             <button key={value} type="button" role="radio" aria-checked={mode === value} onClick={() => setMode(value)}
-              className={cn("rounded-lg border px-3.5 py-3 text-left transition-colors", mode === value ? "border-foreground bg-secondary/60" : "hover:bg-secondary/40")}>
+              className={cn("rounded-lg border px-3.5 py-3 text-left transition-colors", mode === value ? "border-primary bg-coach-soft" : "hover:bg-sunk")}>
               <span className="block text-sm font-medium">{label}</span>
               <span className="meta mt-0.5 block">{meta}</span>
             </button>
@@ -97,7 +97,7 @@ export function NewEssayDialog({ trigger, focus, pasteOnly = false }: { trigger:
               {TOPICS.map((item, index) => (
                 <button key={item.name} type="button" role="radio" aria-checked={topic === index} onClick={() => setTopic(index)}
                   className={cn("flex items-start gap-3 px-3.5 py-2.5 text-left first:rounded-t-lg last:rounded-b-lg", topic === index ? "bg-secondary/60" : "hover:bg-secondary/30")}>
-                  <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", topic === index ? "bg-foreground" : "bg-border")} aria-hidden />
+                  <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", topic === index ? "bg-primary" : "bg-border")} aria-hidden />
                   <span className="min-w-0">
                     <span className="block text-xs font-medium">{item.name}</span>
                     <span className="mt-0.5 line-clamp-2 block font-serif text-[13px] leading-snug text-muted-foreground">{item.text}</span>

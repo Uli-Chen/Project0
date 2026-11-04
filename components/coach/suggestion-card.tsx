@@ -25,13 +25,13 @@ export function SuggestionCard({
 }) {
   const decided = suggestion.status !== "pending";
   return (
-    <div className={cn("rounded-lg border bg-background px-3.5 py-3", decided && "bg-transparent")}>
-      <p className={cn("font-serif text-[15px] leading-relaxed", decided && "text-muted-foreground")}>
+    <div className={cn("overflow-hidden rounded-[10px] border border-coach-line bg-sheet px-3.5 py-3", decided && "border-border bg-transparent")}>
+      <p className={cn("font-serif text-[15.5px] leading-relaxed", decided && "text-muted-foreground")}>
         {(suggestion.type === "express" || suggestion.type === "example") ? suggestion.suggestedText : <DiffText from={suggestion.selectionText} to={suggestion.suggestedText} />}
       </p>
       <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{suggestion.reason}</p>
       {notice && <p className="mt-1.5 text-xs text-warn">{notice}</p>}
-      <div className="mt-2.5 flex items-center gap-1">
+      <div className={cn("mt-3 flex items-center gap-1.5", !decided && "-mx-3.5 -mb-3 border-t bg-sunk/60 px-3 py-2")}>
         {suggestion.status === "pending" ? (
           <>
             <Button size="sm" variant="outline" disabled={acceptDisabled} onClick={onAccept}>

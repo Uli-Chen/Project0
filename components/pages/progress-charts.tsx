@@ -33,7 +33,7 @@ export function MockScoreChart({ points: allPoints, target }: { points: MockPoin
         {[{ value: "overall" as const, label: "总分" }, ...DIMS.map((d) => ({ value: d, label: DIM_LABEL[d] }))].map((option) => <ToggleGroupItem key={option.value} value={option.value} className="px-2.5 text-xs">{option.label}</ToggleGroupItem>)}
       </ToggleGroup>
       <div className="relative mt-4">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full font-mono" role="img" aria-label="模考成绩变化">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full tabular-nums" role="img" aria-label="模考成绩变化">
           {TICKS.map((t) => (
             <g key={t}>
               <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeWidth={1} />
@@ -88,7 +88,7 @@ function PercentTooltip({ tip }: { tip: Tip }) {
       style={{ left: `${tip.x}%`, top: `calc(${(tip.y / 240) * 100}% - 10px)` }}
     >
       {tip.lines.map((l, i) => (
-        <p key={i} className={i === 0 ? "opacity-70" : "font-mono tabular-nums"}>
+        <p key={i} className={i === 0 ? "opacity-70" : "tabular-nums"}>
           {l}
         </p>
       ))}
@@ -118,7 +118,7 @@ export function PracticeDumbbell({ rows: allRows }: { rows: Array<{ date: string
         </span>
       </div>
       <div className="relative mt-3">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full font-mono" role="img" aria-label="练习成绩：原稿与改写稿">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full tabular-nums" role="img" aria-label="练习成绩：原稿与改写稿">
           {TICKS.map((t) => (
             <g key={t}>
               <line x1={x(t)} x2={x(t)} y1={pad.t} y2={H - pad.b} stroke="var(--border)" strokeWidth={1} />
@@ -156,7 +156,7 @@ export function PracticeDumbbell({ rows: allRows }: { rows: Array<{ date: string
             style={{ left: `${tip.x}%`, top: `calc(${(tip.y / H) * 100}% - 12px)` }}
           >
             <p className="opacity-70">{tip.lines[0]}</p>
-            <p className="font-mono tabular-nums">{tip.lines[1]}</p>
+            <p className="tabular-nums">{tip.lines[1]}</p>
           </div>
         )}
       </div>

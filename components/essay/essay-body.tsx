@@ -32,15 +32,15 @@ export function EssayBody() {
   const showDiff = ui.version === "revision" && ui.panel === "compare" && ui.compareMode === "diff" && Boolean(state.submitted.revision);
 
   return (
-    <div className="mx-auto w-full max-w-[760px] px-4 py-6 sm:px-8 sm:py-10">
+    <div className="mx-auto w-full max-w-[760px] px-3 py-4 sm:px-6 sm:py-8">
       {evaluating && <EvaluationStatus />}
-      <article className="min-h-[calc(100dvh-10rem)] rounded-xl border bg-sheet px-6 pt-8 pb-14 sm:px-12 sm:pt-11">
+      <article className="paper min-h-[calc(100dvh-10rem)] px-6 pt-8 pb-14 sm:px-14 sm:pt-11">
         {stage === "prewriting" ? (
           <p className="font-serif text-[26px] leading-[1.45] tracking-[-0.005em]">{state.prompt.text}</p>
         ) : (
           <>
-            <p className="prose-prompt text-[15px] text-muted-foreground">{state.prompt.text}</p>
-            <div className="my-8 h-px bg-border" />
+            <p className="prose-prompt text-[16px] text-muted-foreground">{state.prompt.text}</p>
+            <div className="mt-6 mb-7 h-px bg-border" />
             {editing ? (
               <EssayEditor
                 editorRef={editorRef}
@@ -90,14 +90,14 @@ function EvaluationStatus() {
 
   if (state.evalError) {
     return (
-      <div role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 px-5 py-4 text-sm">
+      <div role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-sheet px-5 py-4 text-sm shadow-[var(--shadow-panel)]">
         <p className="font-medium text-destructive">评估没有完成</p>
         <p className="mt-1 text-muted-foreground">{state.evalError}</p>
       </div>
     );
   }
   return (
-    <div role="status" className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border bg-sheet px-5 py-3.5 text-[13px]">
+    <div role="status" className="surface mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3.5 text-[13px]">
       {steps.map((step, i) => (
         <span key={step.key} className={cn("flex items-center gap-2", i > current && "text-muted-foreground/60")}>
           {i < current ? <Check className="size-3.5 text-good" /> : i === current ? <LoaderCircle className="size-3.5 animate-spin" /> : <span className="size-3.5 rounded-full border border-dashed border-muted-foreground/50" />}

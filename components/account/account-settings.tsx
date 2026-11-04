@@ -79,7 +79,7 @@ export function AccountSettings({ user, tutorV2Enabled = false }: { user: Curren
       </Row>
       <Row title="目标与节奏">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">{user.profile.onboardingCompleted ? <span className="font-mono text-foreground">{user.profile.target} 分 · 每周 {user.profile.perWeek} 次 · {user.profile.minutes} 分钟</span> : "未设置"}</p>
+          <p className="text-sm text-muted-foreground">{user.profile.onboardingCompleted ? <span className="font-medium text-foreground tabular-nums">{user.profile.target} 分 · 每周 {user.profile.perWeek} 次 · {user.profile.minutes} 分钟</span> : "未设置"}</p>
           <Link href="/onboarding" className={buttonVariants({ variant: "outline" })}>{user.profile.onboardingCompleted ? "修改" : "设置"}<ChevronRight /></Link>
         </div>
       </Row>

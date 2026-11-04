@@ -32,12 +32,12 @@ export function FeedbackTab() {
 
 
   return (
-    <div className="h-full overflow-y-auto px-5 pt-5 pb-10">
+    <div className="h-full overflow-y-auto px-4 pt-5 pb-10">
       {state.finish && <div className="mb-8"><FinishSummary /></div>}
       <ScoreCard scores={scores} label={state.mode === "practice" ? "原稿 · 练习成绩" : "原稿 · 模考成绩"} />
 
-      <section className="mt-8">
-        <h2 className="mb-1 text-xs text-muted-foreground">{tutorV2Enabled ? "先推进一个问题" : `先改这 ${issues.length} 处`}</h2>
+      <section className="mt-7">
+        <h2 className="mb-2.5 flex items-baseline justify-between text-[15px] font-semibold">{tutorV2Enabled ? "先推进一个问题" : `先改这 ${issues.length} 处`}{!tutorV2Enabled && issues.length > 1 && <span className="text-xs font-normal text-faint">按影响排序</span>}</h2>
         {issues.length === 0 ? <p className="py-3 text-sm text-muted-foreground">没有需要优先改的问题</p> : (
           <IssueList
             issues={visibleIssues}
@@ -49,15 +49,15 @@ export function FeedbackTab() {
           />
         )}
         {tutorV2Enabled && primary && <>
-          <blockquote className="my-3 border-l-2 pl-3 font-serif text-sm">{splitSentences(state.submitted.original ?? "").filter(s => primary.sentenceIds.includes(s.id)).map(s => s.text).join(" ")}</blockquote>
+          <blockquote className="my-3 border-l-2 border-coach-line pl-3 font-serif text-[15px] leading-relaxed text-muted-foreground italic">{splitSentences(state.submitted.original ?? "").filter(s => primary.sentenceIds.includes(s.id)).map(s => s.text).join(" ")}</blockquote>
           <Button disabled={coachBusy || lifecycleBusy || state.lifecycle !== "open" || !["feedback", "revising"].includes(state.stage)} onClick={() => void discuss(primary.rank)}>改这个问题</Button>
-          {issues.length > 1 && <button className="ml-3 text-sm underline" onClick={() => setExpanded(!expanded)}>{expanded ? "收起其他问题" : `还有 ${issues.length - 1} 个问题`}</button>}
+          {issues.length > 1 && <button className="ml-3 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground" onClick={() => setExpanded(!expanded)}>{expanded ? "收起其他问题" : `还有 ${issues.length - 1} 个问题`}</button>}
         </>}
       </section>
 
       {(state.reviewStatus !== "none" || review.focusResult || review.breakthrough || state.mode === "practice") && (
-        <section className="mt-8">
-          <h2 className="text-xs text-muted-foreground">回顾</h2>
+        <section className="mt-7 rounded-xl bg-sunk px-4 py-3.5 shadow-[inset_0_0_0_1px_var(--border)]">
+          <h2 className="text-[15px] font-semibold">回顾</h2>
           {state.reviewStatus === "pending" && <p className="mt-3 text-sm text-muted-foreground">提纲回顾处理中，评分与问题反馈已保存。</p>}
           {state.reviewStatus === "failed" && <div className="mt-3 flex items-center gap-3 text-sm">
             <p>提纲回顾失败，评分与问题反馈已保存。</p>
@@ -71,7 +71,7 @@ export function FeedbackTab() {
               </div>
             )}
             {review.breakthrough && <div><dt className="text-xs text-muted-foreground">突破</dt><dd className="mt-1">{review.breakthrough}</dd></div>}
-            {state.mode === "practice" && <div><div className="flex items-baseline justify-between gap-3"><dt className="text-xs text-muted-foreground">站内已采用建议文本占比</dt><dd className="font-mono tabular-nums">{Math.round(review.aiRatio * 100)}%</dd></div><dd className="mt-1 text-xs text-muted-foreground">按已采用且仍完整保留的站内建议文本词数估算；不检测 AI 生成，也不识别外部来源。</dd></div>}
+            {state.mode === "practice" && <div><div className="flex items-baseline justify-between gap-3"><dt className="text-xs text-muted-foreground">站内已采用建议文本占比</dt><dd className="font-medium tabular-nums">{Math.round(review.aiRatio * 100)}%</dd></div><dd className="mt-1 text-xs text-muted-foreground">按已采用且仍完整保留的站内建议文本词数估算；不检测 AI 生成，也不识别外部来源。</dd></div>}
           </dl>
 
       </section>

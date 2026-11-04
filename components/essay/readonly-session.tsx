@@ -10,9 +10,9 @@ export function ReadonlySession({ session, cardContent }: { session: SessionStat
     <main id="main-content" className="min-h-dvh bg-background px-4 py-8 sm:px-8">
       <div className="mx-auto max-w-[760px]">
         <Link href="/essays" className="text-sm text-muted-foreground hover:text-foreground">返回作文库</Link>
-        <h1 className="mt-6 text-xl font-medium">练习内容 · 只读</h1>
+        <h1 className="page-heading mt-6">练习内容（只读）</h1>
         <p className="mt-2 text-sm text-muted-foreground">当前版本暂不支持编辑这份练习，已保存的内容仍可查看。</p>
-        <article className="mt-6 space-y-8 rounded-xl border bg-sheet p-6 sm:p-10">
+        <article className="paper mt-6 space-y-8 p-6 sm:p-10">
           {cardContent && <CardReadonly content={cardContent} />}
           <TextSection title="题目" text={session.question?.text ?? session.prompt?.text} />
           {(["original", "revision"] as const).map(kind => {

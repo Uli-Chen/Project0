@@ -1,7 +1,7 @@
 "use client";
 
 import { openingForDisplay, prewriteOpening } from "@/lib/learning/prewrite-guidance";
-import { ArrowRight, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CoachThread } from "@/components/coach/coach-thread";
 import { Composer } from "@/components/coach/composer";
@@ -71,18 +71,18 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div ref={scroller} onScroll={(event) => { const el = event.currentTarget; nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120; }} className="min-h-0 flex-1 overflow-y-auto px-5 pt-5 pb-6">
+      <div ref={scroller} onScroll={(event) => { const el = event.currentTarget; nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120; }} className="min-h-0 flex-1 overflow-y-auto px-4 pt-5 pb-6">
         {tutorV2Enabled && state.messages.some(m => m.role === "coach" && m.lang === "en" && m.action !== "opening") && <EnglishNotice />}
         {state.focus && state.mode === "practice" && ["prewriting", "writing", "revising"].includes(stage) && (
-          <section className="mb-5 rounded-lg border px-3.5 py-3">
-            <p className="text-[11px] text-muted-foreground">本次重点</p>
-            <p className="mt-0.5 text-[13px] font-medium">{state.focus.name}</p>
+          <section className="mb-5 rounded-lg bg-sunk px-3.5 py-3 shadow-[inset_0_0_0_1px_var(--border)]">
+            <p className="text-xs text-muted-foreground">本次重点</p>
+            <p className="mt-0.5 text-sm font-semibold">{state.focus.name}</p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{state.focus.instruction}</p>
           </section>
         )}
         {nudge && (
           <div className="mb-5 flex items-start gap-3 rounded-lg bg-coach-soft px-3.5 py-3 animate-in fade-in-0 slide-in-from-top-1">
-            <p className="flex-1 text-[13px] leading-relaxed text-coach">{nudge.message}</p>
+            <p className="flex-1 text-[13.5px] leading-relaxed text-foreground">{nudge.message}</p>
             <button type="button" aria-label="关闭提醒" disabled={unavailable} onClick={() => { setNudgeOpen(false); void actions.dismissNudge(); }} className="text-coach/70 hover:text-coach"><X className="size-3.5" /></button>
           </div>
         )}
@@ -102,12 +102,12 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
           />
         )}
         {showStartWriting && !coachBusy && (
-          <Button variant="outline" size="sm" className="mt-5" disabled={unavailable} onClick={actions.startWriting}>开始写作<ArrowRight /></Button>
+          <Button variant="outline" size="sm" className="mt-5" disabled={unavailable} onClick={actions.startWriting}>开始写作</Button>
         )}
       </div>
 
       {(canSend || (can.issue && issues.length > 0)) && (
-        <div className="shrink-0 px-4 pb-4">
+        <div className="shrink-0 border-t bg-sheet px-3.5 pt-3 pb-3.5">
           {canSend && <Composer
             draft={composerDraft}
             onDraftChange={actions.setComposerDraft}
@@ -123,7 +123,7 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
               {tutorV2Enabled && can.prewrite && <Button size="xs" variant="ghost" disabled={unavailable || (state.tutor?.threads.prewrite?.allowedHelp ?? 0) >= 2 || state.prewriteTurns >= 40} onClick={() => void actions.morePrewrite()}>{(state.tutor?.threads.prewrite?.allowedHelp ?? 0) >= 2 ? "试着先写下你的想法" : "给点提示"}</Button>}
               {intents.length > 1 && (
                 <ToggleGroup size="sm" spacing={0} variant="outline" value={[intent]} onValueChange={(value) => { if (value[0]) ui.setIntent(value[0] as Intent); }} aria-label="意图">
-                  {intents.map((value) => <ToggleGroupItem key={value} value={value} className="h-6 px-2 text-xs">{INTENT_LABEL[value]}</ToggleGroupItem>)}
+                  {intents.map((value) => <ToggleGroupItem key={value} value={value} className="h-7 px-2.5 text-xs">{INTENT_LABEL[value]}</ToggleGroupItem>)}
                 </ToggleGroup>
               )}
               {issue && !ui.quote && can.issue && (
@@ -146,7 +146,7 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
 
 function Chip({ children, onRemove }: { children: React.ReactNode; onRemove?: () => void }) {
   return (
-    <span className="inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-md bg-secondary px-2 py-1 text-xs">
+    <span className="inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-md border bg-sheet px-2 py-1 text-xs">
       {children}
       {onRemove && <button type="button" aria-label="移除" onClick={onRemove} className="shrink-0 text-muted-foreground hover:text-foreground"><X className="size-3" /></button>}
     </span>
