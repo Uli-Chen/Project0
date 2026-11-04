@@ -1,6 +1,15 @@
 # project0.auglearn.org 部署
 
-## 当前发布（2026-11-04）
+## 当前发布（2026-11-05，coming soon 与开发者预览）
+
+已发布 `7e69111`（`redesign` 分支）：未登录访问 `/` 跳转到 coming soon 页，开发者密码登录后可打开 `/preview`（宣传页 v4），见下文“Coming soon 与开发者预览”。没有迁移和开关变化；服务器 `.env.local` 新增 `PREVIEW_PASSWORD_HASH`、`PREVIEW_SESSION_SECRET` 两行，改动前的副本存为 `/home/squareofchen/env-local-before-preview-*`。
+
+- 流程同上次：`git archive` 上传到独立目录，服务器完整 `npm run check` 通过（248 后端、47 UI、数据库、生产构建），再用 nginx 同样的 `Host` / `X-Forwarded-Proto` 头在备用端口冒烟，最后用 `deploy/release-staged.sh` 切换。
+- 第一次切换的 `1324e1a` 在 `/` 用了 rewrite，nginx 后面返回 500（其余页面正常），约 20 分钟后由 `7e69111` 修复。经验：proxy 里不要 rewrite 到本站路径，冒烟测试必须带 nginx 的转发头。
+- 回滚目录：`/home/squareofchen/opc-before-patch-20261104T162027Z` 是本次之前的 `90da275`；`…T164343Z` 是有问题的 `1324e1a`，不要用它回滚。
+- 切换后：`/` 307 到 `/coming-soon`，`/login` 200，无 cookie 访问 `/preview` 303 回 `/`，错误密码 401，正确密码可打开 `/preview`，退出后再次 303；新进程日志无报错。
+
+## 2026-11-04 发布
 
 已发布 `90da275`：前端改版（书桌与试卷层级）、交互动效、Agent Tutor 第一阶段代码（`TUTOR_V2_ENABLED` 未设置，保持关闭）。新增迁移 0007（`llm_call_payloads` 表及 `llm_calls` 观测列）已应用；完整调用内容只在 `LLM_PAYLOADS_ENABLED=true` 时写入，隐私说明页及链接只在 Tutor 或调用内容记录开启时出现。隐私说明的【待定】项补齐、`npm run check:privacy` 通过之前，不要打开这两个开关。
 
