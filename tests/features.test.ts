@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { readFeatures } from "../lib/config/features";
 
 test("features default off and only literal true enables a flag", () => {
-  const off = { QUESTION_BANK_ENABLED: false, QUICK_ENABLED: false, CHECKPOINTS_ENABLED: false, FOCUS_ENABLED: false, TUTOR_V2_ENABLED: false };
+  const off = { QUESTION_BANK_ENABLED: false, QUICK_ENABLED: false, CHECKPOINTS_ENABLED: false, FOCUS_ENABLED: false, TUTOR_V2_ENABLED: false, LLM_PAYLOADS_ENABLED: false };
   assert.deepEqual(readFeatures({}), off);
   for (const value of ["false", "1", "TRUE", "", " true "]) assert.deepEqual(readFeatures(Object.fromEntries(Object.keys(off).map(key => [key, value]))), off);
 });
@@ -26,4 +26,12 @@ test("feature reader reads the runtime environment", () => {
     process.env.QUESTION_BANK_ENABLED = "false";
     assert.equal(readFeatures().QUESTION_BANK_ENABLED, false);
   } finally { if (previous === undefined) delete process.env.QUESTION_BANK_ENABLED; else process.env.QUESTION_BANK_ENABLED = previous; }
+});
+
+test("privacy notice is visible only once Agent Tutor or payload retention is on", async () => {
+  const { privacyNoticeVisible } = await import("../lib/config/features");
+  assert.equal(privacyNoticeVisible({}), false);
+  assert.equal(privacyNoticeVisible({ QUESTION_BANK_ENABLED: "true", QUICK_ENABLED: "true" }), false);
+  assert.equal(privacyNoticeVisible({ TUTOR_V2_ENABLED: "true" }), true);
+  assert.equal(privacyNoticeVisible({ LLM_PAYLOADS_ENABLED: "true" }), true);
 });

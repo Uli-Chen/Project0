@@ -19,7 +19,7 @@ async function send(url: string, body: unknown, method = "POST") {
   return data;
 }
 
-export function AccountSettings({ user, tutorV2Enabled = false }: { user: CurrentUser; tutorV2Enabled?: boolean }) {
+export function AccountSettings({ user, tutorV2Enabled = false, privacyVisible = false }: { user: CurrentUser; tutorV2Enabled?: boolean; privacyVisible?: boolean }) {
   const router = useRouter();
   const [name, setName] = useState(user.name);
   const [profileBusy, setProfileBusy] = useState(false);
@@ -85,7 +85,7 @@ export function AccountSettings({ user, tutorV2Enabled = false }: { user: Curren
         </div>
       </Row>
       {tutorV2Enabled && <Row title="学习偏好"><LearningPreferences user={user} /></Row>}
-      <Row title="隐私"><Link href="/privacy" className="text-sm underline">隐私说明</Link></Row>
+      {privacyVisible && <Row title="隐私"><Link href="/privacy" className="text-sm underline">隐私说明</Link></Row>}
       <Row title="外观"><ThemeToggle /></Row>
       <Row title="密码">
         <form onSubmit={changePassword} onChange={() => setPasswordMessage("")} className="flex max-w-sm flex-col gap-3">

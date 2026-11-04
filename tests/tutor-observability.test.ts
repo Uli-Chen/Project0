@@ -9,7 +9,7 @@ import { getDb } from '../lib/db/client';
 import { generateJson } from '../lib/llm/client';
 import { callSites } from '../lib/llm/call-sites';
 import { cleanCallPayloads } from '../lib/llm/payloads';
-const dir=mkdtempSync(join(tmpdir(),'at-observe-'));process.env.DATABASE_PATH=join(dir,'test.db');process.env.LLM_API_KEY='offline';
+const dir=mkdtempSync(join(tmpdir(),'at-observe-'));process.env.DATABASE_PATH=join(dir,'test.db');process.env.LLM_API_KEY='offline';process.env.LLM_PAYLOADS_ENABLED='true';
 const db=getDb(),sql=db.$client;migrate(db,{migrationsFolder:resolve('drizzle')});
 sql.prepare('INSERT INTO users(id,email,name,password_hash,created_at,updated_at) VALUES(?,?,?,?,?,?)').run('u','t@example.invalid','Test','x','2026-11-01','2026-11-01');
 sql.prepare('INSERT INTO writing_sessions(id,user_id,state_json,created_at,updated_at) VALUES(?,?,?,?,?)').run('s','u','{}','2026-11-01','2026-11-01');
@@ -43,4 +43,13 @@ test('account deletion removes both payloads and call records',async t=>{
  sql.prepare("DELETE FROM users WHERE id='u'").run();
  assert.equal((sql.prepare('SELECT count(*) n FROM llm_call_payloads').get() as {n:number}).n,0);
  assert.equal((sql.prepare('SELECT count(*) n FROM llm_calls').get() as {n:number}).n,0);
+});
+test('payload retention stays off unless LLM_PAYLOADS_ENABLED is literally true',async t=>{
+ sql.prepare('INSERT OR IGNORE INTO users(id,email,name,password_hash,created_at,updated_at) VALUES(?,?,?,?,?,?)').run('u2','t2@example.invalid','Test','x','2026-11-01','2026-11-01');
+ t.mock.method(globalThis,'fetch',async()=>new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content:'{"reply":"fine"}'}}]})));
+ const previous=process.env.LLM_PAYLOADS_ENABLED;
+ try{for(const value of [undefined,'false','1']){if(value===undefined)delete process.env.LLM_PAYLOADS_ENABLED;else process.env.LLM_PAYLOADS_ENABLED=value;let id='';
+  await generateJson('test',{student:'own text'},z.object({reply:z.string()}),{userId:'u2',purpose:'writing_chat',callSite:'deep.chat',onSuccess:m=>{id=m.callId}});
+  assert.ok(sql.prepare('SELECT id FROM llm_calls WHERE id=?').get(id));assert.equal(sql.prepare('SELECT call_id FROM llm_call_payloads WHERE call_id=?').get(id),undefined);}}
+ finally{if(previous===undefined)delete process.env.LLM_PAYLOADS_ENABLED;else process.env.LLM_PAYLOADS_ENABLED=previous;}
 });

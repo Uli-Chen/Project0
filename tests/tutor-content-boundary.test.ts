@@ -9,6 +9,7 @@ import {GET as LIST} from '../app/api/sessions/route';
 import {observeCall} from '../lib/llm/calls';
 import {writeCallPayload} from '../lib/llm/payloads';
 import {prompt} from '../lib/llm/prompts';
+process.env.LLM_PAYLOADS_ENABLED='true';
 const fixture=quickFixture();after(()=>fixture.close());
 const sentinel='PAYLOAD_ONLY_bf76c37b_NOT_STUDENT_CONTENT';
 test('stored private content cannot appear in session reads, lists, success/error responses or safe error logs',async t=>{
