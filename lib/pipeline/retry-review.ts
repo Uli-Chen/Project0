@@ -35,7 +35,7 @@ export async function retryReview(userId: string, id: string, requestId: string)
   });
   if (!snapshot.reserved) return snapshot.state;
   try {
-    const result = await withModelAdmission(userId, () => runAction(snapshot.state, { action: "retryReview" }, () => {}));
+    const result = await withModelAdmission(userId, () => runAction(snapshot.state, { action: "retryReview" }, () => {}, [], undefined, { userId, operationId: requestId }));
     return await withSessionLock(key, async () => {
       const current = getSession(userId, id);
       assertSupportedSession(current); // Never upsert deleted content.

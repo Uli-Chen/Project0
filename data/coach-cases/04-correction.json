@@ -1,0 +1,85 @@
+{
+  "id": "case-04",
+  "topicType": "problem_solution",
+  "topic": "Many cities suffer from traffic congestion. What problems does this cause and what solutions can help?",
+  "scenario": "correction",
+  "language": "zh",
+  "issue": false,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "prewrite",
+      "text": "我之前说所有拥堵都靠公交解决，其实只指我家附近上班高峰的拥堵。"
+    },
+    {
+      "action": "prewrite",
+      "text": "请不要再说我认为公交能解决所有城市的拥堵。"
+    }
+  ],
+  "seedHistory": 2,
+  "difficulties": [],
+  "excludedMemoryIds": [],
+  "track": "argument",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": null,
+  "seed": {
+    "draft": "Traffic jams make my bus late. I think the city should improve public transport.",
+    "issue": null,
+    "messages": [
+      {
+        "id": "case-04-seed-1",
+        "role": "user",
+        "stage": "prewriting",
+        "content": "我认为所有城市的拥堵都可以靠公交解决。"
+      },
+      {
+        "id": "case-04-seed-2",
+        "role": "coach",
+        "stage": "prewriting",
+        "content": "你说的是所有城市吗？可以明确一下范围。"
+      }
+    ],
+    "thread": {
+      "v": 1,
+      "key": "prewrite",
+      "status": "open",
+      "closedReason": null,
+      "track": "argument",
+      "current": {
+        "target": "解释学生自己已提出的判断与理由之间的联系",
+        "refs": []
+      },
+      "openQuestion": {
+        "text": "你说的是所有城市吗？可以明确一下范围。",
+        "askedMessageId": "case-04-seed-2"
+      },
+      "established": [
+        {
+          "id": "case-04-e1",
+          "text": "我认为所有城市的拥堵都可以靠公交解决。",
+          "refMessageId": "case-04-seed-1",
+          "basis": "student_stated",
+          "archived": false,
+          "retracted": false
+        }
+      ],
+      "attempts": [],
+      "allowedHelp": 0,
+      "providedHelp": null,
+      "legacyLevel": null,
+      "lastMessageId": "case-04-seed-2"
+    }
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [],
+    "note": "不把拒绝添加题目内容本身当作无效推进；需在允许范围提供下一步。"
+  }
+}

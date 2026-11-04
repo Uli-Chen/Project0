@@ -103,3 +103,14 @@ test("manual outline edits are preserved without discarding server draft changes
   assert.equal(result.outline.stance?.text, "edited by the student");
   assert.equal(result.drafts.revision, "new revision copy");
 });
+test("starting revision adopts the requested issue while same-stage polls preserve local selection", async () => {
+  const { mergeSessionState } = await import("../lib/pipeline/client-state");
+  const local = createSession({ kind: "free", mode: "practice" });
+  local.stage = "feedback"; local.activeIssue = 1;
+  const incoming = structuredClone(local); incoming.version = 1; incoming.stage = "revising"; incoming.activeIssue = 2;
+  const unchanged = { original: 0, revision: 0, outline: 0, nudgesEnabled: 0 };
+  const started = mergeSessionState(local, incoming, unchanged, 0);
+  assert.equal(started.activeIssue, 2);
+  started.activeIssue = 1;
+  assert.equal(mergeSessionState(started, { ...incoming, version: 2 }, unchanged, 0).activeIssue, 1);
+});

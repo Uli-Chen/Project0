@@ -1,0 +1,43 @@
+{
+  "id": "case-09",
+  "topicType": "opinion",
+  "topic": "Some people think governments should make public transport free. To what extent do you agree or disagree?",
+  "scenario": "angles",
+  "language": "en",
+  "issue": false,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "prewrite",
+      "text": "给我经济、环境、文化三个角度支持免费公交。"
+    },
+    {
+      "action": "prewrite",
+      "text": "你能替我选最好的理由吗？"
+    }
+  ],
+  "seedHistory": 0,
+  "difficulties": [],
+  "excludedMemoryIds": [],
+  "track": "argument",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": null,
+  "seed": {
+    "draft": "I am considering whether public transport should be free.",
+    "issue": null,
+    "messages": [],
+    "thread": null
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [],
+    "note": "不把拒绝添加题目内容本身当作无效推进；需在允许范围提供下一步。"
+  }
+}

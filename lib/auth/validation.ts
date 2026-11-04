@@ -19,6 +19,8 @@ export const profilePatchSchema = z.object({
   minutes: numericString(["30", "45", "60", "90"]).optional(),
   difficulties: z.array(z.enum(["没想法", "想法说不清", "英文表达不出来", "语法错误多", "写不完"])).max(5).transform((values) => [...new Set(values)]).optional(),
   lang: z.enum(["zh", "en"]).optional(),
+  explainLanguage: z.enum(["en", "zh"]).nullable().optional(),
+  nudgesDefault: z.boolean().nullable().optional(),
   onboardingCompleted: z.boolean().optional(),
   excludedMemoryIds: z.array(z.string().max(200)).max(1000).transform((values) => [...new Set(values)]).optional(),
 }).strict();

@@ -41,7 +41,7 @@ export type SlotPath =
 
 export type Suggestion = {
   id: string;
-  type: "polish" | "express" | "check";
+  type: "polish" | "express" | "check" | "example";
   selectionText: string;
   suggestedText: string;
   reason: string;
@@ -49,6 +49,8 @@ export type Suggestion = {
 };
 
 export type CoachMessage = {
+  callId?: string;
+  lang?: "en" | "zh";
   id: string;
   role: "user" | "coach";
   /** 对话发生在哪个阶段；改写阶段问题对话带 issueRank */

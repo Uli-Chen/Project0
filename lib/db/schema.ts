@@ -4,6 +4,7 @@ import { check, foreignKey, index, integer, primaryKey, sqliteTable, text, uniqu
 export const llmCalls = sqliteTable("llm_calls", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  callSite: text("call_site"), stageGroup: text("stage_group"), provider: text("provider"), promptVersion: text("prompt_version"), paramsHash: text("params_hash"), finishReason: text("finish_reason"), reasoningTokens: integer("reasoning_tokens"), move: text("move"), allowedHelp: integer("allowed_help"), providedHelp: integer("provided_help"), warningsJson: text("warnings_json"),
   sessionId: text("session_id"), purpose: text("purpose").notNull(),
   operationId: text("operation_id"), packageId: text("package_id"), attempt: integer("attempt").notNull(),
   model: text("model").notNull(), configVersion: text("config_version").notNull(), startedAt: text("started_at").notNull(),
@@ -200,3 +201,9 @@ export const checkpoints = sqliteTable("checkpoints", {
   isBaseline: integer("is_baseline", { mode: "boolean" }).notNull().default(false), evidenceDeleted: integer("evidence_deleted", { mode: "boolean" }).notNull().default(false),
 }, t => [uniqueIndex("checkpoint_active_user").on(t.userId).where(sql`${t.status} = 'in_progress'`),
   uniqueIndex("checkpoint_attempt").on(t.userId, t.attemptId), uniqueIndex("checkpoint_baseline").on(t.userId).where(sql`${t.isBaseline} = 1`)]);
+
+export const llmCallPayloads = sqliteTable("llm_call_payloads", {
+  callId: text("call_id").primaryKey().references(() => llmCalls.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  sessionId: text("session_id"), createdAt: text("created_at").notNull(), expiresAt: text("expires_at").notNull(), requestJson: text("request_json").notNull(), responseText: text("response_text"),
+}, t => [index("llm_payloads_expiry").on(t.expiresAt), index("llm_payloads_session").on(t.userId,t.sessionId), foreignKey({ columns: [t.userId,t.sessionId], foreignColumns: [writingSessions.userId,writingSessions.id] }).onDelete("cascade")]);

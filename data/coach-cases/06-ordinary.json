@@ -1,0 +1,67 @@
+{
+  "id": "case-06",
+  "topicType": "opinion",
+  "topic": "Some people believe all university students should study science. To what extent do you agree?",
+  "scenario": "ordinary",
+  "language": "zh",
+  "issue": false,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "prewrite",
+      "text": "I enjoy science, but I do not think everyone should study it."
+    },
+    {
+      "action": "prewrite",
+      "text": "这句话普通但准确，需要为了分数换成高级词吗？"
+    }
+  ],
+  "seedHistory": 1,
+  "difficulties": [],
+  "excludedMemoryIds": [],
+  "track": "argument",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": null,
+  "seed": {
+    "draft": "I disagree with making science compulsory. Students should be able to choose subjects they enjoy.",
+    "issue": null,
+    "messages": [
+      {
+        "id": "case-06-seed-1",
+        "role": "coach",
+        "stage": "prewriting",
+        "content": "先看看这句话是否准确表达你的意思，不需要为了显得高级而改词。"
+      }
+    ],
+    "thread": {
+      "v": 1,
+      "key": "prewrite",
+      "status": "open",
+      "closedReason": null,
+      "track": "argument",
+      "current": {
+        "target": "解释学生自己已提出的判断与理由之间的联系",
+        "refs": []
+      },
+      "openQuestion": null,
+      "established": [],
+      "attempts": [],
+      "allowedHelp": 0,
+      "providedHelp": null,
+      "legacyLevel": null,
+      "lastMessageId": "case-06-seed-1"
+    }
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [],
+    "note": "不把拒绝添加题目内容本身当作无效推进；需在允许范围提供下一步。"
+  }
+}

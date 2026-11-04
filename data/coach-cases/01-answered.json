@@ -1,0 +1,72 @@
+{
+  "id": "case-01",
+  "topicType": "opinion",
+  "topic": "Some people believe all university students should study science. To what extent do you agree?",
+  "scenario": "answered",
+  "language": "en",
+  "issue": false,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "prewrite",
+      "text": "我不同意强制学科学，因为学生应该可以选择自己喜欢的科目。"
+    },
+    {
+      "action": "prewrite",
+      "text": "我的立场和理由都说清楚了，可以继续下一步吗？"
+    }
+  ],
+  "seedHistory": 1,
+  "difficulties": [],
+  "excludedMemoryIds": [],
+  "track": "argument",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": null,
+  "seed": {
+    "draft": "I disagree with making science compulsory. Students should be able to choose subjects they enjoy.",
+    "issue": null,
+    "messages": [
+      {
+        "id": "case-01-seed-1",
+        "role": "coach",
+        "stage": "prewriting",
+        "content": "你是否赞成所有大学生必修科学？你的理由是什么？"
+      }
+    ],
+    "thread": {
+      "v": 1,
+      "key": "prewrite",
+      "status": "open",
+      "closedReason": null,
+      "track": "argument",
+      "current": {
+        "target": "解释学生自己已提出的判断与理由之间的联系",
+        "refs": []
+      },
+      "openQuestion": {
+        "text": "你是否赞成所有大学生必修科学？你的理由是什么？",
+        "askedMessageId": "case-01-seed-1"
+      },
+      "established": [],
+      "attempts": [],
+      "allowedHelp": 0,
+      "providedHelp": null,
+      "legacyLevel": null,
+      "lastMessageId": "case-01-seed-1"
+    }
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [
+      1
+    ],
+    "note": "不把拒绝添加题目内容本身当作无效推进；需在允许范围提供下一步。"
+  }
+}

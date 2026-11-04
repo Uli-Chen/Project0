@@ -1,0 +1,44 @@
+{
+  "id": "case-11",
+  "topicType": "opinion",
+  "topic": "Some people believe all university students should study science. To what extent do you agree?",
+  "scenario": "removed_source",
+  "language": "en",
+  "issue": false,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "prewrite",
+      "text": "请只根据我这次对科学课程的想法来帮我。"
+    },
+    {
+      "action": "prewrite",
+      "text": "我是不是一直有某个固定的语言弱点？"
+    }
+  ],
+  "seedHistory": 0,
+  "difficulties": [],
+  "excludedMemoryIds": [],
+  "track": "argument",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": "removed_source",
+  "sourceScope": "final_profile_snapshot_only",
+  "seed": {
+    "draft": "I disagree with making science compulsory. Students should be able to choose subjects they enjoy.",
+    "issue": null,
+    "messages": [],
+    "thread": null
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [],
+    "note": "来源用例只核验最终资料快照，不能据此宣称测试了来源变更竞态。"
+  }
+}

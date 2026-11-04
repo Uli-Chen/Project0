@@ -18,7 +18,7 @@ async function send(url: string, body: unknown, method = "POST") {
   return data;
 }
 
-export function AccountSettings({ user }: { user: CurrentUser }) {
+export function AccountSettings({ user, tutorV2Enabled = false }: { user: CurrentUser; tutorV2Enabled?: boolean }) {
   const router = useRouter();
   const [name, setName] = useState(user.name);
   const [profileBusy, setProfileBusy] = useState(false);
@@ -83,6 +83,8 @@ export function AccountSettings({ user }: { user: CurrentUser }) {
           <Link href="/onboarding" className={buttonVariants({ variant: "outline" })}>{user.profile.onboardingCompleted ? "修改" : "设置"}<ChevronRight /></Link>
         </div>
       </Row>
+      {tutorV2Enabled && <Row title="学习偏好"><LearningPreferences user={user} /></Row>}
+      <Row title="隐私"><Link href="/privacy" className="text-sm underline">隐私说明</Link></Row>
       <Row title="外观"><ThemeToggle /></Row>
       <Row title="密码">
         <form onSubmit={changePassword} className="flex max-w-sm flex-col gap-3">
@@ -122,3 +124,13 @@ function Status({ error, message }: { error?: string; message?: string }) {
   return null;
 }
 
+
+function LearningPreferences({ user }: { user: CurrentUser }) {
+  const [busy, setBusy] = useState(false), [message, setMessage] = useState(""), [error, setError] = useState("");
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); const data = new FormData(event.currentTarget); setBusy(true); setError(""); setMessage("");
+    try { await send("/api/profile", { explainLanguage: data.get("explainLanguage"), lang: data.get("lang"), nudgesDefault: data.get("nudgesDefault") === "on" }, "PATCH"); setMessage("已保存，下次新请求生效。段落提醒偏好仅影响新建练习。"); }
+    catch (e) { setError(e instanceof Error ? e.message : "保存失败"); } finally { setBusy(false); }
+  }
+  return <form onSubmit={save} className="flex max-w-sm flex-col gap-4"><label className="text-sm">讲解语言<select name="explainLanguage" defaultValue={user.profile.explainLanguage === "zh" ? "zh" : "en"} disabled={busy} className="ml-3 rounded border bg-background p-2"><option value="en">English（默认）</option><option value="zh">中文</option></select></label><label className="text-sm">写作思考语言<select name="lang" defaultValue={user.profile.lang ?? "zh"} disabled={busy} className="ml-3 rounded border bg-background p-2"><option value="zh">中文</option><option value="en">英文</option></select></label><label className="text-sm"><input type="checkbox" name="nudgesDefault" defaultChecked={user.profile.nudgesDefault !== false} disabled={busy} className="mr-2" />新建练习开启段落提醒</label><Status error={error} message={message} /><Button type="submit" variant="outline" disabled={busy}>保存偏好</Button></form>;
+}

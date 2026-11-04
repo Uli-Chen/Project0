@@ -16,7 +16,7 @@ import { useEssayUi, type Intent } from "./essay-ui";
 const INTENT_LABEL: Record<Intent, string> = { ask: "提问", attempt: "试写", express: "英文怎么说" };
 
 export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggestion) => void; onUndo: (s: Suggestion) => void; notices: Record<string, string> }) {
-  const { state, actions, coachBusy, lifecycleBusy, composerDraft } = useSession();
+  const { state, actions, coachBusy, lifecycleBusy, composerDraft, tutorV2Enabled } = useSession();
   const unavailable = coachBusy || lifecycleBusy || state.lifecycle !== "open";
   const ui = useEssayUi();
   const can = coachCapabilities({ ...state, lifecycle: "open" });
@@ -72,6 +72,7 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div ref={scroller} onScroll={(event) => { const el = event.currentTarget; nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120; }} className="min-h-0 flex-1 overflow-y-auto px-5 pt-5 pb-6">
+        {tutorV2Enabled && state.messages.some(m => m.role === "coach" && m.lang === "en" && m.action !== "opening") && <EnglishNotice />}
         {state.focus && state.mode === "practice" && ["prewriting", "writing", "revising"].includes(stage) && (
           <section className="mb-5 rounded-lg border px-3.5 py-3">
             <p className="text-[11px] text-muted-foreground">本次重点</p>
@@ -119,6 +120,7 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
               {issue && !ui.quote && <Chip onRemove={can.chat ? () => ui.setIssueContext(null) : undefined}><IssueBadge rank={issue.rank} className="size-4 text-[10px]" /><span className="truncate">{issue.title}</span></Chip>}
             </> : undefined}
             toolbar={<div className="flex items-center gap-1.5">
+              {tutorV2Enabled && can.prewrite && <Button size="xs" variant="ghost" disabled={unavailable || (state.tutor?.threads.prewrite?.allowedHelp ?? 0) >= 2 || state.prewriteTurns >= 40} onClick={() => void actions.morePrewrite()}>{(state.tutor?.threads.prewrite?.allowedHelp ?? 0) >= 2 ? "试着先写下你的想法" : "给点提示"}</Button>}
               {intents.length > 1 && (
                 <ToggleGroup size="sm" spacing={0} variant="outline" value={[intent]} onValueChange={(value) => { if (value[0]) ui.setIntent(value[0] as Intent); }} aria-label="意图">
                   {intents.map((value) => <ToggleGroupItem key={value} value={value} className="h-6 px-2 text-xs">{INTENT_LABEL[value]}</ToggleGroupItem>)}
@@ -149,4 +151,20 @@ function Chip({ children, onRemove }: { children: React.ReactNode; onRemove?: ()
       {onRemove && <button type="button" aria-label="移除" onClick={onRemove} className="shrink-0 text-muted-foreground hover:text-foreground"><X className="size-3" /></button>}
     </span>
   );
+}
+
+const englishNoticeSeen = new Set<string>();
+function EnglishNotice() {
+  const { state } = useSession();
+  const checked = useRef(false);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (checked.current) return;
+    checked.current = true;
+    let shown = englishNoticeSeen.has(state.id);
+    englishNoticeSeen.add(state.id);
+    try { shown = shown || localStorage.getItem("tutor-english-notice") === "shown"; if (!shown) localStorage.setItem("tutor-english-notice", "shown"); } catch { /* Once per mounted practice when storage is unavailable. */ }
+    setVisible(!shown);
+  }, [state.id]);
+  return visible ? <p className="mb-4 text-xs text-muted-foreground">教练目前用英文讲解，可以在<a href="/account" className="underline">用户中心</a>改为中文。<button className="ml-2 underline" onClick={() => setVisible(false)}>知道了</button></p> : null;
 }

@@ -1,0 +1,5 @@
+
+> project-0@0.1.0 check:privacy
+> node --conditions=react-server --import tsx scripts/check-privacy.ts
+
+隐私说明尚有待定项，不能部署。

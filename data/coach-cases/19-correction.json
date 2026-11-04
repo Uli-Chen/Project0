@@ -1,0 +1,103 @@
+{
+  "id": "case-19",
+  "topicType": "problem_solution",
+  "topic": "Many cities suffer from traffic congestion. What problems does this cause and what solutions can help?",
+  "scenario": "correction",
+  "language": "en",
+  "issue": true,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "我之前说所有拥堵都靠公交解决，其实只指我家附近上班高峰的拥堵。"
+    },
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "请不要再说我认为公交能解决所有城市的拥堵。"
+    }
+  ],
+  "seedHistory": 2,
+  "difficulties": [],
+  "excludedMemoryIds": [],
+  "track": "argument",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": null,
+  "seed": {
+    "draft": "Traffic jams make my bus late. I think the city should improve public transport.",
+    "issue": {
+      "rank": 1,
+      "code": "TR",
+      "title": "解释自己的判断",
+      "why": "本轮只讨论学生自己的判断、理由和例子，不添加新的题目内容。",
+      "sentenceIds": [
+        1
+      ],
+      "hintL1": "解释原因、后果或自己的观察。",
+      "recurring": false
+    },
+    "messages": [
+      {
+        "id": "case-19-seed-1",
+        "role": "user",
+        "stage": "issue",
+        "content": "我认为所有城市的拥堵都可以靠公交解决。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-19-seed-2",
+        "role": "coach",
+        "stage": "issue",
+        "content": "你说的是所有城市吗？可以明确一下范围。",
+        "issueRank": 1
+      }
+    ],
+    "thread": {
+      "v": 1,
+      "key": "issue:1",
+      "status": "open",
+      "closedReason": null,
+      "track": "argument",
+      "current": {
+        "target": "解释学生自己已提出的判断与理由之间的联系",
+        "refs": [
+          "1"
+        ]
+      },
+      "openQuestion": {
+        "text": "你说的是所有城市吗？可以明确一下范围。",
+        "askedMessageId": "case-19-seed-2"
+      },
+      "established": [
+        {
+          "id": "case-19-e1",
+          "text": "我认为所有城市的拥堵都可以靠公交解决。",
+          "refMessageId": "case-19-seed-1",
+          "basis": "student_stated",
+          "archived": false,
+          "retracted": false
+        }
+      ],
+      "attempts": [],
+      "allowedHelp": 1,
+      "providedHelp": null,
+      "legacyLevel": 1,
+      "lastMessageId": "case-19-seed-2"
+    }
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [],
+    "note": "不把拒绝添加题目内容本身当作无效推进；需在允许范围提供下一步。"
+  }
+}

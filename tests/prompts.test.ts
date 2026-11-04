@@ -16,8 +16,8 @@ test("提示词文件：全部可读、非空；只有固定开头含 {{schema}}
 
 test("提示词版本：改了 prompts/ 下的文件就要升级 promptConfigVersion，并更新这里的摘要", () => {
   assert.deepEqual({ promptConfigVersion, digest: promptsDigest() }, {
-    promptConfigVersion: "coach-json-v4-quick-guidance",
-    digest: "a67c74a8907ac07f3c658a489a6bfebd79fa8dad0bd0ed68bae97dd7ab3c2dd9",
+    promptConfigVersion: "coach-json-v10-tutor-p1",
+    digest: "64b4f3f756bc67222b47d0ee972d78e1a1d29894047762fbe627e8ea1a71d712",
   });
 });
 

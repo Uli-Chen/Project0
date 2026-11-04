@@ -1,0 +1,86 @@
+{
+  "id": "case-21",
+  "topicType": "opinion",
+  "topic": "Some people believe all university students should study science. To what extent do you agree?",
+  "scenario": "ordinary",
+  "language": "en",
+  "issue": true,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "I enjoy science, but I do not think everyone should study it."
+    },
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "这句话普通但准确，需要为了分数换成高级词吗？"
+    }
+  ],
+  "seedHistory": 1,
+  "difficulties": [],
+  "excludedMemoryIds": [],
+  "track": "language",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": null,
+  "seed": {
+    "draft": "I enjoy science, but I do not think everyone should study it.",
+    "issue": {
+      "rank": 1,
+      "code": "LR",
+      "title": "普通表达是否需要替换",
+      "why": "此前建议将 enjoy 换成高级词；本轮需要核验这个建议是否必要。",
+      "sentenceIds": [
+        1
+      ],
+      "hintL1": "先判断表达是否准确，不把生僻词当作评分要求。",
+      "recurring": false
+    },
+    "messages": [
+      {
+        "id": "case-21-seed-1",
+        "role": "coach",
+        "stage": "issue",
+        "content": "先看看这句话是否准确表达你的意思，不需要为了显得高级而改词。",
+        "issueRank": 1
+      }
+    ],
+    "thread": {
+      "v": 1,
+      "key": "issue:1",
+      "status": "open",
+      "closedReason": null,
+      "track": "language",
+      "current": {
+        "target": "核验普通但准确的表达是否真的需要修改",
+        "refs": [
+          "1"
+        ]
+      },
+      "openQuestion": null,
+      "established": [],
+      "attempts": [],
+      "allowedHelp": 1,
+      "providedHelp": null,
+      "legacyLevel": 1,
+      "lastMessageId": "case-21-seed-1"
+    }
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [
+      1
+    ],
+    "note": "不把拒绝添加题目内容本身当作无效推进；需在允许范围提供下一步。"
+  }
+}

@@ -1,4 +1,5 @@
 import "server-only";
+import { publicUser, userById } from "./queries/users";
 import { readFeatures } from "../config/features";
 import { requirementSchema } from "../question-bank/types";
 import { createHash } from "node:crypto";
@@ -22,6 +23,10 @@ export function saveNewPractice(userId: string, session: SessionState) {
     if (family) {
       const active = getDb().select().from(checkpoints).where(and(eq(checkpoints.userId,userId),eq(checkpoints.exposureKey,family),eq(checkpoints.status,"in_progress"))).get();
       if(active && active.attemptId !== session.id) throw new SessionError("这道题正在进行检查点，请先完成或关闭。",409,"checkpoint_family_busy");
+    }
+    if (readFeatures().TUTOR_V2_ENABLED && !getSession(userId, session.id)) {
+      const owner = userById(userId);
+      if (owner) session.nudgesEnabled = publicUser(owner).profile.nudgesDefault !== false;
     }
     saveSession(userId, session);
     recordAttempt(sqlite, userId, session, questionContext(sqlite));

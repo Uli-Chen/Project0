@@ -1,0 +1,51 @@
+{
+  "purpose": "Separate targeted A3 coverage; not added to fixed 30-case score",
+  "samples": 6,
+  "valid": 6,
+  "firstValid": 6,
+  "independentReviewers": 2,
+  "agreedSemanticLabels": 6,
+  "actualArgumentSentenceExamples": 6,
+  "explanationLanguageViolations": 0,
+  "violations": 0,
+  "severe": 0,
+  "effective": 6,
+  "previousCorrect": 0,
+  "repeated": 0,
+  "repeatedRate": null,
+  "cost": {
+    "mode": "live",
+    "corpusDigest": "4584c0d5c736a3fa863a12c56c434a90f6802a4bb590756381eb7b9aa0464b1b",
+    "rubricDigest": "f109cf1ce54082f062eb057e4bce91684b2eb6de6f92f4c9be00780211c9992f",
+    "promptDigest": "166a1acbe7e97731627310bce5cf5956c988c3079f4b77abf9f01fb06ea50ad1",
+    "promptConfigVersion": "coach-json-v10-tutor-p1",
+    "model": "deepseek-flash",
+    "credentialSource": "current-config",
+    "previousAccountedCny": 14.482682,
+    "hardLimitCny": 35.517318,
+    "concurrency": 3,
+    "calls": 6,
+    "accountedCny": 0.050782,
+    "reservedCny": 0,
+    "unknownUsage": 0,
+    "providerExceededDeclaredLimits": false,
+    "totalAuthorizedCny": 50,
+    "cumulativeAccountedCny": 14.533464,
+    "maximumCny": 35.517318,
+    "projectedWorstCaseCny": 110.592,
+    "completedRounds": 6,
+    "plannedRounds": 6,
+    "warningCounts": {
+      "unattributed_sentence": 6
+    },
+    "halted": null,
+    "pricingSource": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing (2026-11-03 peak)",
+    "rubricStatus": "local-review-v1; designated-owner-signoff-pending"
+  },
+  "reviewFiles": {
+    "judgment-a.jsonl": "8c11a07137d0115fb3f120e4784bee563f10bf88917f8490f4c4b32e29c7d08c",
+    "judgment-b.jsonl": "2fa80eb178fb9ed162b33c41ca9c919da82b3943ccd2dcace3480e375982af74",
+    "coverage-a.json": "bf5c82ccae57a869ae68b2a5c76733bba61bf0dcf4b6534b4751462dab00f59d",
+    "coverage-b.json": "75d77c6c53b0806f972c5bccc2b45e1e68bae6e07423cc41555ab5d589ee3be9"
+  }
+}

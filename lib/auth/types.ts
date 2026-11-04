@@ -8,6 +8,8 @@ export type UserProfile = {
   minutes: string | null;
   difficulties: string[];
   lang: "zh" | "en" | null;
+  explainLanguage?: "en" | "zh" | null;
+  nudgesDefault?: boolean | null;
   onboardingCompleted: boolean;
   excludedMemoryIds: string[];
 };
@@ -30,6 +32,8 @@ export const DEFAULT_PROFILE: UserProfile = {
   minutes: null,
   difficulties: [],
   lang: null,
+  explainLanguage: null,
+  nudgesDefault: null,
   onboardingCompleted: false,
   excludedMemoryIds: [],
 };

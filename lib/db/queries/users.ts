@@ -15,7 +15,7 @@ export function userById(id: string) {
 export function publicUser(user: typeof users.$inferSelect): CurrentUser {
   let profile: Partial<UserProfile> = {};
   try { profile = JSON.parse(user.profileJson) as Partial<UserProfile>; } catch { /* Recover legacy empty profiles. */ }
-  return { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt, profile: { ...DEFAULT_PROFILE, ...profile } };
+  return { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt, profile: { ...DEFAULT_PROFILE, ...profile, explainLanguage: profile.explainLanguage === "zh" ? "zh" : "en", nudgesDefault: profile.nudgesDefault !== false } };
 }
 
 export function updateUserProfile(userId: string, profile: UserProfile, name?: string): CurrentUser {

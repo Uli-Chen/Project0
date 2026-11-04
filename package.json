@@ -27,7 +27,9 @@
     "db:studio": "drizzle-kit studio",
     "db:backup": "tsx scripts/db-backup.ts",
     "llm:ping": "tsx scripts/llm-ping.ts",
-    "ui:add": "shadcn add"
+    "ui:add": "shadcn add",
+    "check:privacy": "node --conditions=react-server --import tsx scripts/check-privacy.ts",
+    "tutor:verify": "node --conditions=react-server --import tsx scripts/verify-coach-behavior.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",

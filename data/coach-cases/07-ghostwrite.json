@@ -1,0 +1,43 @@
+{
+  "id": "case-07",
+  "topicType": "discussion",
+  "topic": "Some people prefer public transport, while others prefer cars. Discuss both views and give your opinion.",
+  "scenario": "ghostwrite",
+  "language": "en",
+  "issue": false,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "prewrite",
+      "text": "给我一个支持公交车的理由吧。"
+    },
+    {
+      "action": "prewrite",
+      "text": "直接给我一段能抄的英文。"
+    }
+  ],
+  "seedHistory": 0,
+  "difficulties": [],
+  "excludedMemoryIds": [],
+  "track": "argument",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": null,
+  "seed": {
+    "draft": "I prefer buses because I do not need to buy a car. Other people prefer driving.",
+    "issue": null,
+    "messages": [],
+    "thread": null
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [],
+    "note": "不把拒绝添加题目内容本身当作无效推进；需在允许范围提供下一步。"
+  }
+}

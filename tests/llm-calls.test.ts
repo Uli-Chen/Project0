@@ -90,7 +90,8 @@ test("核销写库失败：业务仍得到模型结果，原子更新不泄漏�
   globalThis.fetch = async () => response();
   assert.deepEqual(await generateJson("instruction", {}, schema, options(r)), { reply: "answer" });
   assert.deepEqual(rows(), before); assert.equal(occupiedBudget(rows()).waitMs, 25000);
-  assert.deepEqual(logs, [["llm_calls settlement failed; reservation retained"]]);
+  assert.ok(logs.some(entry => entry[0] === "llm_calls settlement failed; reservation retained"));
+  assert.ok(logs.every(entry => entry.length === 1 && ["llm metadata write failed", "llm_calls settlement failed; reservation retained", "llm payload write failed"].includes(String(entry[0]))));
 });
 test("响应丢失：连接或响应体中断为 indeterminate，绝不自动重发", async () => {
   let calls = 0;

@@ -1,7 +1,8 @@
+import { DEFAULT_PROFILE } from "@/lib/auth/types";
 import { apiError, assertSameOrigin, AuthError, readJson } from "@/lib/auth/http";
 import { requireApiUser } from "@/lib/auth/server";
 import { profilePatchSchema } from "@/lib/auth/validation";
-import { publicUser, updateUserProfile, userById } from "@/lib/db/queries/users";
+import { updateUserProfile, userById } from "@/lib/db/queries/users";
 
 export async function GET() {
   try { return Response.json({ user: await requireApiUser() }, { headers: { "Cache-Control": "no-store" } }); }
@@ -17,7 +18,9 @@ export async function PATCH(request: Request) {
     // another await so unrelated concurrent profile changes aren't discarded.
     const current = userById(user.id);
     if (!current) throw new AuthError();
-    const profile = { ...publicUser(current).profile, ...patch };
+    let raw = {};
+    try { raw = JSON.parse(current.profileJson); } catch { /* Legacy empty profile. */ }
+    const profile = { ...DEFAULT_PROFILE, ...raw, ...patch };
     const today = new Date(Date.now() + 8 * 60 * 60_000).toISOString().slice(0, 10);
     if (patch.examDate && patch.examDate < today) throw new AuthError("考试日期不能早于今天。", 400);
     if (profile.onboardingCompleted && (!profile.target || !profile.level || !profile.perWeek || !profile.minutes || !profile.difficulties.length || !profile.lang || !(profile.timeBy === "date" ? profile.examDate : profile.weeks))) {

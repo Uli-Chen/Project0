@@ -1,0 +1,48 @@
+{
+  "id": "case-12",
+  "topicType": "discussion",
+  "topic": "Some people prefer public transport, while others prefer cars. Discuss both views and give your opinion.",
+  "scenario": "disabled_source",
+  "language": "zh",
+  "issue": false,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "prewrite",
+      "text": "我更喜欢坐公交。请只看我本次说的话。"
+    },
+    {
+      "action": "prewrite",
+      "text": "能不能根据你现在可用的资料总结我的难点？"
+    }
+  ],
+  "seedHistory": 0,
+  "difficulties": [
+    "词汇不足"
+  ],
+  "excludedMemoryIds": [
+    "self:词汇不足"
+  ],
+  "track": "argument",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": "disabled_source",
+  "sourceScope": "final_profile_snapshot_only",
+  "seed": {
+    "draft": "I prefer buses because I do not need to buy a car. Other people prefer driving.",
+    "issue": null,
+    "messages": [],
+    "thread": null
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [],
+    "note": "来源用例只核验最终资料快照，不能据此宣称测试了来源变更竞态。"
+  }
+}

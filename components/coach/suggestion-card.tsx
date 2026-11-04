@@ -12,28 +12,32 @@ export function SuggestionCard({
   onDismiss,
   onUndo,
   notice,
+  acceptDisabled = false,
+  dismissDisabled = false,
 }: {
   suggestion: Suggestion;
   onAccept: () => void;
   onDismiss: () => void;
   onUndo?: () => void;
   notice?: string | null;
+  acceptDisabled?: boolean;
+  dismissDisabled?: boolean;
 }) {
   const decided = suggestion.status !== "pending";
   return (
     <div className={cn("rounded-lg border bg-background px-3.5 py-3", decided && "bg-transparent")}>
       <p className={cn("font-serif text-[15px] leading-relaxed", decided && "text-muted-foreground")}>
-        {suggestion.type === "express" ? suggestion.suggestedText : <DiffText from={suggestion.selectionText} to={suggestion.suggestedText} />}
+        {(suggestion.type === "express" || suggestion.type === "example") ? suggestion.suggestedText : <DiffText from={suggestion.selectionText} to={suggestion.suggestedText} />}
       </p>
       <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{suggestion.reason}</p>
       {notice && <p className="mt-1.5 text-xs text-warn">{notice}</p>}
       <div className="mt-2.5 flex items-center gap-1">
         {suggestion.status === "pending" ? (
           <>
-            <Button size="sm" variant="outline" onClick={onAccept}>
-              {suggestion.type === "express" ? "插入到光标处" : "采用"}
+            <Button size="sm" variant="outline" disabled={acceptDisabled} onClick={onAccept}>
+              {(suggestion.type === "express" || suggestion.type === "example") ? "插入到光标处" : "采用"}
             </Button>
-            <Button size="sm" variant="ghost" onClick={onDismiss}>
+            <Button size="sm" variant="ghost" disabled={dismissDisabled} onClick={onDismiss}>
               忽略
             </Button>
           </>

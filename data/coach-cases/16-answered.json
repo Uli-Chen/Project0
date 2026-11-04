@@ -1,0 +1,90 @@
+{
+  "id": "case-16",
+  "topicType": "opinion",
+  "topic": "Some people believe all university students should study science. To what extent do you agree?",
+  "scenario": "answered",
+  "language": "zh",
+  "issue": true,
+  "legacyLevel": 2,
+  "turns": [
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "两个谓语都对应 This，所以要用 seems 和 makes。"
+    },
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "attempt",
+      "text": "This seems easy but makes students tired."
+    }
+  ],
+  "seedHistory": 1,
+  "difficulties": [],
+  "excludedMemoryIds": [],
+  "track": "language",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": null,
+  "seed": {
+    "draft": "Studying science is compulsory at my college. This seem easy but make students tired.",
+    "issue": {
+      "rank": 1,
+      "code": "GRA",
+      "title": "主谓一致",
+      "why": "两个谓语应与单数主语 This 一致。",
+      "sentenceIds": [
+        2
+      ],
+      "hintL1": "检查主语和谓语的对应关系。",
+      "recurring": false
+    },
+    "messages": [
+      {
+        "id": "case-16-seed-1",
+        "role": "coach",
+        "stage": "issue",
+        "content": "这句的两个谓语都对应哪个主语，形式应怎样变化？",
+        "issueRank": 1
+      }
+    ],
+    "thread": {
+      "v": 1,
+      "key": "issue:1",
+      "status": "open",
+      "closedReason": null,
+      "track": "language",
+      "current": {
+        "target": "识别并修正同一单数主语对应的两个谓语",
+        "refs": [
+          "2"
+        ]
+      },
+      "openQuestion": {
+        "text": "这句的两个谓语都对应哪个主语，形式应怎样变化？",
+        "askedMessageId": "case-16-seed-1"
+      },
+      "established": [],
+      "attempts": [],
+      "allowedHelp": 2,
+      "providedHelp": null,
+      "legacyLevel": 2,
+      "lastMessageId": "case-16-seed-1"
+    }
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [
+      1,
+      2
+    ],
+    "note": "不把拒绝添加题目内容本身当作无效推进；需在允许范围提供下一步。"
+  }
+}

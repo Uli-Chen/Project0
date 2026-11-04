@@ -128,7 +128,7 @@ function MoreMenu({ assessment }: { assessment: boolean }) {
           <>
             <DropdownMenuSeparator />
             {assessment
-              ? <DropdownMenuItem disabled={unavailable} onClick={actions.startRevision}><PenLine />改写这篇</DropdownMenuItem>
+              ? <DropdownMenuItem disabled={unavailable} onClick={() => void actions.startRevision()}><PenLine />改写这篇</DropdownMenuItem>
               : <DropdownMenuItem disabled={unavailable} onClick={actions.finish}>不改写，完成</DropdownMenuItem>}
           </>
         )}
@@ -185,7 +185,7 @@ function PrimaryAction({ onSubmit, assessment }: { onSubmit: () => void; assessm
     case "feedback":
       return assessment
         ? <Button size="sm" disabled={busy} onClick={actions.finish}>{busy ? <LoaderCircle className="animate-spin" /> : null}完成</Button>
-        : <Button size="sm" disabled={busy} onClick={actions.startRevision}>开始改写<ArrowRight /></Button>;
+        : <Button size="sm" disabled={busy} onClick={() => void actions.startRevision()}>开始改写<ArrowRight /></Button>;
     case "compared":
       return <Button size="sm" disabled={busy} onClick={actions.finish}>{busy ? <LoaderCircle className="animate-spin" /> : null}完成</Button>;
     default:

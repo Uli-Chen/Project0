@@ -5,7 +5,7 @@ import { getDb } from "../db/client";
 import { decideReservation, type CallAccounting, type CallOutcome, type QuotaRejection } from "../rules/llm-budget";
 import { callConfigVersion, llmPurposes, quickBudget, type BudgetLimits, type LlmPurpose, type QuickPurpose } from "./budget";
 
-export type CallUsage = { inputTokens: number | null; outputTokens: number | null };
+export type CallUsage = { inputTokens: number | null; outputTokens: number | null; reasoningTokens?: number | null };
 export type CallRecord = Readonly<{
   id: string; userId: string; sessionId: string | null; operationId: string | null; packageId: string | null;
   purpose: LlmPurpose; attempt: number; model: string; configVersion: string; startedAt: string;
@@ -25,7 +25,7 @@ const identifier = z.string().min(1).max(128).regex(/^[a-zA-Z0-9_.:-]+$/);
 const metadata = z.object({ userId: identifier, sessionId: identifier.nullable(), operationId: identifier.nullable(), purpose: z.enum(llmPurposes) });
 const limits = z.object({ calls: count, inputTokens: count, outputTokens: count, waitMs: count });
 const reserveInput = metadata.extend({ operationId: identifier, packageId: identifier, purpose: z.enum(["quick_followup", "quick_check"]), perCall: z.object({ inputTokens: count, maxOutputTokens: count.positive() }), packageLimits: limits, now: z.iso.datetime() });
-const settlement = z.object({ usage: z.object({ inputTokens: count.nullable(), outputTokens: count.nullable() }).nullable(), latencyMs: count, outcome: z.enum(["ok", "timeout", "invalid_output", "provider_error", "indeterminate"]) });
+const settlement = z.object({ finishReason: z.string().nullable().optional(), usage: z.object({ inputTokens: count.nullable(), outputTokens: count.nullable(), reasoningTokens: count.nullable().optional() }).nullable(), latencyMs: count, outcome: z.enum(["ok", "timeout", "invalid_output", "provider_error", "indeterminate"]) });
 export type CallSettlement = z.infer<typeof settlement>;
 
 function insertCall(sqlite: Database.Database, call: CallRecord) {
@@ -75,8 +75,8 @@ export function observeCall(input: Omit<CallRecord, "id" | "packageId" | "config
 export function settleCall(reservation: CallRecord, result: CallSettlement, sqlite?: Database.Database): void {
   try {
     const parsed = settlement.parse(result);
-    (sqlite ?? getDb().$client).prepare(`UPDATE llm_calls SET input_tokens = ?, output_tokens = ?, latency_ms = ?, outcome = ?
-      WHERE id = ? AND user_id = ? AND outcome = 'reserved'`).run(parsed.usage?.inputTokens ?? null, parsed.usage?.outputTokens ?? null, parsed.latencyMs, parsed.outcome, reservation.id, reservation.userId);
+    (sqlite ?? getDb().$client).prepare(`UPDATE llm_calls SET input_tokens = ?, output_tokens = ?, latency_ms = ?, outcome = ?, finish_reason = ?, reasoning_tokens = ?
+      WHERE id = ? AND user_id = ? AND outcome = 'reserved'`).run(parsed.usage?.inputTokens ?? null, parsed.usage?.outputTokens ?? null, parsed.latencyMs, parsed.outcome, parsed.finishReason ?? null, parsed.usage?.reasoningTokens ?? null, reservation.id, reservation.userId);
   } catch { console.error("llm_calls settlement failed; reservation retained"); }
 }
 
@@ -96,3 +96,16 @@ export function consumeReservation(reservation: Reservation, expected: { userId?
 }
 
 export type { CallOutcome };
+
+export type ResultMetadata = { move?: string; allowedHelp?: number; providedHelp?: number; warnings?: Record<string, number> };
+export function recordCallMetadata(call: CallRecord, data: { callSite?: string; stageGroup?: string; provider?: string; promptVersion?: string; paramsHash?: string } & ResultMetadata) {
+  try {
+    const values: Record<string, string | number | null> = {};
+    for (const [key, column] of Object.entries({callSite:"call_site",stageGroup:"stage_group",provider:"provider",promptVersion:"prompt_version",paramsHash:"params_hash",move:"move",allowedHelp:"allowed_help",providedHelp:"provided_help",warnings:"warnings_json"})) {
+      const value = data[key as keyof typeof data];
+      if(value !== undefined) values[column] = typeof value === "object" ? JSON.stringify(value) : value;
+    }
+    const keys = Object.keys(values); if (!keys.length) return;
+    getDb().$client.prepare(`UPDATE llm_calls SET ${keys.map(key=>`${key} = ?`).join(",")} WHERE id = ? AND user_id = ?`).run(...Object.values(values), call.id, call.userId);
+  } catch { console.error("llm metadata write failed"); }
+}

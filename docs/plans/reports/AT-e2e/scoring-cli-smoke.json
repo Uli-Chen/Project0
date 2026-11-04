@@ -1,0 +1,34 @@
+[
+  {
+    "mode": "mock",
+    "completed": 1,
+    "alternateJudgments": false,
+    "exitCode": 2,
+    "passed": false,
+    "eligibleForFormalReview": false
+  },
+  {
+    "mode": "live",
+    "completed": 0,
+    "alternateJudgments": false,
+    "exitCode": 2,
+    "passed": false,
+    "eligibleForFormalReview": false
+  },
+  {
+    "mode": "live",
+    "completed": 1,
+    "alternateJudgments": false,
+    "exitCode": 0,
+    "passed": true,
+    "eligibleForFormalReview": true
+  },
+  {
+    "mode": "live",
+    "completed": 1,
+    "alternateJudgments": true,
+    "exitCode": 2,
+    "passed": false,
+    "eligibleForFormalReview": false
+  }
+]

@@ -1,0 +1,6 @@
+
+> project-0@0.1.0 tutor:verify
+> node --conditions=react-server --import tsx scripts/verify-coach-behavior.ts --mock
+
+{"mode":"mock","cases":30,"multiTurn":30,"turns":216,"maxProviderAttempts":432,"maximumCny":null,"pricingSource":"not provided","hasDedicatedKey":false}
+{"privateRunDirectory":"/Users/chen/Desktop/opc/artifacts/private/coach-eval/2026-11-03T15-33-23-000Z","calls":216,"estimatedActualCny":0,"semanticStatus":"pending independent owner judgment"}

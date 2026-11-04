@@ -1,0 +1,1 @@
+Check the selection for concrete grammar or wording errors. If none, acknowledge it and return suggestions=[]. Otherwise return one check suggestion with exact selectionText and a minimal correction. Explain the rule without repeating the corrected sentence in reply.

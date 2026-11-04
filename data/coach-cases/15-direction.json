@@ -1,0 +1,53 @@
+{
+  "id": "case-15",
+  "topicType": "two_part",
+  "topic": "Online learning is becoming common. Why is this happening and is this a positive development?",
+  "scenario": "direction",
+  "language": "en",
+  "issue": false,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "prewrite",
+      "text": "在线课让我下班后也能学习，但不知道怎样从自己的经历找例子。"
+    },
+    {
+      "action": "prewrite",
+      "intent": "more",
+      "text": ""
+    },
+    {
+      "action": "prewrite",
+      "intent": "more",
+      "text": ""
+    },
+    {
+      "action": "prewrite",
+      "text": "不要给我一个新例子，告诉我怎样自己回想。"
+    }
+  ],
+  "seedHistory": 0,
+  "difficulties": [],
+  "excludedMemoryIds": [],
+  "track": "argument",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": null,
+  "seed": {
+    "draft": "Online lessons let me study after work. I think this is a positive change.",
+    "issue": null,
+    "messages": [],
+    "thread": null
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [],
+    "note": "不把拒绝添加题目内容本身当作无效推进；需在允许范围提供下一步。"
+  }
+}

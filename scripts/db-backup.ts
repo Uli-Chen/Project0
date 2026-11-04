@@ -1,4 +1,5 @@
 import "./load-env";
+import { pruneBackups } from "../lib/db/backup-retention";
 import { mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
@@ -14,6 +15,7 @@ async function backup() {
     const timestamp = new Date().toISOString().replaceAll(":", "-");
     const destination = join(backupDirectory, `${timestamp}-${randomUUID()}.db`);
     await sqlite.backup(destination);
+    await pruneBackups(backupDirectory, process.env.DATABASE_BACKUP_KEEP_DAYS);
     console.log(`SQLite backup complete: ${destination}`);
   } finally {
     sqlite.close();

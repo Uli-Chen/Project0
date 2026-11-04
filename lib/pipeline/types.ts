@@ -1,9 +1,12 @@
+import type { TutorExecution } from "../tutor/execution";
+import type { TutorState } from "../tutor/types";
 import type { CardSnapshot } from "../quick/schemas";
 import type { AgentAction } from "./schemas";
 import type { CatalogQuestion } from "@/lib/question-bank/types";
 import type { CoachMessage, Comparison, EssayKind, Evaluation, Focus, MemoryChange, Mode, Nudge, Outline, Prompt, Scores, SessionKind, Stage, Suggestion } from "@/lib/prototype/types";
 
 export type SessionState = {
+  tutor?: TutorState | null;
   schemaVersion: number; activity: "deep" | "quick";
   question: (Pick<CatalogQuestion, "id" | "version" | "exposureKey" | "primaryTopic" | "questionType" | "text"> & { bankVersion: string }) | null;
   lifecycle: "open" | "set_aside" | "closed"; lastStudentActionAt: string | null;
@@ -15,7 +18,7 @@ export type SessionState = {
   id: string; kind: SessionKind; mode: Mode; prompt: Prompt; focus: Focus | null; stage: Stage;
   createdAt: string; updatedAt: string; version: number; completedRequests?: string[];
   lastWriteId?: string;
-  pendingAction?: { requestId: string; input: AgentAction; startedAt: string; error?: string } | null;
+  pendingAction?: { requestId: string; input: AgentAction; startedAt: string; error?: string; retryable?: boolean; tutor?: TutorExecution } | null;
   outline: Outline; prewriteTurns: number; messages: CoachMessage[]; suggestions: Record<string, Suggestion>;
   nudge: Nudge | null; nudgedParagraphs: Record<string, boolean>; nudgesEnabled: boolean;
   drafts: Record<EssayKind, string>; elapsed: Record<EssayKind, number>; savedAt: string | null;

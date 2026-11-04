@@ -1,0 +1,36 @@
+{
+  "independentAuditCount": 79,
+  "suspectedReviewed": 10,
+  "passControls": 21,
+  "initialPassCount": 206,
+  "criticalScenarioCount": 7,
+  "criticalRoundsReviewed": 54,
+  "disputesAdjudicated": 13,
+  "semanticLabelsChanged": 10,
+  "conservativeEffectiveWithoutAnyViolation": 204,
+  "total": 216,
+  "declaredHelpLevels": {
+    "argument:0": 101,
+    "argument:1": 63,
+    "argument:2": 28,
+    "language:0": 4,
+    "language:1": 11,
+    "language:2": 3,
+    "language:3": 6
+  },
+  "declaredMoves": {
+    "ask": 44,
+    "check_attempt": 9,
+    "clarify": 41,
+    "confirm": 16,
+    "explain": 19,
+    "hint": 69,
+    "invite_write": 12,
+    "suggest": 6
+  },
+  "roundsWithSuggestions": 6,
+  "languageCheck": {
+    "reviewed": 216,
+    "violations": []
+  }
+}

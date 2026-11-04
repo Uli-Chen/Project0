@@ -1,0 +1,57 @@
+{
+  "id": "case-20",
+  "topicType": "two_part",
+  "topic": "Online learning is becoming common. Why is this happening and is this a positive development?",
+  "scenario": "circular",
+  "language": "zh",
+  "issue": true,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "在线学习越来越常见，因为越来越多人在网上学习。"
+    },
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "为什么这不算原因？"
+    }
+  ],
+  "seedHistory": 0,
+  "difficulties": [],
+  "excludedMemoryIds": [],
+  "track": "argument",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": null,
+  "seed": {
+    "draft": "Online lessons let me study after work. I think this is a positive change.",
+    "issue": {
+      "rank": 1,
+      "code": "TR",
+      "title": "解释自己的判断",
+      "why": "本轮只讨论学生自己的判断、理由和例子，不添加新的题目内容。",
+      "sentenceIds": [
+        1
+      ],
+      "hintL1": "解释原因、后果或自己的观察。",
+      "recurring": false
+    },
+    "messages": [],
+    "thread": null
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [],
+    "note": "不把拒绝添加题目内容本身当作无效推进；需在允许范围提供下一步。"
+  }
+}

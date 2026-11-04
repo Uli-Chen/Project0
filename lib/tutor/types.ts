@@ -1,0 +1,11 @@
+export type Help = 0 | 1 | 2 | 3;
+export type Track = "argument" | "language";
+export type Move = "ask" | "clarify" | "explain" | "hint" | "check_attempt" | "confirm" | "suggest" | "invite_write" | "noop";
+export type Established = { id: string; text: string; refMessageId: string; basis: "student_stated"; archived: boolean; retracted: boolean };
+export type Attempt = { messageId: string; result: "met" | "partial" | "not_met" | "unclear"; reason: string; help: Help };
+export type TeachingState = { v: 1; key: string; status: "open" | "closed"; closedReason: "met" | null; track: Track; current: { target: string; refs: string[] } | null; openQuestion: { text: string; askedMessageId: string } | null; established: Established[]; attempts: Attempt[]; allowedHelp: Help; providedHelp: Help | null; legacyLevel: 1 | 2 | 3 | null; lastMessageId: string | null };
+export type HelpEvent = { id: string; at: string; entry: "prewrite" | "chat" | "clarify" | "polish" | "express" | "check" | "issue" | "nudge"; essayKind: "original" | "revision" | null; draftVersion: number; level: Help | null; track: Track | null; suggestionIds: string[]; messageId: string | null };
+export type TutorState = { v: 1; brief: null; activeThread: string | null; threads: Record<string, TeachingState>; helpEvents: HelpEvent[] };
+export type DeltaOp = { op: "establish"; text: string; ref: string } | { op: "retract"; establishedId: string; ref: string } | { op: "ask"; text: string } | { op: "clearQuestion" } | { op: "recordAttempt"; ref: string; result: Attempt["result"]; reason: string } | { op: "close"; reason: "met" };
+export type TutorOutput = { move: Move; reply: string; help: { level: Help }; track?: Track; delta: DeltaOp[]; payload: { outlineUpdates?: { path: "stance" | "reasons.0.claim" | "reasons.0.why" | "reasons.0.example" | "reasons.1.claim" | "reasons.1.why" | "reasons.1.example" | "counter.view" | "counter.response"; text: string; source: string }[]; suggestion?: { suggestedText: string; reason: string } } };
+export type RefKeys = Record<string, { messageId: string; text: string }>;

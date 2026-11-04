@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { readFeatures } from "../lib/config/features";
 
 test("features default off and only literal true enables a flag", () => {
-  const off = { QUESTION_BANK_ENABLED: false, QUICK_ENABLED: false, CHECKPOINTS_ENABLED: false, FOCUS_ENABLED: false };
+  const off = { QUESTION_BANK_ENABLED: false, QUICK_ENABLED: false, CHECKPOINTS_ENABLED: false, FOCUS_ENABLED: false, TUTOR_V2_ENABLED: false };
   assert.deepEqual(readFeatures({}), off);
   for (const value of ["false", "1", "TRUE", "", " true "]) assert.deepEqual(readFeatures(Object.fromEntries(Object.keys(off).map(key => [key, value]))), off);
 });

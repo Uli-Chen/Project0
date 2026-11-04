@@ -3,7 +3,7 @@
 * **负责人（方案、语义判定、验收）：** Claude Code
 * **实现者：** Codex gpt-6-astra
 * **日期：** 2026-11-03
-* **状态：** 方案 v3（2026-11-03）。v1、v2 经实现者两轮 P-3 审阅，结论均为“修改后同意”，全部意见已处理（见 §10）。尚未实现。
+* **状态：** 方案 v3（2026-11-03）。v1、v2 经实现者两轮 P-3 审阅，结论均为“修改后同意”，全部意见已处理（见 §10）。T1～T5 实现与统一技术检查完成。T6 已完成6轮固定语料真实回放、本地逐条盲审、规定抽查及独立A3覆盖补充；最终本地结果达到原设计数值门槛，另加的本地逐场景门槛仍未通过，两种口径及历史结果均保留。指定负责人的正式语义验收、真人试用与发布条件尚未完成。证据与剩余事项见 [统一验收报告](reports/AT-ACCEPTANCE.md)。
 * **取代关系：** 本方案取代 [风格档位开发方案](2026-11-03_tutor_style_tiers_dev_plan.md) 中 WP1 之后的主线，对应关系见 §9。
 
 ## 0. 依据与范围
@@ -177,7 +177,7 @@
   - **升级在本轮生效：** 调用前先在临时线程上计算升级后的上限，模型生成和 schema 预演都使用这个上限；调用成功才把升级写入线程，失败不升级。达到上限（A2）后按钮不可用，并提示“试着先写下你的想法”。
   - 无文字的 `more` 请求不提供 `cur` 引用键。所有 `action = "hint"` 的消息都不能用于确认项、尝试或提纲的 `source` 校验。
 - **AT-20 问题线程接入**：开关打开时，`issue` 改用协议 schema。线程键 `issue:<rank>`：
-  - 第一次打开时模型必须输出 `track`，之后固定。
+  - 请求明确传入 `newThread`。首次问题线程不发送尚未确定的 `track`，由模型在输出中必填并保存；写前始终为 `argument`，已有线程传入已保存的 `track`，输出不再声明。
   - `more` 调用 `escalate`；`ask`、`attempt` 不改上限；核验为 `met` 时通过 `delta.close` 关闭线程。
   - 每次成功后调用 `syncIssueLevels`，让现有按钮、关闭开关后的旧路径都看到同一个级别。
   - **重新开启后的对齐：** 线程记录最后处理的消息 id（`lastMessageId`）。开关关闭期间旧路径可能继续对话；重新开启后打开线程时，如果该线程范围内有晚于 `lastMessageId` 的消息，就调用 `reconcileLegacy`：`allowedHelp` 取最新的 `issueLevels[rank]`，清除开放问题，`providedHelp` 记为未知（`null`），不补造尝试。写前线程同理（只清除开放问题，不改上限）。
@@ -426,7 +426,7 @@ type DeltaOp =
 
 **引用键**：上下文中每条学生消息（窗口内、`action` 不是 `hint`）分配引用键 `m:<messageId>`；本次学生输入有文字时引用键为 `cur`，保存后映射为新消息的 id；无文字的 `more` 请求没有 `cur`。引用键在同一次请求的重试之间保持不变，因为它们由请求开始前的状态生成。
 
-**校验规则**（全部在 schema 的 `superRefine` 中完成）：
+**校验规则**（上下文权限写入模型可见的动态 schema；跨字段约束及增量预演由 `superRefine` 校验）：
 
 | 规则 | 写前 | 问题线程 |
 |---|---|---|
@@ -434,9 +434,9 @@ type DeltaOp =
 | `help.level` | ≤ `allowedHelp`；`suggest` 时必须为 3 | 同左 |
 | `suggest` 与 `payload.suggestion` | 都不允许 | `suggest` 只在 `allowedHelp = 3` 时允许；`payload.suggestion` 只有 `suggest` 能带，并且 `suggest` 必须带 |
 | `payload.outlineUpdates` | 允许 | 不允许 |
-| `ask` 操作 | 每次最多一个，且 move 为 `ask` 或 `clarify` | 同左 |
+| `ask` 操作 | 每次最多一个；问题是线程状态更新，可与任意允许的教学 move 同用 | 同左；同轮含 `close` 时禁止 `ask` |
 | `recordAttempt` | 不允许 | 只在 move 为 `check_attempt` 时允许；`ref` 必须是 `cur`；同一条消息只记一次 |
-| `close` | 不允许 | 只在 move 为 `check_attempt`、本轮 `recordAttempt.result = "met"`、并且同时有 `clearQuestion` 时允许，四者一起提交 |
+| `close` | 不允许 | 只在 move 为 `check_attempt`、本轮 `recordAttempt.result = "met"`、并且同时有 `clearQuestion`、没有任何 `ask` 时允许，四者一起提交，关闭后不得留有开放问题 |
 | `confirm` | 局部确认，不能带 `recordAttempt` 或 `close` | 同左 |
 | `establish` | `ref` 必须是本次提供的键；`text` 必须是该消息的连续原话片段 | 同左 |
 | `retract` | `ref` 必须是本次提供的键；对象必须存在且未撤回 | 同左 |

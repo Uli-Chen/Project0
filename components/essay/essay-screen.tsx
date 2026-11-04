@@ -52,7 +52,7 @@ function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements 
     if (coachBusy) return;
     const draft = state.drafts[essayKind];
     const el = editorRef.current;
-    if (s.type === "express") {
+    if ((s.type === "express" || s.type === "example")) {
       const at = el?.selectionStart ?? draft.length;
       const before = draft.slice(0, at);
       const after = draft.slice(at);
@@ -98,6 +98,15 @@ function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements 
     </div>
   );
 
+  const errorNotice = error && !state.evalError && (
+    <div role="alert" className="flex shrink-0 flex-wrap items-center gap-3 border-b border-destructive/20 bg-destructive/5 px-4 py-2 text-[13px]">
+      <div className="min-w-0 flex-1"><p>{error}</p>{failedInput && <p className="mt-0.5 truncate text-xs text-muted-foreground">未完成的消息：{failedInput}</p>}</div>
+      <Button size="xs" variant="outline" onClick={actions.downloadDraft}>下载草稿</Button>
+      <Button size="xs" variant="outline" disabled={coachBusy} onClick={() => void actions.retry()}>{state.pendingAction?.retryable === false ? "重新发送" : "重试"}</Button>
+      <Button size="icon-xs" variant="ghost" aria-label="关闭" onClick={actions.clearError}><X /></Button>
+    </div>
+  );
+
   const inspector = ui.panel && (
     <Tabs value={ui.panel} onValueChange={(value) => ui.setPanel(value as Panel)} className="flex h-full min-h-0 flex-col gap-0">
       <div className="flex h-11 shrink-0 items-center border-b px-5">
@@ -105,6 +114,7 @@ function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements 
           {ui.panels.map((panel) => <TabsTrigger key={panel} value={panel} className="flex-none px-0 text-[13px] after:bg-foreground">{PANEL_LABEL[panel]}</TabsTrigger>)}
         </TabsList>
       </div>
+      {!ui.wide && errorNotice}
       <div className="min-h-0 flex-1">
         {ui.panel === "coach" && <CoachTab onAccept={accept} onUndo={undo} notices={notices} />}
         {ui.panel === "feedback" && <FeedbackTab />}
@@ -118,14 +128,7 @@ function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements 
       <EssayTopbar onSubmit={submit} hasLeft={hasLeft} />
       <DeepLeaveGuard />
       <DeepLifecycleBar lifecycle={state.lifecycle} checkpoint={Boolean(state.checkpointId)} busy={coachBusy || lifecycleBusy} onResume={() => void actions.changeLifecycle("resume")} />
-      {error && !state.evalError && (
-        <div role="alert" className="flex shrink-0 flex-wrap items-center gap-3 border-b border-destructive/20 bg-destructive/5 px-4 py-2 text-[13px]">
-          <div className="min-w-0 flex-1"><p>{error}</p>{failedInput && <p className="mt-0.5 truncate text-xs text-muted-foreground">未完成的消息：{failedInput}</p>}</div>
-          <Button size="xs" variant="outline" onClick={actions.downloadDraft}>下载草稿</Button>
-          <Button size="xs" variant="outline" disabled={coachBusy} onClick={() => void actions.retry()}>重试</Button>
-          <Button size="icon-xs" variant="ghost" aria-label="关闭" onClick={actions.clearError}><X /></Button>
-        </div>
-      )}
+      {(ui.wide || ui.sheet !== "right") && errorNotice}
       <div className="flex min-h-0 flex-1">
         {ui.wide && hasLeft && ui.leftOpen && <aside aria-label="提纲" className="w-[264px] shrink-0 border-r bg-background">{outline}</aside>}
         <main ref={centerRef} id="main-content" className="min-w-0 flex-1 overflow-y-auto">

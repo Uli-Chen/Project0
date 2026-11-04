@@ -25,6 +25,12 @@ async function requestJson(url: string, options?: RequestInit, timeout = 15000):
     throw new RequestError("网络连接中断，请检查网络后重试。你的文字仍在当前页面。");
   }
 }
+/** A failed request must not replace the student's newer unsent message. */
+export function recoverComposerDraft(currentDraft: string, input: AgentAction): string {
+  if (currentDraft || !("text" in input) || !input.text?.trim() || ("intent" in input && input.intent === "more")) return currentDraft;
+  return input.text;
+}
+
 function useSessionController(initialState: SessionState) {
   const initialPending = initialState.pendingAction;
   const [state, setState] = useState(initialState);
@@ -32,8 +38,8 @@ function useSessionController(initialState: SessionState) {
   const [pendingActionName, setPendingActionName] = useState<AgentAction["action"] | null>(initialPending?.input.action ?? null);
   const [error, setError] = useState<string | null>(initialPending?.error ?? null);
   const [failedInput, setFailedInput] = useState<string | null>(initialPending && "text" in initialPending.input ? initialPending.input.text ?? null : null);
-  const [composerDraft, setComposerDraftState] = useState("");
-  const composerDraftRef = useRef("");
+  const [composerDraft, setComposerDraftState] = useState(initialPending?.retryable === false && "text" in initialPending.input ? initialPending.input.text ?? "" : "");
+  const composerDraftRef = useRef(composerDraft);
   const setComposerDraft = useCallback((text: string) => { composerDraftRef.current = text; setComposerDraftState(text); }, []);
   const [lifecycleBusy, setLifecycleBusy] = useState(false);
   const lifecycleChanging = useRef(false);
@@ -116,7 +122,7 @@ function useSessionController(initialState: SessionState) {
         const messageStage = ref.current.stage === "prewriting" ? "prewriting" as const : ref.current.stage === "revising" ? "revision" as const : "writing" as const;
         update(s => ({ ...s, pendingAction: { requestId, input, startedAt: new Date().toISOString() } }));
         if (["prewrite", "chat", "express", "clarify", "polish", "check", "issue"].includes(input.action)) {
-          const content = "text" in input ? input.text ?? "再给点提示" : ({ clarify: "理清这段", polish: "润色这句", check: "检查这段" } as Record<string, string>)[input.action];
+          const content = "intent" in input && input.intent === "more" ? "（请求提示）" : "text" in input ? input.text ?? "再给点提示" : ({ clarify: "理清这段", polish: "润色这句", check: "检查这段" } as Record<string, string>)[input.action];
           update(s => ({ ...s, messages: [...s.messages.filter(m => !m.id.startsWith("pending-")), { id: `pending-${requestId}`, role: "user", stage: input.action === "issue" ? "issue" : messageStage, content, ...("selection" in input ? { quote: input.selection } : {}), ...(input.action === "chat" ? { quote: input.quote } : {}), ...(input.action === "issue" ? { issueRank: input.rank } : {}) }] }));
         }
         if (input.action === "evaluate") update(s => ({ ...s, stage: input.kind === "revision" ? "re_evaluating" : "evaluating", submitted: { ...s.submitted, [input.kind]: s.submitted[input.kind] ?? s.drafts[input.kind] }, evalStep: "scoring", evalError: null }));
@@ -134,10 +140,15 @@ function useSessionController(initialState: SessionState) {
     } catch (err) {
       const message = err instanceof Error ? err.message : "请求失败，请检查网络后重试。";
       setError(message);
+      if (ref.current.pendingAction?.retryable === false) {
+        const recovered = recoverComposerDraft(composerDraftRef.current, input);
+        if (recovered !== composerDraftRef.current) setComposerDraft(recovered);
+      }
       if (input.action === "evaluate") update(s => ["evaluating", "re_evaluating"].includes(s.stage) ? ({ ...s, evalError: message }) : s);
     } finally { busy.current = false; setCoachBusy(false); setPendingActionName(null); }
     if (ref.current.completedRequests?.includes(requestId) && edits.current !== savedEdits.current) void save();
-  }, [enqueue, merge, saveNow, update, save]);
+    return ref.current.completedRequests?.includes(requestId) ?? false;
+  }, [enqueue, merge, saveNow, update, save, setComposerDraft]);
 
   const changeLifecycle = useCallback(async (action: "setAside" | "resume" | "close") => {
     if (busy.current || lifecycleChanging.current) return false;
@@ -213,6 +224,7 @@ function useSessionController(initialState: SessionState) {
     actions: {
       changeLifecycle, setComposerDraft,
       hasUnsentComposer: () => Boolean(composerDraftRef.current.trim()),
+      morePrewrite: () => perform({ action: "prewrite", text: "", intent: "more" }),
       sendPrewrite: (text: string) => perform({ action: "prewrite", text }),
       editOutline: (path: string, text: string) => edit("outline", s => ({ ...s, outline: { ...setSlot(s.outline, path, text, "用户编辑"), userEdited: true } })),
       startWriting: () => perform({ action: "startWriting" }), setDraft, tick, markSaved: save, save,
@@ -226,19 +238,19 @@ function useSessionController(initialState: SessionState) {
       submit: (kind: EssayKind) => perform({ action: "evaluate", kind }),
       retryEvaluation: () => perform({ action: "evaluate", kind: ref.current.stage === "re_evaluating" ? "revision" : "original" }, lastAction.current?.action === "evaluate" ? lastRequestId.current ?? undefined : undefined),
       retryReview: () => perform({ action: "retryReview" }),
-      startRevision: () => perform({ action: "startRevision" }),
+      startRevision: (options?: { openIssue?: number }) => perform({ action: "startRevision", ...options }),
       setActiveIssue: (rank: number) => update(s => ({ ...s, activeIssue: rank })),
       issueAction: (rank: number, intent: "more" | "attempt" | "ask", text?: string) => perform({ action: "issue", rank, intent, text }),
       finish: () => perform({ action: "finish" }),
       rate: (useful: number | null, mine: "yes" | "partly" | "no" | null, comment: string) => perform({ action: "rating", useful, mine, comment }),
-      retry: () => lastAction.current ? perform(lastAction.current, lastRequestId.current ?? undefined) : save(),
+      retry: () => lastAction.current ? perform(lastAction.current, ref.current.pendingAction?.retryable === false ? undefined : lastRequestId.current ?? undefined) : save(),
       downloadDraft: () => { const s = ref.current; const blob = new Blob([`${s.prompt.text}\n\n原稿\n${s.drafts.original}\n\n改写稿\n${s.drafts.revision}`], { type: "text/plain;charset=utf-8" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `writemind-${s.id}.txt`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); },
       hasUnsaved: () => edits.current !== savedEdits.current,
       clearError: () => setError(null),
     },
   };
 }
-type SessionContextValue = ReturnType<typeof useSessionController> & { questionBankEnabled: boolean };
+type SessionContextValue = ReturnType<typeof useSessionController> & { questionBankEnabled: boolean; tutorV2Enabled: boolean };
 const SessionContext = createContext<SessionContextValue | null>(null);
-export function SessionProvider({ initialState, children, questionBankEnabled = false }: { initialState: SessionState; children: ReactNode; questionBankEnabled?: boolean }) { const value = useSessionController(initialState); return <SessionContext.Provider value={{ ...value, questionBankEnabled }}>{children}</SessionContext.Provider>; }
+export function SessionProvider({ initialState, children, tutorV2Enabled = false, questionBankEnabled = false }: { initialState: SessionState; children: ReactNode; tutorV2Enabled?: boolean; questionBankEnabled?: boolean }) { const value = useSessionController(initialState); return <SessionContext.Provider value={{ ...value, questionBankEnabled, tutorV2Enabled }}>{children}</SessionContext.Provider>; }
 export function useSession() { const value = useContext(SessionContext); if (!value) throw new Error("useSession must be used inside SessionProvider"); return value; }

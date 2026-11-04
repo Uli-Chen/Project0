@@ -1,6 +1,12 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "web", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--", "--port", "3123"], "port": 3123 }
+    { "name": "web", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--", "--port", "3123"], "port": 3123 },
+    {
+      "name": "web-review",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["DATABASE_PATH=./data/review.sqlite", "TUTOR_V2_ENABLED=true","npm", "run", "dev", "--", "--port", "3124"],
+      "port": 3124
+    }
   ]
 }

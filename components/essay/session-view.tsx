@@ -7,7 +7,7 @@ import { EssayScreen } from "./essay-screen";
 import { ReadonlySession } from "./readonly-session";
 
 /** Server boundary: unsupported sessions never mount the editing controller. */
-export function SessionView({ session, questionBankEnabled = false, cardContent, cardRequirements }: { session: SessionState; questionBankEnabled?: boolean; cardContent?: CardContent | null; cardRequirements?: QuestionRequirements }) {
+export function SessionView({ session, tutorV2Enabled = false, questionBankEnabled = false, cardContent, cardRequirements }: { session: SessionState; tutorV2Enabled?: boolean; questionBankEnabled?: boolean; cardContent?: CardContent | null; cardRequirements?: QuestionRequirements }) {
   if (!isSupportedSession(session)) return <ReadonlySession session={session} cardContent={cardContent} />;
-  return <SessionProvider key={session.id} initialState={session} questionBankEnabled={questionBankEnabled}><EssayScreen cardRequirements={cardRequirements} /></SessionProvider>;
+  return <SessionProvider key={session.id} initialState={session} tutorV2Enabled={tutorV2Enabled} questionBankEnabled={questionBankEnabled}><EssayScreen cardRequirements={cardRequirements} /></SessionProvider>;
 }

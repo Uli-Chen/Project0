@@ -9,7 +9,8 @@ import path from "node:path";
  * are this fixed list: never derive a name from request data. Editing a file
  * changes model behaviour, so bump promptConfigVersion (tests pin the digest). */
 export const promptNames = [
-  "system/preamble", "system/retry",
+  "system/preamble", "system/retry", "system/coach-preamble", "system/coach-language-en", "system/coach-language-zh",
+  "coach-v2/prewrite", "coach-v2/chat", "coach-v2/clarify", "coach-v2/polish", "coach-v2/express", "coach-v2/check", "coach-v2/issue", "coach-v2/nudge",
   "coach/prewrite", "coach/nudge", "coach/issue", "coach/clarify", "coach/polish", "coach/check", "coach/express", "coach/chat",
   "judge/evaluate", "judge/compare", "judge/finish", "judge/review",
   "quick/followup", "quick/check",
@@ -53,4 +54,11 @@ export function promptsDigest(): string {
   const hash = createHash("sha256");
   for (const name of promptNames) hash.update(`${name}\0${prompt(name)}\0`);
   return hash.digest("hex");
+}
+
+/** Names and hashes only, never prompt content. */
+export function promptFingerprint(instruction: string, coachV2 = false, retry = false, systemMessage?: string): string {
+  const names = promptNames.filter(name => prompt(name) === instruction);
+  const languageNames = coachV2 && systemMessage ? (["system/coach-language-en", "system/coach-language-zh"] as const).filter(name => systemMessage.includes(prompt(name))) : [];
+  return JSON.stringify({ ...(systemMessage === undefined ? {} : { systemHash: createHash("sha256").update(systemMessage).digest("hex") }), files: [...names, coachV2 ? "system/coach-preamble" : "system/preamble", ...languageNames, ...(retry ? ["system/retry"] : [])].map(name => ({ name, hash: createHash("sha256").update(prompt(name as PromptName)).digest("hex") })), instructionHash: createHash("sha256").update(instruction).digest("hex") });
 }

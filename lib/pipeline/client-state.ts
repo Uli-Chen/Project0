@@ -7,6 +7,8 @@ export function mergeSessionState(local: SessionState, incoming: SessionState, c
     drafts: { original: changed.original > generation ? local.drafts.original : incoming.drafts.original, revision: changed.revision > generation ? local.drafts.revision : incoming.drafts.revision },
     outline: changed.outline > generation ? local.outline : incoming.outline,
     nudgesEnabled: changed.nudgesEnabled > generation ? local.nudgesEnabled : incoming.nudgesEnabled,
-    elapsed: { original: Math.max(incoming.elapsed.original, local.elapsed.original), revision: Math.max(incoming.elapsed.revision, local.elapsed.revision) }, activeIssue: local.activeIssue,
+    elapsed: { original: Math.max(incoming.elapsed.original, local.elapsed.original), revision: Math.max(incoming.elapsed.revision, local.elapsed.revision) },
+    // Entering revision carries the server-validated openIssue selection.
+    activeIssue: local.stage === incoming.stage ? local.activeIssue : incoming.activeIssue,
   };
 }

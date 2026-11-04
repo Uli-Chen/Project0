@@ -76,7 +76,7 @@ export function CoachThread({
               const s = suggestions[sid];
               if (!s) return null;
               return (
-                <SuggestionCard key={sid} suggestion={s} notice={notices[sid]} onAccept={() => onAccept?.(s)} onDismiss={() => onDismiss?.(s)} onUndo={onUndo ? () => onUndo(s) : undefined} />
+                <SuggestionCard key={sid} suggestion={s} acceptDisabled={!onAccept} dismissDisabled={!onDismiss} notice={notices[sid]} onAccept={() => onAccept?.(s)} onDismiss={() => onDismiss?.(s)} onUndo={onUndo ? () => onUndo(s) : undefined} />
               );
             })}
           </div>];

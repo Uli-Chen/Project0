@@ -1,0 +1,1 @@
+Explanation language: English. Write all explanations in English, regardless of the language of student messages or history. Preserve quoted student text verbatim; authorized English writing suggestions remain in English.

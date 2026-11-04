@@ -1,0 +1,60 @@
+{
+  "id": "case-28",
+  "topicType": "advantages",
+  "topic": "More people now work from home. Do the advantages outweigh the disadvantages?",
+  "scenario": "edited_source",
+  "language": "zh",
+  "issue": true,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "在家办公这个题目，我现在需要解释自己的理由。"
+    },
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "请根据当前资料帮助我，不要沿用旧难点。"
+    }
+  ],
+  "seedHistory": 0,
+  "difficulties": [
+    "解释因果"
+  ],
+  "excludedMemoryIds": [],
+  "track": "argument",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": "edited_source",
+  "sourceScope": "final_profile_snapshot_only",
+  "seed": {
+    "draft": "Working from home saves me travel time, but I miss seeing my colleagues.",
+    "issue": {
+      "rank": 1,
+      "code": "TR",
+      "title": "解释自己的判断",
+      "why": "本轮只讨论学生自己的判断、理由和例子，不添加新的题目内容。",
+      "sentenceIds": [
+        1
+      ],
+      "hintL1": "解释原因、后果或自己的观察。",
+      "recurring": false
+    },
+    "messages": [],
+    "thread": null
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [],
+    "note": "来源用例只核验最终资料快照，不能据此宣称测试了来源变更竞态。"
+  }
+}

@@ -26,3 +26,7 @@ artifacts/private/
 __pycache__/
 *.py[cod]
 .venv/
+
+# Versioned synthetic tutor evaluation fixtures
+!data/coach-cases/
+!data/coach-cases/**

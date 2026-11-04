@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { splitSentences } from "@/lib/rules";
 import { Check, CircleDashed, CircleDot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IssueList } from "@/components/feedback/issue-list";
@@ -13,12 +15,21 @@ import { FinishSummary } from "./finish-summary";
 const ACHIEVED = { yes: "做到了", partial: "部分做到", no: "还没做到" } as const;
 
 export function FeedbackTab() {
-  const { state, actions, coachBusy, lifecycleBusy } = useSession();
+  const { state, actions, coachBusy, lifecycleBusy, tutorV2Enabled } = useSession();
   const ui = useEssayUi();
+  const [expanded, setExpanded] = useState(false);
   const evaluation = state.evaluation;
   if (!evaluation) return null;
   const { scores, issues, review } = evaluation;
   const can = coachCapabilities(state);
+  const primary = issues.find(i => i.rank === 1) ?? issues[0];
+  const visibleIssues = tutorV2Enabled && !expanded && primary ? [primary] : issues;
+  async function discuss(rank: number) {
+    if (coachBusy || lifecycleBusy || state.lifecycle !== "open") return;
+    if (state.stage === "feedback" && !await actions.startRevision({ openIssue: rank })) return;
+    ui.discussIssue(rank);
+  }
+
 
   return (
     <div className="h-full overflow-y-auto px-5 pt-5 pb-10">
@@ -26,17 +37,22 @@ export function FeedbackTab() {
       <ScoreCard scores={scores} label={state.mode === "practice" ? "原稿 · 练习成绩" : "原稿 · 模考成绩"} />
 
       <section className="mt-8">
-        <h2 className="mb-1 text-xs text-muted-foreground">先改这 {issues.length} 处</h2>
+        <h2 className="mb-1 text-xs text-muted-foreground">{tutorV2Enabled ? "先推进一个问题" : `先改这 ${issues.length} 处`}</h2>
         {issues.length === 0 ? <p className="py-3 text-sm text-muted-foreground">没有需要优先改的问题</p> : (
           <IssueList
-            issues={issues}
+            issues={visibleIssues}
             activeRank={ui.hoverRank ?? (ui.version === "original" ? state.activeIssue : null)}
             onSelect={(rank) => { actions.setActiveIssue(rank); ui.setVersion("original"); }}
             onHover={ui.setHoverRank}
             onJump={(id) => { ui.setVersion("original"); ui.jumpToSentence(id); }}
-            onDiscuss={can.issue ? ui.discussIssue : undefined}
+            onDiscuss={can.issue && state.lifecycle === "open" ? (tutorV2Enabled ? (rank) => void discuss(rank) : ui.discussIssue) : undefined}
           />
         )}
+        {tutorV2Enabled && primary && <>
+          <blockquote className="my-3 border-l-2 pl-3 font-serif text-sm">{splitSentences(state.submitted.original ?? "").filter(s => primary.sentenceIds.includes(s.id)).map(s => s.text).join(" ")}</blockquote>
+          <Button disabled={coachBusy || lifecycleBusy || state.lifecycle !== "open" || !["feedback", "revising"].includes(state.stage)} onClick={() => void discuss(primary.rank)}>改这个问题</Button>
+          {issues.length > 1 && <button className="ml-3 text-sm underline" onClick={() => setExpanded(!expanded)}>{expanded ? "收起其他问题" : `还有 ${issues.length - 1} 个问题`}</button>}
+        </>}
       </section>
 
       {(state.reviewStatus !== "none" || review.focusResult || review.breakthrough || state.mode === "practice") && (
@@ -57,7 +73,8 @@ export function FeedbackTab() {
             {review.breakthrough && <div><dt className="text-xs text-muted-foreground">突破</dt><dd className="mt-1">{review.breakthrough}</dd></div>}
             {state.mode === "practice" && <div><div className="flex items-baseline justify-between gap-3"><dt className="text-xs text-muted-foreground">站内已采用建议文本占比</dt><dd className="font-mono tabular-nums">{Math.round(review.aiRatio * 100)}%</dd></div><dd className="mt-1 text-xs text-muted-foreground">按已采用且仍完整保留的站内建议文本词数估算；不检测 AI 生成，也不识别外部来源。</dd></div>}
           </dl>
-        </section>
+
+      </section>
       )}
     </div>
   );

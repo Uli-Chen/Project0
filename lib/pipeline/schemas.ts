@@ -11,7 +11,7 @@ export const createSessionSchema = z.union([questionCreateSessionSchema, legacyC
 export const lifecycleSchema = z.object({ action: z.enum(["setAside", "resume", "close"]) }).strict();
 export const draftSchema = z.object({ requestId: z.string().uuid().optional(), version: z.number().int().nonnegative(), drafts: z.object({ original: z.string().max(30000), revision: z.string().max(30000) }).optional(), elapsed: z.object({ original: z.number().int().min(0).max(604800), revision: z.number().int().min(0).max(604800) }).optional(), outline: outlineSchema.optional(), nudgesEnabled: z.boolean().optional() }).strict();
 export const actionSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("prewrite"), text }),
+  z.object({ action: z.literal("prewrite"), text: z.string().trim().max(12000).default(""), intent: z.literal("more").optional() }).refine(v => v.intent === "more" || v.text.length > 0, { message: "请输入你的想法", path: ["text"] }),
   z.object({ action: z.literal("startWriting") }),
   z.object({ action: z.enum(["clarify", "polish", "check"]), selection: text }),
   z.object({ action: z.literal("express"), text }),
@@ -21,7 +21,7 @@ export const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("dismissNudge") }),
   z.object({ action: z.literal("evaluate"), kind: z.enum(["original", "revision"]) }),
   z.object({ action: z.literal("retryReview") }),
-  z.object({ action: z.literal("startRevision") }),
+  z.object({ action: z.literal("startRevision"), openIssue: z.number().int().min(1).max(10).optional() }),
   z.object({ action: z.literal("issue"), rank: z.number().int().min(1).max(10), intent: z.enum(["more", "attempt", "ask"]), text: text.optional() }),
   z.object({ action: z.literal("finish") }),
   z.object({ action: z.literal("rating"), useful: z.number().int().min(1).max(5).nullable(), mine: z.enum(["yes", "partly", "no"]).nullable(), comment: z.string().max(2000) }),

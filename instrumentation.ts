@@ -1,5 +1,6 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  try { const { cleanCallPayloads } = await import("./lib/llm/payloads"); cleanCallPayloads(); } catch { console.error("llm payload cleanup failed"); }
   try {
     const { recoverQuickOperations } = await import("./lib/pipeline/quick-model");
     recoverQuickOperations();

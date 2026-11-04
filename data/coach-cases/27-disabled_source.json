@@ -1,0 +1,62 @@
+{
+  "id": "case-27",
+  "topicType": "discussion",
+  "topic": "Some people prefer public transport, while others prefer cars. Discuss both views and give your opinion.",
+  "scenario": "disabled_source",
+  "language": "en",
+  "issue": true,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "我更喜欢坐公交。请只看我本次说的话。"
+    },
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "能不能根据你现在可用的资料总结我的难点？"
+    }
+  ],
+  "seedHistory": 0,
+  "difficulties": [
+    "词汇不足"
+  ],
+  "excludedMemoryIds": [
+    "self:词汇不足"
+  ],
+  "track": "argument",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": "disabled_source",
+  "sourceScope": "final_profile_snapshot_only",
+  "seed": {
+    "draft": "I prefer buses because I do not need to buy a car. Other people prefer driving.",
+    "issue": {
+      "rank": 1,
+      "code": "TR",
+      "title": "解释自己的判断",
+      "why": "本轮只讨论学生自己的判断、理由和例子，不添加新的题目内容。",
+      "sentenceIds": [
+        1
+      ],
+      "hintL1": "解释原因、后果或自己的观察。",
+      "recurring": false
+    },
+    "messages": [],
+    "thread": null
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [],
+    "note": "来源用例只核验最终资料快照，不能据此宣称测试了来源变更竞态。"
+  }
+}

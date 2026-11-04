@@ -126,7 +126,7 @@ export async function runQuickModel(userId: string, id: string, raw: QuickModelA
   for (let attempt = 0; attempt < 2; attempt++) {
     let result: z.infer<typeof followSchema> | z.infer<typeof checkSchema>;
     try {
-      const options = { userId, sessionId: id, operationId: op.id, purpose: op.kind === "check" ? "quick_check" as const : "quick_followup" as const, reservation, maxInputTokens: 4000, retries: 0 };
+      const options = { callSite: op.kind === "check" ? "quick.check" as const : "quick.followup" as const, userId, sessionId: id, operationId: op.id, purpose: op.kind === "check" ? "quick_check" as const : "quick_followup" as const, reservation, maxInputTokens: 4000, retries: 0 };
       result = op.kind === "check" ? await generateJson(instruction.check, frozen.context, checkSchema, options) : await generateJson(instruction.followup, frozen.context, followSchema, options);
       if ("results" in result) {
         const ids = frozen.context.requirements.map(r => r.id);

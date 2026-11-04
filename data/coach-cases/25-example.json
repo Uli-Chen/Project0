@@ -1,0 +1,67 @@
+{
+  "id": "case-25",
+  "topicType": "opinion",
+  "topic": "Some people believe all university students should study science. To what extent do you agree?",
+  "scenario": "example",
+  "language": "en",
+  "issue": true,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "我想保留这句话的意思，只修正 seem 的语法；我不知道怎么改。"
+    },
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "more"
+    },
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "more"
+    },
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "请用卡片给一句只修正这个语法问题的示范。"
+    }
+  ],
+  "seedHistory": 0,
+  "difficulties": [],
+  "excludedMemoryIds": [],
+  "track": "language",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": null,
+  "seed": {
+    "draft": "Studying science seem difficult for many students.",
+    "issue": {
+      "rank": 1,
+      "code": "GRA",
+      "title": "主谓一致",
+      "why": "动名词短语作主语，谓语需要单数形式。",
+      "sentenceIds": [
+        1
+      ],
+      "hintL1": "检查主语和谓语的对应关系。",
+      "recurring": false
+    },
+    "messages": [],
+    "thread": null
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [],
+    "note": "不把拒绝添加题目内容本身当作无效推进；需在允许范围提供下一步。"
+  }
+}

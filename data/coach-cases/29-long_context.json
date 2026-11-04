@@ -1,0 +1,254 @@
+{
+  "id": "case-29",
+  "topicType": "problem_solution",
+  "topic": "Many cities suffer from traffic congestion. What problems does this cause and what solutions can help?",
+  "scenario": "long_context",
+  "language": "en",
+  "issue": true,
+  "legacyLevel": 1,
+  "turns": [
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "你还记得我们最早已经确认的拥堵带来的问题吗？"
+    },
+    {
+      "action": "issue",
+      "rank": 1,
+      "intent": "ask",
+      "text": "请沿用那个已确认事实，不要让我从头重复一遍。"
+    }
+  ],
+  "seedHistory": 24,
+  "difficulties": [],
+  "excludedMemoryIds": [],
+  "track": "argument",
+  "initialDifficulty": "词汇不足",
+  "sourceMutation": null,
+  "seed": {
+    "draft": "Traffic jams make my bus late. I think the city should improve public transport.",
+    "issue": {
+      "rank": 1,
+      "code": "TR",
+      "title": "解释自己的判断",
+      "why": "本轮只讨论学生自己的判断、理由和例子，不添加新的题目内容。",
+      "sentenceIds": [
+        1
+      ],
+      "hintL1": "解释原因、后果或自己的观察。",
+      "recurring": false
+    },
+    "messages": [
+      {
+        "id": "case-29-seed-1",
+        "role": "user",
+        "stage": "issue",
+        "content": "我每天坐公交上班，拥堵让我迟到。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-2",
+        "role": "coach",
+        "stage": "issue",
+        "content": "已记下：拥堵让你迟到。接下来只整理你自己的观察。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-3",
+        "role": "user",
+        "stage": "issue",
+        "content": "这是我自己经历的，不代表所有人。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-4",
+        "role": "coach",
+        "stage": "issue",
+        "content": "已记录；没有增加新的事实。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-5",
+        "role": "user",
+        "stage": "issue",
+        "content": "我想先限定为上班高峰。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-6",
+        "role": "coach",
+        "stage": "issue",
+        "content": "已记录；没有增加新的事实。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-7",
+        "role": "user",
+        "stage": "issue",
+        "content": "我还没有决定具体解决办法。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-8",
+        "role": "coach",
+        "stage": "issue",
+        "content": "已记录；没有增加新的事实。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-9",
+        "role": "user",
+        "stage": "issue",
+        "content": "先保留我确认过的事实。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-10",
+        "role": "coach",
+        "stage": "issue",
+        "content": "已记录；没有增加新的事实。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-11",
+        "role": "user",
+        "stage": "issue",
+        "content": "其他人的情况我不确定。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-12",
+        "role": "coach",
+        "stage": "issue",
+        "content": "已记录；没有增加新的事实。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-13",
+        "role": "user",
+        "stage": "issue",
+        "content": "我不想编造统计数据。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-14",
+        "role": "coach",
+        "stage": "issue",
+        "content": "已记录；没有增加新的事实。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-15",
+        "role": "user",
+        "stage": "issue",
+        "content": "我还在考虑方案。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-16",
+        "role": "coach",
+        "stage": "issue",
+        "content": "已记录；没有增加新的事实。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-17",
+        "role": "user",
+        "stage": "issue",
+        "content": "现在没有新的亲身例子。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-18",
+        "role": "coach",
+        "stage": "issue",
+        "content": "已记录；没有增加新的事实。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-19",
+        "role": "user",
+        "stage": "issue",
+        "content": "先不要替我加入新理由。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-20",
+        "role": "coach",
+        "stage": "issue",
+        "content": "已记录；没有增加新的事实。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-21",
+        "role": "user",
+        "stage": "issue",
+        "content": "我想检查已有信息。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-22",
+        "role": "coach",
+        "stage": "issue",
+        "content": "已记录；没有增加新的事实。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-23",
+        "role": "user",
+        "stage": "issue",
+        "content": "我们可以回到最初确认的那个问题。",
+        "issueRank": 1
+      },
+      {
+        "id": "case-29-seed-24",
+        "role": "coach",
+        "stage": "issue",
+        "content": "已记录；没有增加新的事实。",
+        "issueRank": 1
+      }
+    ],
+    "thread": {
+      "v": 1,
+      "key": "issue:1",
+      "status": "open",
+      "closedReason": null,
+      "track": "argument",
+      "current": {
+        "target": "解释学生自己已提出的判断与理由之间的联系",
+        "refs": [
+          "1"
+        ]
+      },
+      "openQuestion": null,
+      "established": [
+        {
+          "id": "case-29-e1",
+          "text": "我每天坐公交上班，拥堵让我迟到。",
+          "refMessageId": "case-29-seed-1",
+          "basis": "student_stated",
+          "archived": false,
+          "retracted": false
+        }
+      ],
+      "attempts": [],
+      "allowedHelp": 1,
+      "providedHelp": null,
+      "legacyLevel": 1,
+      "lastMessageId": "case-29-seed-24"
+    }
+  },
+  "expectations": {
+    "focus": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "previousCorrectTurns": [],
+    "note": "长对话事实仅在最早学生消息及线程确认项中，当前输入不重复。"
+  }
+}

@@ -1,6 +1,6 @@
 /** RFC §8 provisional ceilings. All durations are milliseconds. */
 export const budgetConfigVersion = "quick-budget-20261101-v1";
-export const promptConfigVersion = "coach-json-v4-quick-guidance";
+export const promptConfigVersion = "coach-json-v10-tutor-p1";
 export const inputEstimateVersion = "utf8-byte-v1";
 export const quickProviderPolicyVersion = "quick-deepseek-no-thinking-v1";
 // config_version covers prompts, limits, admission estimate and Quick provider policy.
@@ -12,6 +12,6 @@ export const quickBudget = {
   perCall: { inputTokens: 4_000, followupOutputTokens: 512, checkOutputTokens: 768, timeoutMs: 25_000 },
   user: { windowMs: 86_400_000, limits: { calls: 15, inputTokens: 60_000, outputTokens: 12_000, waitMs: 300_000 } },
 } as const;
-export const llmPurposes = ["prewrite_turn", "writing_assist", "writing_chat", "nudge", "scoring", "diagnosis", "feedback_review", "issue_hint", "comparison", "idea_extract", "opening", "quick_followup", "quick_check"] as const;
+export const llmPurposes = ["writing_check", "memory_summary", "prewrite_turn", "writing_assist", "writing_chat", "nudge", "scoring", "diagnosis", "feedback_review", "issue_hint", "comparison", "idea_extract", "opening", "quick_followup", "quick_check"] as const;
 export type LlmPurpose = typeof llmPurposes[number];
 export type QuickPurpose = "quick_followup" | "quick_check";

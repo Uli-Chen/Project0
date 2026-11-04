@@ -1,3 +1,5 @@
+import { executionFor, tutorActions, sourcesStillValid } from "@/lib/tutor/execution";
+import { publicUser, userById } from "@/lib/db/queries/users";
 import { runQuickModel } from "@/lib/pipeline/quick-model";
 import { quickModelActionSchema } from "@/lib/quick/schemas";
 import { commitQuickMutation } from "@/lib/pipeline/quick";
@@ -48,10 +50,30 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       if (input.action === "evaluate" && input.kind === "original") assertOriginalEvaluationStage(current);
       const persist = (state: SessionState) => { state.version++; state.updatedAt = state.savedAt = new Date().toISOString(); saveSession(user.id, state); };
       if (isStudentAction({ kind: "action", action: input.action })) current.lastStudentActionAt = new Date().toISOString();
-      current.pendingAction = { requestId, input, startedAt: new Date().toISOString() };
+      const latestUser = userById(user.id);
+      if (!latestUser) throw new SessionError("账户已不存在。", 401);
+      const profile = publicUser(latestUser).profile;
+      let execution;
+      try { execution = executionFor(current, input, requestId, profile); }
+      catch (error) {
+        const message = error instanceof Error ? error.message : "请重新发送。";
+        if (current.pendingAction) current.pendingAction = { ...current.pendingAction, error: message, retryable: false };
+        persist(current);
+        return Response.json({ error: message, session: current }, { status: 409 });
+      }
+      if (!execution.v2 && input.action === "prewrite" && input.intent) throw new SessionError("当前版本不支持给点提示。", 400);
+      current.pendingAction = { requestId, input, startedAt: new Date().toISOString(), tutor: execution };
       persist(current);
+      const acceptedVersion = current.version;
+      const acceptedTutor = JSON.stringify(current.tutor);
+      const usedDifficulties = profile.difficulties.filter(d => !profile.excludedMemoryIds.includes(`self:${d}`));
+      const beforeTutorCommit = () => {
+        const latest = getSession(user.id, id), row = userById(user.id);
+        if (!latest || !row || latest.version !== acceptedVersion || JSON.stringify(latest.tutor) !== acceptedTutor || !sourcesStillValid(usedDifficulties, publicUser(row).profile)) throw new SessionError("设置已更改，请重新发送。你的文字已保留。", 409, "tutor_stale");
+      };
       try {
-        const session = await withModelAdmission(user.id, () => runAction(current, input, (state, event) => event ? commitPracticeCheckpoint(getDb().$client, user.id, state, event, persist) : persist(state), input.action === "finish" ? listSessions(user.id) : [], user.profile));
+        const session = await withModelAdmission(user.id, () => runAction(current, input, (state, event) => event ? commitPracticeCheckpoint(getDb().$client, user.id, state, event, persist) : persist(state), input.action === "finish" ? listSessions(user.id) : [], profile, { userId: user.id, operationId: requestId, beforeTutorCommit }));
+        if (execution.v2 && tutorActions.has(input.action)) beforeTutorCommit();
         session.completedRequests = [...(session.completedRequests ?? []), requestId].slice(-50);
         session.pendingAction = null;
         persist(session);
@@ -62,7 +84,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const session = getSession(user.id, id);
         if (session?.pendingAction?.requestId === requestId) {
           // Keep retriable requests and their text recoverable after a refresh.
-          session.pendingAction = (response.status >= 500 || response.status === 429) ? { ...session.pendingAction, error: payload.error } : null;
+          session.pendingAction = error instanceof SessionError && error.code === "tutor_stale" && tutorActions.has(input.action) ? { ...session.pendingAction, error: payload.error, retryable: false } : (response.status >= 500 || response.status === 429) ? { ...session.pendingAction, error: payload.error } : null;
           persist(session);
         }
         return Response.json({ ...payload, session }, { status: response.status, headers: response.headers });
