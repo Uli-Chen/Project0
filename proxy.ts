@@ -6,7 +6,11 @@ import { NextResponse, type NextRequest } from "next/server";
 export function proxy(request: NextRequest) {
   const session = request.cookies.get("wm_session")?.value;
   if (session && /^[a-f0-9]{64}$/.test(session)) return NextResponse.next();
-  return NextResponse.rewrite(new URL("/coming-soon", request.url));
+  // Clone nextUrl rather than building from request.url: behind nginx the
+  // forwarded https scheme would otherwise turn this into an external proxy.
+  const target = request.nextUrl.clone();
+  target.pathname = "/coming-soon";
+  return NextResponse.rewrite(target);
 }
 
 export const config = { matcher: "/" };
