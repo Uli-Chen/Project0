@@ -26,7 +26,7 @@ export function TopicHome({ userId, onboardingCompleted, quickEnabled, perWeek, 
           <p className="text-[13px] text-muted-foreground">本周已练 <span className="text-[15px] font-semibold text-foreground tabular-nums">{week}</span>{perWeek > 0 && <> / {perWeek} 次</>}{perWeek === 0 && ' 次'}</p>
           {perWeek > 0 && (
             <div className="mt-2 flex justify-end gap-1" aria-hidden>
-              {Array.from({ length: Math.min(perWeek, 14) }, (_, i) => <span key={i} className={cn('h-1.5 w-6 rounded-full', i < week ? 'bg-primary' : 'bg-border')} />)}
+              {Array.from({ length: Math.min(perWeek, 14) }, (_, i) => <span key={i} className={cn('h-1.5 w-6 rounded-full', i < week ? 'bg-primary' : 'bg-input')} />)}
             </div>
           )}
           {data.counts.unknownDate > 0 && <p className="meta mt-1.5">另有 {data.counts.unknownDate} 次日期未知</p>}
@@ -82,7 +82,7 @@ function ResumeBlock({ session }: { session: Session }) {
   const words = countWords(draft);
   const minutes = Math.round((session.elapsed?.[kind] ?? 0) / 60);
   const topic = session.question?.primaryTopic;
-  const paragraphs = draft.split(/\n+/).map((p) => p.trim()).filter(Boolean).slice(0, 3);
+  const paragraphs = draft.split(/\n+/).map((p) => p.trim()).filter(Boolean).slice(0, 2);
   const { statusLabel } = libraryEntryState(session, false);
 
   return (
@@ -105,10 +105,10 @@ function ResumeBlock({ session }: { session: Session }) {
         </div>
       </div>
       {!quick && (
-        <div aria-hidden className="relative hidden overflow-hidden border-l bg-sunk pt-6 pl-7 md:block">
-          <div className="paper relative h-full min-h-56 rounded-tr-none rounded-br-none rounded-bl-none px-6 py-5 font-serif text-[13.5px] leading-[1.75]">
+        <div aria-hidden className="relative hidden min-h-60 overflow-hidden border-l bg-sunk md:block">
+          <div className="paper absolute top-6 right-0 bottom-0 left-7 overflow-hidden rounded-tr-none rounded-br-none rounded-bl-none px-6 py-5 font-serif text-[13.5px] leading-[1.75]">
             <p className="border-b pb-2.5 text-xs leading-normal text-faint italic line-clamp-2">{session.prompt.text}</p>
-            {paragraphs.length ? paragraphs.map((p, i) => <p key={i} className="mt-2.5 line-clamp-4">{p}</p>) : <p className="mt-3 text-faint">还没有开始写。</p>}
+            {paragraphs.length ? paragraphs.map((p, i) => <p key={i} className="mt-2.5 line-clamp-3">{p}</p>) : <p className="mt-3 text-faint">还没有开始写。</p>}
             <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-paper" />
           </div>
         </div>
