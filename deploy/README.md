@@ -40,6 +40,21 @@ ssh auglearn
 
 SSH 公钥通过 Google Cloud 元数据管理；必须绑定 `squareofchen` 用户。只在服务器 `authorized_keys` 中手动追加，可能在 Google Guest Agent 同步元数据时被覆盖。
 
+## Coming soon 与开发者预览
+
+未登录访问 `/` 时显示 coming soon 页（`proxy.ts` 改写到 `/coming-soon`），页面不含产品信息；已登录用户照常进入应用，`/login` 不变。页面右下角的 “Developer access” 输入开发者密码后，可以打开 `/preview`，即 [宣传页 v4](../docs/designs/landing_page_v4.md)。
+
+- `/preview` 由路由处理器从 `docs/designs/mockups/landing-v4.html` 读取并返回，不在 `public/`，没有有效的预览 cookie 时一律 303 回到 `/`。响应带 `no-store`、`noindex` 和只允许内联资源的 CSP。
+- 密码不进仓库。服务器 `.env.local` 只保存 `PREVIEW_PASSWORD_HASH`（scrypt）与 `PREVIEW_SESSION_SECRET`；两项缺一，开发者入口一律拒绝。
+- 预览 cookie `p0_preview` 有效期 7 天，签名绑定密码哈希；更换密码即让所有预览会话失效。
+- 尝试次数：每个来源地址 15 分钟 8 次，全站每小时 60 次。
+
+更换密码：在本机生成两行配置，替换服务器 `.env.local` 中的同名两行，再 `sudo systemctl restart opc`（不需要重新构建）。
+
+```sh
+read -rs PW && printf '%s' "$PW" | node scripts/preview-access-env.mjs; unset PW
+```
+
 ## 查看运行状态
 
 注册目前关闭：`REGISTRATION_ENABLED=false`。登录页隐藏创建账户入口，`/register` 显示暂停提示，注册 API 拒绝创建新账户。恢复时在服务器 `.env.local` 设置 `REGISTRATION_ENABLED=true`，执行 `sudo systemctl restart opc`；不需要重新构建。已有账户登录不受此开关影响。
