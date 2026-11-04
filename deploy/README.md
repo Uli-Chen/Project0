@@ -1,6 +1,14 @@
 # project0.auglearn.org 部署
 
-## 0.4 当前发布（2026-11-01）
+## 当前发布（2026-11-04）
+
+已发布 `90da275`：前端改版（书桌与试卷层级）、交互动效、Agent Tutor 第一阶段代码（`TUTOR_V2_ENABLED` 未设置，保持关闭）。新增迁移 0007（`llm_call_payloads` 表及 `llm_calls` 观测列）已应用；完整调用内容只在 `LLM_PAYLOADS_ENABLED=true` 时写入，隐私说明页及链接只在 Tutor 或调用内容记录开启时出现。隐私说明的【待定】项补齐、`npm run check:privacy` 通过之前，不要打开这两个开关。
+
+- 用 `git archive` 上传到 `/home/squareofchen/opc-release-20261104-redesign`，服务器 Node 24 完整 `npm run check` 通过（244 后端、47 UI、数据库四组、生产构建），再用 `deploy/release-staged.sh` 切换。
+- 备份：`/home/squareofchen/opc-data/backups/2026-11-04T08-26-26.048Z-6a7a38f7-fc42-466d-9171-d41ad757cd94.db`；旧代码：`/home/squareofchen/opc-before-patch-20261104T082625Z`。
+- 切换后：`opc`、`nginx` active；integrity_check=ok；开关沿用 QUESTION_BANK/QUICK/CHECKPOINTS=true、FOCUS=false，注册关闭；`/login` 200、`/privacy` 404、公网 TLS 校验通过。
+
+## 0.4 发布（2026-11-01）
 
 已发布 `53c52b4`，题库、速刷与检查点已开启，`FOCUS_ENABLED=false`；注册继续关闭。服务器 Node 24 全量检查、生产构建、逐项开关 HTTP 冒烟及 SQLite 完整性检查通过。详见 [WP8 发布记录](../docs/plans/reports/WP8.md)。
 
