@@ -19,9 +19,10 @@
 
 | # | 决定 | 日期 |
 |---|---|---|
-| D1 | 后台与主应用同一进程、同一部署，路径 `/admin` 与 `/api/admin`；nginx 按 IP 限制访问，应用内再做管理员校验 | 2026-11-04 |
+| D1 | 后台与主应用同一进程、同一部署，路径 `/admin` 与 `/api/admin`。公网 nginx 对这两个路径一律返回 404；运营者只通过 SSH 隧道访问（§9.1） | 2026-11-04 |
 | D2 | 密钥只存在环境变量文件里，不进 SQLite、不进数据库备份；但后台可以更换 endpoint 和 key（§6.2） | 2026-11-04 |
 | D3 | 金额默认同时显示 CNY 和 USD（CNY 为主数字，USD 为副数字）；TWD 只用于记账导出 | 2026-11-04 |
+| D4 | 隧道之内再加一层后台专用的账号密码，与学生账户体系分开；账号与密码哈希只放在服务器环境变量（§9.2） | 2026-11-04 |
 
 ## 3. 已知事实（2026-11-04 代码）
 
@@ -175,7 +176,8 @@ cost = uncached × 输入价 + cache_read_tokens × 缓存读价 + cache_write_t
 
 | 表 | 关键字段 |
 |---|---|
-| `users`（加列） | `role`（user / admin）、`status`（active / suspended）、`last_seen_at` |
+| `users`（加列） | `status`（active / suspended）、`last_seen_at` |
+| `admin_sessions` | token_hash, password_fp, created_at, last_seen_at, expires_at |
 | `providers` | id, name, kind, env_prefix, status, region, balance_source |
 | `models` | id, provider_id, model_name, capabilities_json（json_mode、thinking）, status |
 | `model_prices` | model_id, effective_from, effective_to, in / out / cache_read / cache_write（每百万 token，微美元）, tier_rules_json, currency, source_url, verified_at |
@@ -191,13 +193,59 @@ cost = uncached × 输入价 + cache_read_tokens × 缓存读价 + cache_write_t
 
 另给 `llm_calls(started_at)` 单独建索引，全站时间范围查询需要。
 
-## 9. 权限与安全（D1）
+## 9. 访问与安全（D1、D4）
 
-- **nginx**：`location ^~ /admin` 与 `location ^~ /api/admin` 只 `allow` 运营者的 IP（或 VPN 网段），其余 `deny all`，返回 404。
-- **应用**：`app/admin/` 独立路由组和 layout；layout 和每个 `/api/admin/*` 都在服务端调用 `requireAdmin()`；非管理员返回 404。Next 16 的守卫写法实现前先读 `node_modules/next/dist/docs/`（见 AGENTS.md）。
-- **管理员来源**：`users.role = 'admin'`；首个管理员由 `ADMIN_EMAILS` 环境变量引导。
-- **敏感操作**（删除账户、退款、改价格、改路由、更换 key、破例查看）要求重新输入密码，并写入审计。
-- 写操作复用现有 Origin 校验与请求体大小限制。
+三层，任何一层失效都不会直接暴露后台：
+
+| 层 | 作用 |
+|---|---|
+| 网络 | 公网访问 `/admin`、`/api/admin` 一律 404；只能经 SSH 隧道到达 |
+| 后台登录 | 后台专用账号密码，独立会话 |
+| 敏感操作 | 再次输入后台密码，写审计 |
+
+### 9.1 SSH 隧道
+
+服务只监听 `127.0.0.1:3000`（`deploy/opc.service`）。运营者在自己电脑上执行：
+
+```bash
+ssh -N -L 3900:127.0.0.1:3000 squareofchen@<服务器>
+```
+
+然后用 Chrome 打开 `http://localhost:3900/admin`。本地端口用 3900，避免和本机 `next dev` 的 3000 冲突。
+
+nginx 在现有 `location /` 之前加：
+
+```nginx
+location ^~ /admin     { return 404; }
+location ^~ /api/admin { return 404; }
+```
+
+隧道请求不经过 nginx，所以不带 `X-Forwarded-For`。应用侧再做一次判断：`/admin`、`/api/admin` 收到带 `X-Forwarded-For` 的请求时直接返回 404，即使 nginx 规则被误删也不会暴露。
+
+**Origin 校验**：admin 写接口只接受 `ADMIN_ORIGIN`（默认 `http://localhost:3900`）作为来源，不接受 `APP_ORIGIN`；学生接口仍只接受 `APP_ORIGIN`。
+
+**Cookie**：Chrome 与 Firefox 把 `http://localhost` 视为安全来源，`Secure` Cookie 可以正常写入；Safari 不保证，后台使用 Chrome。
+
+### 9.2 后台登录
+
+- 后台账号与 `users` 表无关：学生账户被盗、被提权或数据库被改，都拿不到后台。
+- 只有一个管理员，凭据放在服务器 `.env.local`：
+
+  ```text
+  ADMIN_EMAIL=<管理员邮箱>
+  ADMIN_PASSWORD_HASH=scrypt-v1:<salt>:<hash>
+  ADMIN_ORIGIN=http://localhost:3900
+  ```
+
+  哈希格式与 `lib/auth/password.ts` 相同（scrypt，N=32768），用 `npm run admin:hash` 从标准输入读密码生成（实现时新增脚本），不在命令行参数、仓库或文档里出现明文。两个变量缺任一个时，后台整体返回 404。
+- 登录页 `/admin/login`：邮箱 + 密码。邮箱比较不区分大小写；无论邮箱是否正确都执行一次 KDF。失败不提示哪一项错。
+- 限流：复用 `limitAuth("admin-login", 5, 15 分钟)` 全局计数，超限返回 429。
+- 会话：随机令牌，Cookie 名 `p0_admin`，`HttpOnly`、`SameSite=Strict`、`Path=/`；数据库只存令牌的 SHA-256（新表 `admin_sessions`）。闲置 2 小时或登录 12 小时后失效。退出、修改 `ADMIN_PASSWORD_HASH` 后全部失效（会话记录密码哈希的指纹，不一致即作废）。
+- 学生登录 Cookie 与后台 Cookie 互不承认：用学生账户登录不能进后台，后台登录也不会产生学生会话。
+- 敏感操作（删除账户、退款、改价格、改路由、更换 key、破例查看）需要再次输入后台密码。
+- 审计里的操作者记为 `ADMIN_EMAIL`。
+- 写操作复用现有请求体大小限制。
+- Next 16 的路由守卫写法实现前先读 `node_modules/next/dist/docs/`（见 AGENTS.md）。
 
 ## 10. 界面
 
@@ -209,7 +257,7 @@ cost = uncached × 输入价 + cache_read_tokens × 缓存读价 + cache_write_t
 
 | 阶段 | 内容 | 依赖 |
 |---|---|---|
-| **P0** | 管理员权限、nginx 限制、审计；`model_prices` + `cost_micros` + 缓存 token + 回填；总览；用户列表与详情（只读 + 暂停 / 撤销会话）；模型调用 | 无 |
+| **P0** | nginx 对公网关闭后台、后台登录与会话、审计；`model_prices` + `cost_micros` + 缓存 token + 回填；总览；用户列表与详情（只读 + 暂停 / 撤销会话）；模型调用 | 无 |
 | **P1** | `providers.env` 热加载与更换 endpoint / key；路由入库（含档位表与批改校准门槛）；价格影响预览；`usage_daily`；固定支出、汇率、对账 | P1 路由依赖 tutor_style_tiers 档位实现 |
 | **P2** | 套餐、订阅、收款；损益与单位经济；运营项可编辑；破例查看 | 收费主体确定 |
 
@@ -217,7 +265,8 @@ cost = uncached × 输入价 + cache_read_tokens × 缓存读价 + cache_write_t
 
 | 风险 | 应对 |
 |---|---|
-| 后台被入侵即可换 key、导出数据 | nginx IP 限制 + 应用校验 + 敏感操作二次密码 + 审计 |
+| 后台被入侵即可换 key、导出数据 | 公网 404 + SSH 隧道 + 独立后台密码 + 敏感操作二次密码 + 审计 |
+| 后台密码泄露或过弱 | 仍需先通过 SSH；限流 5 次 / 15 分钟；更换 `ADMIN_PASSWORD_HASH` 即作废全部后台会话 |
 | `providers.env` 写坏导致所有调用失败 | 测试通过才保存；原子替换；`.prev` 一键回滚；解析失败时继续使用上一次成功解析的配置并告警 |
 | 本地成本与账单不一致 | 读取缓存 token；超时按预留估算；月度对账 |
 | 换批改模型导致分数断层 | 校准门槛；强制切换时标断点 |
