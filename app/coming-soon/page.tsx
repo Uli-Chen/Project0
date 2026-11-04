@@ -7,7 +7,7 @@ import { hasPreviewAccess, PREVIEW_COOKIE } from "@/lib/preview/access";
 
 export const dynamic = "force-dynamic";
 
-// Shown at / to logged-out visitors (see proxy.ts). Keep it free of product details.
+// Logged-out visitors to / are redirected here (see proxy.ts). Keep it free of product details.
 export const metadata: Metadata = { title: { absolute: "project 0" }, description: "Coming soon." };
 
 export default async function ComingSoonPage() {
