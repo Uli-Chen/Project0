@@ -4,14 +4,21 @@ import { NextResponse, type NextRequest } from "next/server";
 // with a session cookie continues to the app, which still checks the session
 // itself and sends expired sessions to /login.
 //
-// This is a redirect with a relative Location, not a rewrite: behind nginx the
-// absolute URL a rewrite needs carries the forwarded https scheme and a host
-// that differs from the one `next start` binds, so Next would treat it as an
-// external proxy and fail.
+// This is a redirect, not a rewrite: behind nginx a rewrite's absolute URL
+// carries the forwarded https scheme and a host that differs from the one
+// `next start` binds, so Next treats it as an external proxy and fails. Proxy
+// redirects need an absolute Location, so build it from the public host and
+// scheme that nginx forwards rather than the internal URL.
 export function proxy(request: NextRequest) {
   const session = request.cookies.get("wm_session")?.value;
   if (session && /^[a-f0-9]{64}$/.test(session)) return NextResponse.next();
-  return new NextResponse(null, { status: 307, headers: { Location: "/coming-soon", "Cache-Control": "no-store" } });
+  const host = request.headers.get("host");
+  const forwarded = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const scheme = forwarded === "https" || forwarded === "http" ? forwarded : request.nextUrl.protocol.replace(":", "");
+  const target = new URL("/coming-soon", host ? `${scheme}://${host}` : request.nextUrl.origin);
+  const response = NextResponse.redirect(target, 307);
+  response.headers.set("Cache-Control", "no-store");
+  return response;
 }
 
 export const config = { matcher: "/" };

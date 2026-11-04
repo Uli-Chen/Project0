@@ -42,7 +42,7 @@ SSH 公钥通过 Google Cloud 元数据管理；必须绑定 `squareofchen` 用�
 
 ## Coming soon 与开发者预览
 
-未登录访问 `/` 时由 `proxy.ts` 307 跳转到 coming soon 页 `/coming-soon`（用相对 Location；不要改成 rewrite：在 nginx 后面 Next 会把它当成外部代理，返回 500），页面不含产品信息；已登录用户照常进入应用，`/login` 不变。页面右下角的 “Developer access” 输入开发者密码后，可以打开 `/preview`，即 [宣传页 v4](../docs/designs/landing_page_v4.md)。
+未登录访问 `/` 时由 `proxy.ts` 307 跳转到 coming soon 页 `/coming-soon`（Location 用 nginx 转发的 Host 与协议拼成绝对地址；不要改成 rewrite：在 nginx 后面 Next 会把它当成外部代理，返回 500），页面不含产品信息；已登录用户照常进入应用，`/login` 不变。页面右下角的 “Developer access” 输入开发者密码后，可以打开 `/preview`，即 [宣传页 v4](../docs/designs/landing_page_v4.md)。
 
 - `/preview` 由路由处理器从 `docs/designs/mockups/landing-v4.html` 读取并返回，不在 `public/`，没有有效的预览 cookie 时一律 303 回到 `/`。响应带 `no-store`、`noindex` 和只允许内联资源的 CSP。
 - 密码不进仓库。服务器 `.env.local` 只保存 `PREVIEW_PASSWORD_HASH`（scrypt）与 `PREVIEW_SESSION_SECRET`；两项缺一，开发者入口一律拒绝。
