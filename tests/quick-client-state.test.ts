@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { acceptQuickSnapshot, createIntentLatch, unchangedDraft, persistedIntentKey } from '../lib/quick/client-state';
+import { acceptQuickSnapshot, createIntentLatch, unchangedDraft, persistedIntentKey, QUICK_STARTERS, ASK_LIMIT, placeable, validateAsk, askDelivered, echoText, planAsk, settleAsk, reconcileAsk, answerDelivered, stableRequestId, coachBottom, mergeCard, type PendingAsk, type Outcome } from '../lib/quick/client-state';
 const snapshot = (version: number, contentVersion = version) => ({ session: { version }, card: { contentVersion } });
 test('Delayed GET before save cannot roll back saved card; same-version operation results invalidate pending reads', () => {
  assert.equal(acceptQuickSnapshot(snapshot(3), snapshot(2), {epoch:1,sequence:5}, {epoch:2,sequence:4}), false);
@@ -23,4 +23,118 @@ test('Explicit-new lost response followed by refresh reuses persisted intent; st
  assert.equal(allocations,1);
  assert.equal(persistedIntentKey(storage,'attempt-b',create),'intent-2');
  assert.equal(persistedIntentKey({getItem(){throw Error('blocked');},setItem(){throw Error('blocked');}},'attempt-c',create),'intent-3');
+});
+
+/* Speak-first coach: send, reconcile and resend decisions (astra acceptance r1 items 1, 2, 5, 6, 8). */
+const ids = () => { let n = 0; return () => `id-${++n}`; };
+const said = (content: string, action = 'quickAsk') => ({ id: `m-${content}`, role: 'user', stage: 'quick', action, content });
+const coachQ = (content = '你身边有谁离家上学？') => ({ id: 'q', role: 'coach', stage: 'quick', action: 'quickFollowup', content });
+const ok: Outcome = { ok: true };
+const lost: Outcome = { ok: false, code: null, message: '连接超时，内容还在本页。', uncertain: true };
+const refused = (code: string, message = '拒绝'): Outcome => ({ ok: false, code, message, uncertain: false });
+const typed = (text: string) => ({ text, typed: true }), starter = (text: string) => ({ text, typed: false });
+
+test('optimistic bubble shows while sending and disappears once the polled snapshot has the ask; failure rolls it back', () => {
+ const { request } = planAsk(null, '我想从独立说起', 3, 1, ids());
+ assert.equal(echoText(request, [said('早先的一句')]), '我想从独立说起');
+ // The same text said before the send point is not this ask.
+ assert.equal(echoText(request, [said('我想从独立说起')]), '我想从独立说起');
+ assert.equal(echoText(request, [said('早先的一句'), said('我想从独立说起')]), null);
+ assert.equal(echoText({ ...request, status: 'failed' }, []), null);
+ assert.equal(echoText(null, []), null);
+});
+test('a lost response keeps the ask pending for an unchanged replay; typed text returns to the box, a starter does not touch the draft', () => {
+ const { request } = planAsk(null, '我想从独立说起', 3, 0, ids());
+ const t = settleAsk(request, lost, typed('我想从独立说起'), []);
+ assert.deepEqual(t.pending, { ...request, status: 'failed' }); assert.equal(t.restore, '我想从独立说起'); assert.equal(t.refresh, true); assert.ok(t.error);
+ const s = settleAsk({ ...request, text: QUICK_STARTERS[0] }, lost, starter(QUICK_STARTERS[0]), []);
+ assert.equal(s.pending?.text, QUICK_STARTERS[0]); assert.equal(s.pending?.status, 'failed'); assert.equal(s.restore, null);
+ const definitive = settleAsk(request, refused('quota_exhausted'), typed('我想从独立说起'), []);
+ assert.equal(definitive.pending?.requestId, request.requestId); assert.equal(definitive.refresh, false);
+});
+test('resend replays the full pending request unchanged, even after a card edit or with other text; success starts fresh', () => {
+ const next = ids();
+ const first = planAsk(null, '我想从独立说起', 3, 0, next).request;
+ const failed: PendingAsk = { ...first, status: 'failed' };
+ const again = planAsk(failed, '我想从独立说起', 4, 2, next);
+ assert.equal(again.replay, true); assert.deepEqual(again.request, { ...first, status: 'sending' });
+ const other = planAsk(failed, '换一个想法', 4, 2, next);
+ assert.deepEqual(other.request, { ...first, status: 'sending' });
+ // The replay landed; the different new text is not sent and goes back into the ask box.
+ const done = settleAsk(other.request, ok, typed('换一个想法'), []);
+ assert.deepEqual([done.pending, done.restore, done.error], [null, '换一个想法', null]);
+ assert.equal(planAsk(done.pending, '换一个想法', 4, 2, next).request.requestId, 'id-2');
+ assert.equal(settleAsk(again.request, ok, typed('我想从独立说起'), []).restore, null);
+});
+test('card_conflict on a replay means it never reached the server: a new intent with the current version', () => {
+ const failed: PendingAsk = { text: '我想从独立说起', cardVersion: 3, requestId: 'old', after: 0, status: 'failed' };
+ const s = settleAsk({ ...failed, status: 'sending' }, refused('card_conflict'), typed('我想从独立说起'), []);
+ assert.deepEqual([s.pending, s.newIntent, s.error], [null, true, null]);
+ const fresh = planAsk(s.pending, '我想从独立说起', 5, 0, () => 'new').request;
+ assert.deepEqual([fresh.requestId, fresh.cardVersion], ['new', 5]);
+});
+test('followup_pending, followup_unfinished and idempotency_conflict drop the request id; the thread conflicts refresh', () => {
+ const sending: PendingAsk = { text: '我想从独立说起', cardVersion: 3, requestId: 'r', after: 0, status: 'sending' };
+ for (const code of ['followup_pending', 'followup_unfinished']) {
+  const s = settleAsk(sending, refused(code, '请先回答教练的上一个问题。'), typed(sending.text), []);
+  assert.deepEqual([s.pending, s.refresh, s.restore, s.newIntent], [null, true, sending.text, false], code); assert.ok(s.error);
+ }
+ const c = settleAsk(sending, refused('idempotency_conflict'), typed(sending.text), []);
+ assert.deepEqual([c.pending, c.refresh, c.restore], [null, false, sending.text]);
+ assert.notEqual(planAsk(c.pending, sending.text, 3, 0, () => 'fresh').request.requestId, 'r');
+});
+test('A1: polling shows the ask and the coach question, then the POST is lost: the ask is done and nothing is left to send as an answer', () => {
+ const { request } = planAsk(null, '我不知道怎么展开', 3, 0, ids());
+ const polled = [said('我不知道怎么展开'), coachQ()];
+ const s = settleAsk(request, lost, typed('我不知道怎么展开'), polled);
+ assert.deepEqual([s.pending, s.restore, s.error, s.refresh], [null, null, null, false]);
+ // The response was lost before any poll: the text goes back, then the refreshed snapshot settles it.
+ const early = settleAsk(request, lost, typed('我不知道怎么展开'), []);
+ assert.equal(early.restore, '我不知道怎么展开');
+ assert.deepEqual(reconcileAsk(early.pending, '我不知道怎么展开', polled), { pending: null, askDraft: '' });
+ // Something else the student typed meanwhile stays.
+ assert.deepEqual(reconcileAsk(early.pending, '另一句', polled), { pending: null, askDraft: '另一句' });
+ // Not yet in the snapshot, or still in flight: unchanged.
+ assert.deepEqual(reconcileAsk(early.pending, 'x', [said('别的')]), { pending: early.pending, askDraft: 'x' });
+ assert.deepEqual(reconcileAsk(request, 'x', polled), { pending: request, askDraft: 'x' });
+ assert.equal(askDelivered(request, polled), true);
+});
+test('an answer whose response was lost is recognised under the same question only', () => {
+ const messages = [coachQ(), { role: 'user', stage: 'quick', action: 'quickAnswer', replyToMessageId: 'q', content: '我表哥' }];
+ assert.equal(answerDelivered({ text: '我表哥 ', questionId: 'q' }, messages), true);
+ assert.equal(answerDelivered({ text: '我表哥', questionId: 'other' }, messages), false);
+ const a = stableRequestId(null, 'q\n我表哥', ids());
+ assert.equal(stableRequestId(a, 'q\n我表哥', () => 'x'), a); assert.notEqual(stableRequestId(a, 'q\n别的', () => 'x').id, a.id);
+});
+test('bottom area order, including follow-up quota 1 -> 0 after a successful ask', () => {
+ assert.equal(coachBottom({ pendingAnswer: false, followupStuck: false, followupsLeft: 1 }), 'ask');
+ assert.equal(coachBottom({ pendingAnswer: true, followupStuck: false, followupsLeft: 0 }), 'answer');
+ assert.equal(coachBottom({ pendingAnswer: false, followupStuck: false, followupsLeft: 0 }), 'used_up');
+ assert.equal(coachBottom({ pendingAnswer: false, followupStuck: true, followupsLeft: 0 }), 'stuck');
+ assert.equal(coachBottom({ pendingAnswer: false, followupStuck: false, followupsLeft: null }), 'ask');
+});
+test('starter clicks are excluded from 放进卡片 (all four); typed asks and answers are not', () => {
+ assert.equal(QUICK_STARTERS.length, 4);
+ for (const text of QUICK_STARTERS) assert.equal(placeable(said(text)), false, text);
+ assert.equal(placeable(said('我觉得离家上学能锻炼独立')), true);
+ assert.equal(placeable(said(QUICK_STARTERS[3], 'quickAnswer')), true);
+ assert.equal(placeable(coachQ()), false);
+});
+test('asks are limited to 1,000 characters after trimming; blank is ignored silently', () => {
+ assert.deepEqual(validateAsk(`  ${'问'.repeat(ASK_LIMIT)}  `), { ok: true, text: '问'.repeat(ASK_LIMIT) });
+ const over = validateAsk('问'.repeat(ASK_LIMIT + 1)); assert.equal(over.ok, false); assert.match(over.ok ? '' : over.error ?? '', /1,000/);
+ assert.deepEqual(validateAsk(' \n '), { ok: false, error: null });
+});
+test('three-way card merge: remote where untouched, local where the server is untouched, conflicts where both changed', () => {
+ const keys = ['a', 'b', 'c', 'd', 'e'];
+ const base = { a: '旧', b: '旧', c: '旧', d: '旧', e: '旧' };
+ const local = { a: '旧', b: '我改的', c: '我改的', d: '一样', e: '旧 ' };
+ const remote = { a: '他改的', b: '旧', c: '他改的', d: '一样', e: '旧' };
+ const { draft, conflicts } = mergeCard(keys, base, local, remote);
+ assert.deepEqual(draft, { a: '他改的', b: '我改的', c: '我改的', d: '一样', e: '旧 ' });
+ assert.deepEqual(conflicts, { c: { mine: '我改的', theirs: '他改的' } });
+ // Our own save still in flight shows up as remote: not a conflict with what we typed since.
+ assert.deepEqual(mergeCard(['b'], { b: '旧' }, { b: '我改的，还在写' }, { b: '我改的' }, { b: '我改的' }).conflicts, {});
+ // A field cleared elsewhere counts as a change.
+ assert.deepEqual(mergeCard(['a'], { a: '旧' }, { a: '旧' }, {}).draft, { a: '' });
 });

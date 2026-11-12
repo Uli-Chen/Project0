@@ -79,3 +79,16 @@ test("a self-typed quickAsk bubble can go into the card; a starter click cannot"
   const starter = renderCoach({ messages: [asked(QUICK_STARTERS[0])], operations: [{ id: "op", kind: "followup", status: "running" }] });
   assert.ok(starter.includes(QUICK_STARTERS[0])); assert.ok(!starter.includes("放进卡片")); assert.ok(!starter.includes("data-answer"));
 });
+test("every starter the panel offers is excluded from 放进卡片", () => {
+  for (const text of QUICK_STARTERS) {
+    const html = renderCoach({ messages: [asked(text)], operations: [{ id: "op", kind: "followup", status: "running" }] });
+    assert.ok(html.includes(text)); assert.ok(!html.includes("放进卡片"), text);
+  }
+});
+test("a polite live region exists for new coach questions, and the save state stays visible on narrow screens", () => {
+  const html = renderCoach({});
+  assert.match(html, /<p aria-live="polite" class="sr-only">/);
+  const status = html.match(/<span aria-live="polite" class="([^"]*)"/)?.[1] ?? "";
+  assert.ok(status.includes("inline-flex") && !/(^| )hidden( |$)/.test(status), status);
+  assert.match(html, /已保存/);
+});
