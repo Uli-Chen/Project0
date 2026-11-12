@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { acceptQuickSnapshot, createIntentLatch, unchangedDraft, persistedIntentKey, QUICK_STARTERS, ASK_LIMIT, placeable, validateAsk, askDelivered, echoText, planAsk, settleAsk, reconcileAsk, answerDelivered, stableRequestId, coachBottom, mergeCard, mergeSnapshot, unsentCoachText, restoreInto, type PendingAsk, type Outcome } from '../lib/quick/client-state';
+import { acceptQuickSnapshot, createIntentLatch, unchangedDraft, persistedIntentKey, QUICK_STARTERS, ASK_LIMIT, placeable, validateAsk, askDelivered, echoText, planAsk, settleAsk, reconcileAsk, answerDelivered, stableRequestId, coachBottom, mergeCard, mergeSnapshot, unsentCoachText, restoreInto, withoutDelivered, type PendingAsk, type Outcome } from '../lib/quick/client-state';
 const snapshot = (version: number, contentVersion = version) => ({ session: { version }, card: { contentVersion } });
 test('Delayed GET before save cannot roll back saved card; same-version operation results invalidate pending reads', () => {
  assert.equal(acceptQuickSnapshot(snapshot(3), snapshot(2), {epoch:1,sequence:5}, {epoch:2,sequence:4}), false);
@@ -207,4 +207,13 @@ test('restoring an unsent ask keeps what the student typed meanwhile', () => {
  assert.equal(restoreInto('我想从独立说起', '我想从独立说起'), '我想从独立说起');
  // Restoring twice does not stack copies.
  assert.equal(restoreInto(restoreInto('新的想法', 'A'), 'A'), 'A\n新的想法');
+});
+
+test('once a restored ask is delivered, only its copy leaves the box and newer text stays', () => {
+ assert.equal(withoutDelivered('A', 'A'), '');
+ assert.equal(withoutDelivered(restoreInto('B', 'A'), 'A'), 'B');
+ // Edited by the student: the draft is theirs now and stays as it is.
+ assert.equal(withoutDelivered('A 改过了\nB', 'A'), 'A 改过了\nB');
+ assert.equal(withoutDelivered('B', 'A'), 'B');
+ assert.equal(reconcileAsk({ text: 'A', cardVersion: 1, requestId: 'r', after: 0, status: 'failed' }, 'A\nB', [{ id: 'm', role: 'user', stage: 'quick', action: 'quickAsk', content: 'A' }] as never).askDraft, 'B');
 });

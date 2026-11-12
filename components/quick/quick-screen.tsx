@@ -13,7 +13,7 @@ import {
   QUICK_STARTERS, ASK_LIMIT, REQUEST_TIMEOUT_MS, TIMEOUT_MESSAGE, OFFLINE_MESSAGE,
   placeable, validateAsk, echoText, planAsk, settleAsk, reconcileAsk, answerDelivered, coachBottom, mergeSnapshot, unsentCoachText, sameText,
   type PendingAsk, type FieldConflict,
-  restoreInto,
+  restoreInto, withoutDelivered,
 } from "@/lib/quick/client-state";
 import { CoachEmpty, CoachMark } from "@/components/coach/coach-thread";
 import { Composer } from "@/components/coach/composer";
@@ -141,7 +141,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
       if (settled.pending !== pendingAskRef.current) {
         const done = pendingAskRef.current!;
         setPendingAsk(settled.pending); setCoachError("");
-        setAskDraft(text => text.trim() === done.text ? "" : text);
+        setAskDraft(text => withoutDelivered(text, done.text));
       }
       if (sentAnswer.current && answerDelivered(sentAnswer.current, messages)) {
         const done = sentAnswer.current; sentAnswer.current = null; answerKey.current = null;
@@ -316,7 +316,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
         // Only a delivered ask waits for the coach's question (to announce it and focus the answer box).
         if (outcome.pending || outcome.error || outcome.newIntent) awaitingCoach.current = false;
         if (outcome.newIntent) { if (typed) restoreAsk(sent.text); if (!reply.ok) setCoachError(reply.message); }
-        if (outcome.clear) { const done = outcome.clear; setAskDraft(text => text.trim() === done ? "" : text); }
+        if (outcome.clear) { const done = outcome.clear; setAskDraft(text => withoutDelivered(text, done)); }
         if (outcome.restore) restoreAsk(outcome.restore);
         if (outcome.error) setCoachError(outcome.error);
         if (outcome.refresh) void refresh(true);

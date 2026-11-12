@@ -105,10 +105,19 @@ export function restoreInto(current: string, text: string) {
   if (!back || now === back || now.startsWith(`${back}\n`)) return current;
   return now ? `${back}\n${current}` : text;
 }
+/** A delivered ask leaves the box: the whole draft if that is all it holds, or the copy that
+ * `restoreInto` put in front of newer text (only while it is still unedited). */
+export function withoutDelivered(draft: string, done: string) {
+  const sent = done.trim();
+  if (!sent) return draft;
+  if (draft.trim() === sent) return "";
+  const lead = draft.trimStart();
+  return lead.startsWith(`${sent}\n`) ? lead.slice(sent.length + 1) : draft;
+}
 /** After a snapshot: a failed ask the server already has is done, and its text leaves the ask box. */
 export function reconcileAsk(pending: PendingAsk | null, askDraft: string, messages: readonly Message[]): { pending: PendingAsk | null; askDraft: string } {
   if (!pending || pending.status === "sending" || !askDelivered(pending, messages)) return { pending, askDraft };
-  return { pending: null, askDraft: askDraft.trim() === pending.text ? "" : askDraft };
+  return { pending: null, askDraft: withoutDelivered(askDraft, pending.text) };
 }
 /** An answer whose response was lost is done once the snapshot holds it under the same question. */
 export function answerDelivered(sent: { text: string; questionId: string }, messages: readonly Message[]) {
