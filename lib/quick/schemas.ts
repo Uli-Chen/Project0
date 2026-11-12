@@ -33,7 +33,7 @@ export const quickActionSchema = z.discriminatedUnion("action", [cardSaveSchema,
 export type QuickAction = z.infer<typeof quickActionSchema>;
 export const quickActionNames = new Set(["cardSave", "cardExcerpt", "quickAnswer", "continueDeep", "quickFollowup", "quickCheck", "quickRetry", "quickSupplemental"]);
 export const quickModelActionSchema = z.discriminatedUnion("action", [
-  z.object({ ...envelope, action: z.literal("quickFollowup"), cardVersion }).strict(),
+  z.object({ ...envelope, action: z.literal("quickFollowup"), cardVersion, text: z.string().trim().min(1).max(1000).optional() }).strict(),
   z.object({ ...envelope, action: z.literal("quickCheck"), cardVersion }).strict(),
   z.object({ ...envelope, action: z.literal("quickRetry"), operationId: key }).strict(),
   z.object({ ...envelope, action: z.literal("quickSupplemental") }).strict(),

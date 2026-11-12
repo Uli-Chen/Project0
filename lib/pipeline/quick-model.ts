@@ -25,11 +25,15 @@ const followSchema = z.object({ question: z.string().min(1).max(80), targetKey: 
 const checkSchema = z.object({ results: z.array(z.object({ id: z.string(), status: z.enum(["met", "gap"]), note: z.string().max(60).nullable() }).strict()) }).strict();
 type Result = z.infer<typeof checkSchema>["results"][number];
 type Operation = typeof quickOperations.$inferSelect;
-type Frozen = { kind: "followup" | "check"; context: { task: string; requirements: ReturnType<typeof quickRequirements>; parts: { key: string; text: string }[]; messages?: { role: string; content: string }[]; coachingFocus?: "explain_reason" | "develop" }; empty: Result[]; configVersion: string };
+/** variant "ask": the student spoke first (quickFollowup with text). Older frozen rows have no variant and keep the original prompt. */
+type Frozen = { kind: "followup" | "check"; variant?: "ask"; context: { task: string; requirements: ReturnType<typeof quickRequirements>; parts: { key: string; text: string }[]; messages?: { role: string; content: string }[]; coachingFocus?: "explain_reason" | "develop" }; empty: Result[]; configVersion: string };
 const instruction = {
   followup: prompt("quick/followup"),
+  ask: prompt("quick/followup-ask"),
   check: prompt("quick/check")
 };
+/** Retries read the frozen input, so they keep the prompt the operation started with. */
+function instructionFor(op: Operation, frozen: Frozen) { return frozen.variant === "ask" ? instruction.ask : instruction[op.kind]; }
 function scope(userId: string, id: string) { return and(eq(quickOperations.userId, userId), eq(quickOperations.attemptId, id)); }
 function pack(userId: string, id: string) { return getDb().select().from(quickPackages).where(and(eq(quickPackages.userId, userId), eq(quickPackages.attemptId, id))).all().filter(p => !p.closedAt).at(-1); }
 function usage(p: typeof quickPackages.$inferSelect) { return JSON.parse(p.usedJson) as { followups: number; checks: number; retries: number }; }
@@ -50,7 +54,7 @@ function reserve(op: Operation, frozen: Frozen, retry: boolean, now: string): Re
   if (used[field] >= limits[field]) throw new SessionError("本包额度已用完，可手动编辑、写成作文或稍后申请补充检查。", 409, "quota_exhausted");
   const attempt = (db.$client.prepare("SELECT count(*) n FROM llm_calls WHERE user_id=? AND operation_id=?").get(op.userId, op.id) as { n: number }).n;
   const schema = op.kind === "check" ? checkSchema : followSchema;
-  const inputTokens = estimateInputTokens(buildMessages(instruction[op.kind], frozen.context, schema as z.ZodType, attempt));
+  const inputTokens = estimateInputTokens(buildMessages(instructionFor(op, frozen), frozen.context, schema as z.ZodType, attempt));
   const result = reserveCall({ userId: op.userId, sessionId: op.attemptId, operationId: op.id, packageId: p.id, purpose: op.kind === "check" ? "quick_check" : "quick_followup", perCall: { inputTokens, maxOutputTokens: op.kind === "check" ? 768 : 512 }, packageLimits: limits.limits, now });
   if (!result.ok) throw new SessionError(result.reason === "input_too_long" ? "输入过长，请缩短卡片或对话；内容已保留。" : `额度不足，${result.retryAt ? `可于 ${result.retryAt} 后重试` : "可手动编辑或写成作文"}。`, result.reason === "input_too_long" ? 422 : 429, result.reason);
   used[field]++; db.update(quickPackages).set({ usedJson: JSON.stringify(used) }).where(eq(quickPackages.id, p.id)).run();
@@ -94,6 +98,14 @@ export async function runQuickModel(userId: string, id: string, raw: QuickModelA
       const pending = last && !session.messages.some(m => m.replyToMessageId === last.id && m.role === "user");
       const slot = kind === "check" ? `check:v${card.contentVersion}` : `followup:${pending ? followups.length : followups.length + 1}`;
       op = db.select().from(quickOperations).where(and(scope(userId, id), eq(quickOperations.slot, slot), eq(quickOperations.kind, kind))).get();
+      // The student speaks first: refuse instead of replaying, so their text is never stored without a coach reply.
+      const askText = input.action === "quickFollowup" ? input.text : undefined;
+      if (askText !== undefined) {
+        if (pending) throw new SessionError("请先回答教练的上一个问题。", 409, "followup_pending");
+        if (op) throw new SessionError("上一次追问还没有完成，请稍等或先重试。", 409, "followup_unfinished");
+        // Persisted by receipt() below; any later throw (reserve, config) rolls it back with the operation.
+        session.messages.push({ id: randomUUID(), userId, role: "user", stage: "quick", action: "quickAsk", content: askText, afterFollowUp: followups.length as 0 | 1 | 2 });
+      }
       if (op) {
         const active = pack(userId, id);
         if (kind === "check" && active?.kind === "supplemental" && active.id !== op.packageId && ["invalid_output", "timeout", "indeterminate"].includes(op.status)) {
@@ -111,7 +123,7 @@ export async function runQuickModel(userId: string, id: string, raw: QuickModelA
         if (checked) { receipt(checked.checkId); return null; }
       }
       const reqs = quickRequirements(cardRequirements(card), card.content);
-      frozen = { kind, configVersion: callConfigVersion, context: { task: session.prompt.text, requirements: kind === "followup" ? reqs : reqs.filter(r => !r.empty), parts: card.content.parts.map(({ key, text }) => ({ key, text })), ...(kind === "followup" ? { coachingFocus: card.content.parts.some(p => p.key.endsWith(".answer") && !card.content.parts.some(other => other.key === p.key.replace(/\.answer$/, ".why"))) ? "explain_reason" as const : "develop" as const, messages: session.messages.filter(m => m.stage === "quick").map(m => ({ role: m.role, content: m.content })) } : {}) }, empty: reqs.filter(r => r.empty).map(r => ({ id: r.id, status: "gap", note: emptyNote(cardSlots(cardRequirements(card)).filter(s => s.requirementKey === r.id && !card.content.parts.some(p => p.key === s.key && p.text.trim())).map(s => s.label)) })) };
+      frozen = { kind, ...(askText !== undefined ? { variant: "ask" as const } : {}), configVersion: callConfigVersion, context: { task: session.prompt.text, requirements: kind === "followup" ? reqs : reqs.filter(r => !r.empty), parts: card.content.parts.map(({ key, text }) => ({ key, text })), ...(kind === "followup" ? { coachingFocus: card.content.parts.some(p => p.key.endsWith(".answer") && !card.content.parts.some(other => other.key === p.key.replace(/\.answer$/, ".why"))) ? "explain_reason" as const : "develop" as const, messages: session.messages.filter(m => m.stage === "quick").map(m => ({ role: m.role, content: m.content })) } : {}) }, empty: reqs.filter(r => r.empty).map(r => ({ id: r.id, status: "gap", note: emptyNote(cardSlots(cardRequirements(card)).filter(s => s.requirementKey === r.id && !card.content.parts.some(p => p.key === s.key && p.text.trim())).map(s => s.label)) })) };
       if (kind === "check" && reqs.every(r => r.empty)) {
         const checkId = randomUUID(); db.insert(quickCheckResults).values({ checkId, userId, attemptId: id, cardVersion: card.contentVersion, outcome: "needs_development", resultsJson: JSON.stringify(frozen.empty), createdAt: now }).run();
         db.update(topicCards).set({ state: "needs_development", lastCheckId: checkId, lastCheckedVersion: card.contentVersion }).where(eq(topicCards.id, card.id)).run(); receipt(checkId); return null;
@@ -130,7 +142,7 @@ export async function runQuickModel(userId: string, id: string, raw: QuickModelA
     let result: z.infer<typeof followSchema> | z.infer<typeof checkSchema>;
     try {
       const options = { callSite: op.kind === "check" ? "quick.check" as const : "quick.followup" as const, userId, sessionId: id, operationId: op.id, purpose: op.kind === "check" ? "quick_check" as const : "quick_followup" as const, reservation, maxInputTokens: 4000, retries: 0 };
-      result = op.kind === "check" ? await generateJson(instruction.check, frozen.context, checkSchema, options) : await generateJson(instruction.followup, frozen.context, followSchema, options);
+      result = op.kind === "check" ? await generateJson(instruction.check, frozen.context, checkSchema, options) : await generateJson(instructionFor(op, frozen), frozen.context, followSchema, options);
       if ("results" in result) {
         const ids = frozen.context.requirements.map(r => r.id);
         if (result.results.length !== ids.length || new Set(result.results.map(r => r.id)).size !== ids.length || result.results.some(r => !ids.includes(r.id) || !validQuickNote(r.note) || (r.status === "gap" ? !r.note : r.note !== null))) throw new Error("invalid_output");

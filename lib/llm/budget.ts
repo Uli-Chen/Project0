@@ -1,6 +1,6 @@
 /** RFC §8 provisional ceilings. All durations are milliseconds. */
 export const budgetConfigVersion = "quick-budget-20261101-v1";
-export const promptConfigVersion = "coach-json-v11-tutor-p1";
+export const promptConfigVersion = "coach-json-v12-quick-ask";
 export const inputEstimateVersion = "utf8-byte-v1";
 export const quickProviderPolicyVersion = "quick-deepseek-no-thinking-v1";
 // config_version covers prompts, limits, admission estimate and Quick provider policy.
