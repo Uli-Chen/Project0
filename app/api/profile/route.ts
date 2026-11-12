@@ -22,8 +22,10 @@ export async function PATCH(request: Request) {
     try { raw = JSON.parse(current.profileJson); } catch { /* Legacy empty profile. */ }
     const profile = { ...DEFAULT_PROFILE, ...raw, ...patch };
     const today = new Date(Date.now() + 8 * 60 * 60_000).toISOString().slice(0, 10);
-    if (patch.examDate && patch.examDate < today) throw new AuthError("考试日期不能早于今天。", 400);
-    if (profile.onboardingCompleted && (!profile.target || !profile.level || !profile.perWeek || !profile.minutes || !profile.difficulties.length || !profile.lang || !(profile.timeBy === "date" ? profile.examDate : profile.weeks))) {
+    // A past date is only refused when it is new: an ended plan that is kept unchanged can still be saved.
+    const storedDate = (raw as { examDate?: unknown }).examDate;
+    if (patch.examDate && patch.examDate < today && patch.examDate !== storedDate) throw new AuthError("考试日期不能早于今天。", 400);
+    if (profile.onboardingCompleted && (!profile.target || !profile.level || !profile.perWeek || !profile.minutes || !profile.difficulties.length || !profile.lang || !(profile.timeBy === "date" ? profile.examDate : profile.weeks || profile.examDate))) {
       throw new AuthError("请先填写完整的学习目标与练习偏好。", 400);
     }
     const updated = updateUserProfile(user.id, profile, name);

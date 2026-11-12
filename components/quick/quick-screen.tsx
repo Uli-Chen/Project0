@@ -489,6 +489,8 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   const lastFollowupOp = data.operations.filter(o => o.kind === "followup").at(-1);
   const followupStuck = !!lastFollowupOp && !["ok", "running"].includes(lastFollowupOp.status);
   const bottom = coachBottom({ pendingAnswer, followupStuck, followupsLeft });
+  // Text typed while the last ask was in flight must stay visible (to copy or clear) once asking is over.
+  const leftover = (bottom === "used_up" || bottom === "stuck") && askDraft.trim() ? askDraft : null;
   const failedAsk = pendingAsk?.status === "failed" ? pendingAsk : null;
   const deepLabel = data.defaultDeepId ? "打开作文" : "用这张卡写成作文";
   const statusText = coachBusy ? runningLabel : runningKind === "supplemental" ? runningLabel : saving ? "保存中" : saveFailed ? "保存失败" : conflicted ? "有冲突待选择" : overLimit ? `有一栏超过 ${MAX_CHARS} 字` : dirty ? "未保存" : notice || "已保存";
@@ -564,7 +566,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
           {failedFollowups.map(o => failedRow(o, "coach"))}
         </div>
       </div>
-      {(bottom !== "stuck" || coachAlert) && <div className="shrink-0 border-t bg-sheet px-3.5 pt-3 pb-3.5">
+      {(bottom !== "stuck" || coachAlert || leftover) && <div className="shrink-0 border-t bg-sheet px-3.5 pt-3 pb-3.5">
         {coachAlert}
         {bottom === "answer" ? (
           <Composer
@@ -577,7 +579,14 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
           />
         ) : bottom === "used_up" ? (
           <p className="py-1 text-sm text-muted-foreground">这张卡的追问用完了，可以接着改卡片，或直接检查。</p>
-        ) : bottom === "ask" ? (
+        ) : null}
+        {leftover && (
+          <div className="mt-2.5 flex items-start gap-2 rounded-lg border bg-sunk py-2 pr-2 pl-3">
+            <p className="min-w-0 flex-1 text-sm leading-relaxed whitespace-pre-wrap select-text">{leftover}</p>
+            <Button size="xs" variant="ghost" onClick={() => setAskDraft("")}>清除</Button>
+          </div>
+        )}
+        {bottom === "ask" ? (
           <div className="flex flex-col gap-2.5">
             {!failedAsk && <Starters items={starters} disabled={!active || transitioning || running} onPick={text => void ask(text, false)} />}
             <Composer

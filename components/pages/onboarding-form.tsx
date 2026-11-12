@@ -44,7 +44,8 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
 
   const missing = [
     !target && "目标分",
-    !(timeBy === "date" ? examDate : weeks) && "备考时间",
+    // An ended weeks plan that the learner leaves untouched keeps its date, so other settings can still be saved.
+    !(timeBy === "date" ? examDate : weeks || (initial.timeBy === "weeks" && initial.examDate && !weeksChanged)) && "备考时间",
     !level && "目前水平",
     !perWeek && "每周次数",
     !minutes && "每次时长",
