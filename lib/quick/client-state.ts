@@ -77,6 +77,8 @@ export type AskSettlement = {
   refresh: boolean;
   /** card_conflict: the request never reached the server; send once more as a new intent with the current card version. */
   newIntent: boolean;
+  /** Delivered: if the ask box still holds this text (put back after an earlier failure), empty it. */
+  clear: string | null;
 };
 /**
  * What a finished ask request means. `sent` is what the student sent this time (typed text or
@@ -84,16 +86,16 @@ export type AskSettlement = {
  * `messages` is the latest snapshot: an ask it already holds is done even if the response was lost.
  */
 export function settleAsk(request: PendingAsk, outcome: Outcome, sent: { text: string; typed: boolean }, messages: readonly Message[]): AskSettlement {
-  if (outcome.ok || askDelivered(request, messages)) return { pending: null, restore: sent.typed && sent.text !== request.text ? sent.text : null, error: null, refresh: false, newIntent: false };
+  if (outcome.ok || askDelivered(request, messages)) return { pending: null, restore: sent.typed && sent.text !== request.text ? sent.text : null, error: null, refresh: false, newIntent: false, clear: request.text };
   const typed = sent.typed ? sent.text : null;
   switch (outcome.code) {
-    case "card_conflict": return { pending: null, restore: null, error: null, refresh: false, newIntent: true };
+    case "card_conflict": return { pending: null, restore: null, error: null, refresh: false, newIntent: true, clear: null };
     // The id belongs to other parameters: the next send starts a new intent.
-    case "idempotency_conflict": return { pending: null, restore: typed, error: outcome.message, refresh: false, newIntent: false };
+    case "idempotency_conflict": return { pending: null, restore: typed, error: outcome.message, refresh: false, newIntent: false, clear: null };
     // Nothing was stored under this id and the thread moved on elsewhere: show the real state.
     case "followup_pending":
-    case "followup_unfinished": return { pending: null, restore: typed, error: outcome.message, refresh: true, newIntent: false };
-    default: return { pending: { ...request, status: "failed" }, restore: typed, error: outcome.message, refresh: outcome.uncertain, newIntent: false };
+    case "followup_unfinished": return { pending: null, restore: typed, error: outcome.message, refresh: true, newIntent: false, clear: null };
+    default: return { pending: { ...request, status: "failed" }, restore: typed, error: outcome.message, refresh: outcome.uncertain, newIntent: false, clear: null };
   }
 }
 /** After a snapshot: a failed ask the server already has is done, and its text leaves the ask box. */

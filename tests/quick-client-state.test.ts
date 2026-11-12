@@ -65,7 +65,12 @@ test('resend replays the full pending request unchanged, even after a card edit 
  assert.deepEqual([done.pending, done.restore, done.error], [null, '换一个想法', null]);
  assert.equal(planAsk(done.pending, '换一个想法', 4, 2, next).request.requestId, 'id-2');
  assert.equal(settleAsk(again.request, ok, typed('我想从独立说起'), []).restore, null);
+ // The 重新发送 button replays the failed ask; once delivered, the copy that was put back in the box must go.
+ const resent = settleAsk(again.request, ok, starter('我想从独立说起'), []);
+ assert.deepEqual([resent.pending, resent.restore, resent.clear], [null, null, '我想从独立说起']);
+ assert.equal(t_clearOnFailure(), null);
 });
+function t_clearOnFailure() { return settleAsk({ text: 'x', cardVersion: 1, requestId: 'r', after: 0, status: 'sending' }, lost, typed('x'), []).clear; }
 test('card_conflict on a replay means it never reached the server: a new intent with the current version', () => {
  const failed: PendingAsk = { text: '我想从独立说起', cardVersion: 3, requestId: 'old', after: 0, status: 'failed' };
  const s = settleAsk({ ...failed, status: 'sending' }, refused('card_conflict'), typed('我想从独立说起'), []);

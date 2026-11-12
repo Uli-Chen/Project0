@@ -313,6 +313,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
         // Only a delivered ask waits for the coach's question (to announce it and focus the answer box).
         if (outcome.pending || outcome.error || outcome.newIntent) awaitingCoach.current = false;
         if (outcome.newIntent) { if (typed) restoreAsk(sent.text); if (!reply.ok) setCoachError(reply.message); }
+        if (outcome.clear) { const done = outcome.clear; setAskDraft(text => text.trim() === done ? "" : text); }
         if (outcome.restore) restoreAsk(outcome.restore);
         if (outcome.error) setCoachError(outcome.error);
         if (outcome.refresh) void refresh(true);
