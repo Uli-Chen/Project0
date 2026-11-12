@@ -1,0 +1,141 @@
+[
+  {
+    "id": "archive-2",
+    "label": "螺旋楼梯与构造",
+    "src": "/motion-preview/themes/archive/archive-2.jpg",
+    "source": "https://wellcomecollection.org/works/dzpmycnj",
+    "original": "https://iiif.wellcomecollection.org/image/V0024288/full/300,/0/default.jpg",
+    "download": "https://iiif.wellcomecollection.org/image/V0024288/full/900,/0/default.jpg",
+    "credit": "Wellcome Collection"
+  },
+  {
+    "id": "archive-3",
+    "label": "墙体结构详图",
+    "src": "/motion-preview/themes/archive/archive-3.jpg",
+    "source": "https://wellcomecollection.org/works/dvs2juzy",
+    "original": "https://iiif.wellcomecollection.org/image/V0024235ER/full/full/0/default.jpg",
+    "download": "https://iiif.wellcomecollection.org/image/V0024235ER/full/900,/0/default.jpg",
+    "credit": "Wellcome Collection"
+  },
+  {
+    "id": "archive-4",
+    "label": "建筑平面与剖面",
+    "src": "/motion-preview/themes/archive/archive-4.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:An_official_floor_plan_and_transverse_section_with_scale_for_Wellcome_V0015773.jpg",
+    "original": "https://upload.wikimedia.org/wikipedia/commons/e/e9/An_official_floor_plan_and_transverse_section_with_scale_for_Wellcome_V0015773.jpg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/e/e9/An_official_floor_plan_and_transverse_section_with_scale_for_Wellcome_V0015773.jpg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original",
+    "credit": "Wellcome Collection"
+  },
+  {
+    "id": "archive-5",
+    "label": "古典建筑构件图谱",
+    "src": "/motion-preview/themes/archive/archive-5.jpg",
+    "source": "https://wellcomecollection.org/works/wteatqqb",
+    "original": "https://iiif.wellcomecollection.org/image/V0048129/full/full/0/default.jpg",
+    "download": "https://iiif.wellcomecollection.org/image/V0048129/full/900,/0/default.jpg",
+    "credit": "Wellcome Collection"
+  },
+  {
+    "id": "archive-6",
+    "label": "建筑立面与平面",
+    "src": "/motion-preview/themes/archive/archive-6.jpg",
+    "source": "https://wellcomecollection.org/concepts/z96q8nvk",
+    "original": "https://iiif.wellcomecollection.org/image/V0014341/full/600%2C/0/default.jpg",
+    "download": "https://iiif.wellcomecollection.org/image/V0014341/full/900,/0/default.jpg",
+    "credit": "Wellcome Collection"
+  },
+  {
+    "id": "archive-7",
+    "label": "拱廊与庭院图谱",
+    "src": "/motion-preview/themes/archive/archive-7.jpg",
+    "source": "https://wellcomecollection.org/concepts/z96q8nvk",
+    "original": "https://iiif.wellcomecollection.org/image/V0014600/full/282%2C/0/default.jpg",
+    "download": "https://iiif.wellcomecollection.org/image/V0014600/full/900,/0/default.jpg",
+    "credit": "Wellcome Collection"
+  },
+  {
+    "id": "archive-8",
+    "label": "砌体剖面研究",
+    "src": "/motion-preview/themes/archive/archive-8.jpg",
+    "source": "https://wellcomecollection.org/concepts/zzuhfhcm",
+    "original": "https://iiif.wellcomecollection.org/image/V0024237EL/full/282%2C/0/default.jpg",
+    "download": "https://iiif.wellcomecollection.org/image/V0024237EL/full/900,/0/default.jpg",
+    "credit": "Wellcome Collection"
+  },
+  {
+    "id": "archive-9",
+    "label": "建筑空间详图",
+    "src": "/motion-preview/themes/archive/archive-9.jpg",
+    "source": "https://wellcomecollection.org/concepts/z96q8nvk",
+    "original": "https://iiif.wellcomecollection.org/image/V0012703/full/282%2C/0/default.jpg",
+    "download": "https://iiif.wellcomecollection.org/image/V0012703/full/900,/0/default.jpg",
+    "credit": "Wellcome Collection"
+  },
+  {
+    "id": "archive-10",
+    "label": "历史建筑总图",
+    "src": "/motion-preview/themes/archive/archive-10.jpg",
+    "source": "https://wellcomecollection.org/concepts/z96q8nvk",
+    "original": "https://iiif.wellcomecollection.org/image/V0014827/full/880%2C/0/default.jpg",
+    "download": "https://iiif.wellcomecollection.org/image/V0014827/full/900,/0/default.jpg",
+    "credit": "Wellcome Collection"
+  },
+  {
+    "id": "sky-1",
+    "label": "积云与蓝灰天空",
+    "src": "/motion-preview/themes/archive/sky-1.jpg",
+    "source": "https://unsplash.com/photos/white-clouds-under-blue-sky-during-daytime-gJILnne_HFg",
+    "original": "https://images.unsplash.com/photo-1603437873662-dc1f44901825?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE0fHx8ZW58MHx8fHx8",
+    "download": "https://images.unsplash.com/photo-1603437873662-dc1f44901825?w=1000&q=88&fm=jpg",
+    "credit": "Unsplash"
+  },
+  {
+    "id": "sky-2",
+    "label": "深蓝天空与白云",
+    "src": "/motion-preview/themes/archive/sky-2.jpg",
+    "source": "https://unsplash.com/photos/white-clouds-and-blue-sky-during-daytime-pqfkN8WcdR8",
+    "original": "https://images.unsplash.com/photo-1580826237584-fda5b612e1bc?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDE3fHx8ZW58MHx8fHx8",
+    "download": "https://images.unsplash.com/photo-1580826237584-fda5b612e1bc?w=1000&q=88&fm=jpg",
+    "credit": "Unsplash"
+  },
+  {
+    "id": "sky-windows",
+    "label": "晴空下的窗阵",
+    "src": "/motion-preview/themes/sky-windows.webp",
+    "source": "https://unsplash.com/s/photos/library-building",
+    "original": "https://images.unsplash.com/photo-1784530205579-9428f39f51cc",
+    "credit": "Unsplash"
+  },
+  {
+    "id": "stone-pair",
+    "label": "石雕人物",
+    "src": "/motion-preview/themes/stone-pair.webp",
+    "source": "https://unsplash.com/s/photos/marble-statue",
+    "original": "https://images.unsplash.com/photo-1786169371780-cf1c188cf582",
+    "credit": "Unsplash"
+  },
+  {
+    "id": "museum-stair",
+    "label": "博物馆旋梯",
+    "src": "/motion-preview/themes/museum-stair.webp",
+    "source": "https://unsplash.com/photos/a-modern-white-spiral-staircase-HP9_I-pIqy4",
+    "original": "https://images.unsplash.com/photo-1663594665080-e48756d80b35",
+    "credit": "Unsplash"
+  },
+  {
+    "id": "concrete-curves",
+    "label": "混凝土曲面",
+    "src": "/motion-preview/themes/concrete-curves.webp",
+    "source": "https://unsplash.com/photos/white-spiral-stairs-in-grayscale-photography-_rw0J2AsDGg",
+    "original": "https://images.unsplash.com/photo-1622371989772-a40f97e87c02",
+    "credit": "Unsplash"
+  },
+  {
+    "id": "archive-1",
+    "label": "连廊立面与节点",
+    "src": "/motion-preview/themes/archive/archive-1.jpg",
+    "source": "https://wellcomecollection.org/concepts/z96q8nvk",
+    "original": "https://iiif.wellcomecollection.org/image/V0012207/full/600%2C/0/default.jpg",
+    "credit": "Wellcome Collection"
+  }
+]

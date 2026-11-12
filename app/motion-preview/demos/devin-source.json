@@ -1,0 +1,268 @@
+[
+  {
+    "style": "top:-60px;bottom:-60px;--hero-collage-offset:260px;--hero-collage-track:1900px;filter:blur(6px);opacity:0.6",
+    "items": [
+      {
+        "width": 110,
+        "height": 83,
+        "top": 0.05708325052983127,
+        "duration": 121.00000000000001,
+        "delay": 3.491653467540164,
+        "src": "/assets/images/new-home/collage/horizontal/horizontal-04.webp"
+      },
+      {
+        "width": 83,
+        "height": 110,
+        "top": 0.3761968350911047,
+        "duration": 201.66666666666666,
+        "delay": -16.813340478353588,
+        "src": "/assets/images/new-home/collage/vertical/vertical-06.webp"
+      },
+      {
+        "width": 143,
+        "height": 143,
+        "top": 0.583037352131214,
+        "duration": 161.33333333333334,
+        "delay": -25.315908880826708,
+        "src": "/assets/images/new-home/collage/square/square-04.webp"
+      },
+      {
+        "width": 83,
+        "height": 110,
+        "top": 0.8674911365378648,
+        "duration": 242.00000000000003,
+        "delay": -53.30456783438567,
+        "src": "/assets/images/new-home/collage/vertical/vertical-05.webp"
+      },
+      {
+        "width": 83,
+        "height": 110,
+        "top": 0.06706347818835638,
+        "duration": 121.00000000000001,
+        "delay": -33.91720467433916,
+        "src": "/assets/images/new-home/collage/vertical/vertical-03.webp"
+      },
+      {
+        "width": 83,
+        "height": 110,
+        "top": 0.39180569651070984,
+        "duration": 201.66666666666666,
+        "delay": -60.48894612094348,
+        "src": "/assets/images/new-home/collage/vertical/vertical-08.webp"
+      },
+      {
+        "width": 110,
+        "height": 83,
+        "top": 0.5569879938848317,
+        "duration": 161.33333333333334,
+        "delay": -59.049042950524026,
+        "src": "/assets/images/new-home/collage/horizontal/horizontal-07.webp"
+      },
+      {
+        "width": 143,
+        "height": 107,
+        "top": 0.9839239544991869,
+        "duration": 242.00000000000003,
+        "delay": -107.29572888948024,
+        "src": "/assets/images/new-home/collage/horizontal/horizontal-05.webp"
+      },
+      {
+        "width": 50,
+        "height": 66,
+        "top": 0.10978479040786623,
+        "duration": 121.00000000000001,
+        "delay": -57.53547488356126,
+        "src": "/assets/images/new-home/collage/vertical/vertical-02.webp"
+      },
+      {
+        "width": 107,
+        "height": 143,
+        "top": 0.42845346512622196,
+        "duration": 201.66666666666666,
+        "delay": -116.68988355025067,
+        "src": "/assets/images/new-home/collage/vertical/vertical-04.webp"
+      },
+      {
+        "width": 143,
+        "height": 107,
+        "top": 0.5951752684952225,
+        "duration": 161.33333333333334,
+        "delay": -100.04342139538689,
+        "src": "/assets/images/new-home/collage/horizontal/horizontal-02.webp"
+      },
+      {
+        "width": 143,
+        "height": 143,
+        "top": 0.9438710242975503,
+        "duration": 242.00000000000003,
+        "delay": -170.61610180290884,
+        "src": "/assets/images/new-home/collage/square/square-02.webp"
+      },
+      {
+        "width": 110,
+        "height": 110,
+        "top": 0.054673841851763424,
+        "duration": 121.00000000000001,
+        "delay": -91.95064080805751,
+        "src": "/assets/images/new-home/collage/square/square-03.webp"
+      },
+      {
+        "width": 110,
+        "height": 83,
+        "top": 0.34195297478581776,
+        "duration": 201.66666666666666,
+        "delay": -170.70952878826452,
+        "src": "/assets/images/new-home/collage/horizontal/horizontal-01.webp"
+      },
+      {
+        "width": 66,
+        "height": 50,
+        "top": 0.5847006615658756,
+        "duration": 161.33333333333334,
+        "delay": -135.81904208403236,
+        "src": "/assets/images/new-home/collage/horizontal/horizontal-03.webp"
+      },
+      {
+        "width": 110,
+        "height": 83,
+        "top": 0.9771666950837243,
+        "duration": 242.00000000000003,
+        "delay": -218.7440921416157,
+        "src": "/assets/images/new-home/collage/horizontal/horizontal-06.webp"
+      }
+    ]
+  },
+  {
+    "style": "top:-60px;bottom:-60px;--hero-collage-offset:260px;--hero-collage-track:1900px;opacity:1",
+    "items": [
+      {
+        "width": 90,
+        "height": 120,
+        "top": 0.016595672420226037,
+        "duration": 91.66666666666666,
+        "delay": -3.2584556880465234,
+        "src": "/assets/images/new-home/collage/vertical/vertical-02.webp"
+      },
+      {
+        "width": 195,
+        "height": 260,
+        "top": 0.3117244750726968,
+        "duration": 73.33333333333333,
+        "delay": -7.324896663504964,
+        "src": "/assets/images/new-home/collage/vertical/vertical-07.webp"
+      },
+      {
+        "width": 120,
+        "height": 90,
+        "top": 0.6342960039211902,
+        "duration": 110,
+        "delay": -15.599762433732396,
+        "src": "/assets/images/new-home/collage/horizontal/horizontal-03.webp"
+      },
+      {
+        "width": 195,
+        "height": 260,
+        "top": 0.9707309349672869,
+        "duration": 55,
+        "delay": -11.477368769439636,
+        "src": "/assets/images/new-home/collage/vertical/vertical-01.webp"
+      },
+      {
+        "width": 260,
+        "height": 195,
+        "top": 0.06198475962155498,
+        "duration": 91.66666666666666,
+        "delay": -22.60599927418904,
+        "src": "/assets/images/new-home/collage/horizontal/horizontal-07.webp"
+      },
+      {
+        "width": 150,
+        "height": 200,
+        "top": 0.3421361574204639,
+        "duration": 73.33333333333333,
+        "delay": -24.74649522946371,
+        "src": "/assets/images/new-home/collage/vertical/vertical-08.webp"
+      },
+      {
+        "width": 150,
+        "height": 200,
+        "top": 0.586526181345107,
+        "duration": 110,
+        "delay": -43.59178058296675,
+        "src": "/assets/images/new-home/collage/vertical/vertical-04.webp"
+      },
+      {
+        "width": 120,
+        "height": 120,
+        "top": 0.8557645184511784,
+        "duration": 55,
+        "delay": -24.968910275114467,
+        "src": "/assets/images/new-home/collage/square/square-02.webp"
+      },
+      {
+        "width": 90,
+        "height": 120,
+        "top": 0.060029019793728364,
+        "duration": 91.66666666666666,
+        "delay": -43.64952338165797,
+        "src": "/assets/images/new-home/collage/vertical/vertical-06.webp"
+      },
+      {
+        "width": 200,
+        "height": 200,
+        "top": 0.445082865661243,
+        "duration": 73.33333333333333,
+        "delay": -40.04628737014718,
+        "src": "/assets/images/new-home/collage/square/square-04.webp"
+      },
+      {
+        "width": 200,
+        "height": 150,
+        "top": 0.6861920240509789,
+        "duration": 110,
+        "delay": -71.66427188873058,
+        "src": "/assets/images/new-home/collage/horizontal/horizontal-02.webp"
+      },
+      {
+        "width": 260,
+        "height": 260,
+        "top": 0.8554460406769067,
+        "duration": 55,
+        "delay": -38.82802623408497,
+        "src": "/assets/images/new-home/collage/square/square-03.webp"
+      },
+      {
+        "width": 260,
+        "height": 195,
+        "top": 0.060561418603174384,
+        "duration": 91.66666666666666,
+        "delay": -66.13878925316384,
+        "src": "/assets/images/new-home/collage/horizontal/horizontal-04.webp"
+      },
+      {
+        "width": 90,
+        "height": 120,
+        "top": 0.42677515353425405,
+        "duration": 73.33333333333333,
+        "delay": -60.5315395007686,
+        "src": "/assets/images/new-home/collage/vertical/vertical-05.webp"
+      },
+      {
+        "width": 120,
+        "height": 90,
+        "top": 0.6278670555504504,
+        "duration": 110,
+        "delay": -92.77554191154195,
+        "src": "/assets/images/new-home/collage/horizontal/horizontal-05.webp"
+      },
+      {
+        "width": 90,
+        "height": 120,
+        "top": 0.989117156562861,
+        "duration": 55,
+        "delay": -52.730013273772784,
+        "src": "/assets/images/new-home/collage/vertical/vertical-03.webp"
+      }
+    ]
+  }
+]

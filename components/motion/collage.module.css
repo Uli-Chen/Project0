@@ -1,0 +1,23 @@
+.field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+.drift {
+  position: absolute;
+  left: 0;
+  width: var(--card-width);
+  height: 166px;
+  top: calc(var(--row) * (100% - 166px));
+  transform: translateX(-250px);
+  opacity: .82;
+}
+.drift[data-depth="far"] { opacity: .42; }
+.art { width: 100%; height: 100%; }
+@media (max-width: 600px) {
+  .drift { width: calc(var(--card-width) * .7); height: 132px; top: calc(var(--row) * (100% - 132px)); }
+  .art { transform: scale(.8); transform-origin: top left; width: 125%; height: 125%; }
+}

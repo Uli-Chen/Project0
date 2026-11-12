@@ -1,0 +1,206 @@
+[
+  {
+    "id": "humanities",
+    "label": "静读与人文",
+    "description": "书页、雕塑与博物馆空间；石灰白里的一点浅蓝。",
+    "assets": [
+      {
+        "id": "library-atrium",
+        "label": "图书馆中庭",
+        "src": "/motion-preview/themes/library-atrium.webp",
+        "source": "https://unsplash.com/s/photos/library-architecture",
+        "original": "https://images.unsplash.com/photo-1529148482759-b35b25c5f217",
+        "candidate": "candidate-02",
+        "width": 3000,
+        "height": 2000
+      },
+      {
+        "id": "white-library",
+        "label": "白色书架",
+        "src": "/motion-preview/themes/white-library.webp",
+        "source": "https://unsplash.com/photos/white-library-QhE0IA1Zo7w",
+        "original": "https://images.unsplash.com/photo-1561627368-fdc44e974e31",
+        "candidate": "candidate-05",
+        "width": 3000,
+        "height": 4500
+      },
+      {
+        "id": "marble-figures",
+        "label": "大理石雕塑",
+        "src": "/motion-preview/themes/marble-figures.webp",
+        "source": "https://unsplash.com/photos/ancient-greek-marble-sculptures-displayed-in-a-museum-aiAptrffNr8",
+        "original": "https://images.unsplash.com/photo-1775191405662-f73ed45da6b4",
+        "candidate": "candidate-09",
+        "width": 3000,
+        "height": 4000
+      },
+      {
+        "id": "sculpture-study",
+        "label": "雕塑侧面",
+        "src": "/motion-preview/themes/sculpture-study.webp",
+        "source": "https://unsplash.com/s/photos/marble-statue",
+        "original": "https://images.unsplash.com/photo-1600173293426-65190a24be72",
+        "candidate": "candidate-10",
+        "width": 4569,
+        "height": 3264
+      },
+      {
+        "id": "open-pages",
+        "label": "展开的书页",
+        "src": "/motion-preview/themes/open-pages.webp",
+        "source": "https://unsplash.com/photos/white-book-on-white-table-ViyQbdA9RH4",
+        "original": "https://images.unsplash.com/photo-1621944190272-ec775aad58d0",
+        "candidate": "candidate-22",
+        "width": 3000,
+        "height": 2000
+      },
+      {
+        "id": "reading-table",
+        "label": "阅读与纸张",
+        "src": "/motion-preview/themes/reading-table.webp",
+        "source": "https://unsplash.com/photos/an-open-book-with-white-pages-on-a-textured-surface-6LoMYM5rv-o",
+        "original": "https://images.unsplash.com/photo-1766145638784-0f82cc5ea3b4",
+        "candidate": "candidate-23",
+        "width": 3000,
+        "height": 2000
+      },
+      {
+        "id": "museum-light",
+        "label": "博物馆天光",
+        "src": "/motion-preview/themes/museum-light.webp",
+        "source": "https://unsplash.com/photos/modern-spiral-staircase-with-white-walls-and-metal-railing-WqTrBNhfw8U",
+        "original": "https://images.unsplash.com/photo-1761639935139-ffc5d7ce8e67",
+        "candidate": "candidate-30",
+        "width": 3000,
+        "height": 5333
+      },
+      {
+        "id": "rotunda",
+        "label": "回廊与穹顶",
+        "src": "/motion-preview/themes/rotunda.webp",
+        "source": "https://unsplash.com/photos/a-spiral-staircase-with-a-spiral-staircase-with-solomon-r-guggenheim-museum-in-the-background-5m61qM0k3YI",
+        "original": "https://images.unsplash.com/photo-1659737758795-76eddb4c6b23",
+        "candidate": "candidate-31",
+        "width": 3000,
+        "height": 2000
+      },
+      {
+        "id": "spiral-gallery",
+        "label": "螺旋展廊",
+        "src": "/motion-preview/themes/spiral-gallery.webp",
+        "source": "https://unsplash.com/photos/a-modern-white-spiral-staircase-HP9_I-pIqy4",
+        "original": "https://images.unsplash.com/photo-1734940267655-68db285fa382",
+        "candidate": "candidate-34",
+        "width": 3000,
+        "height": 4200
+      },
+      {
+        "id": "quiet-facade",
+        "label": "浅蓝玻璃立面",
+        "src": "/motion-preview/themes/quiet-facade.webp",
+        "source": "https://unsplash.com/photos/modern-glass-building-facade-against-a-clear-sky-wm1O_OC2DQc",
+        "original": "https://images.unsplash.com/photo-1775045308686-8071d2ca2dfe",
+        "candidate": "candidate-19",
+        "width": 3000,
+        "height": 4495
+      }
+    ]
+  },
+  {
+    "id": "technology",
+    "label": "理性与探索",
+    "description": "玻璃、金属与科学设施；银灰和雾蓝的理性秩序。",
+    "assets": [
+      {
+        "id": "structural-grid",
+        "label": "建筑网格",
+        "src": "/motion-preview/themes/structural-grid.webp",
+        "source": "https://unsplash.com/photos/minimalist-photography-of-white-and-blue-high-rise-building-92YZgZELFOM",
+        "original": "https://images.unsplash.com/photo-1774270905589-2a8d79eecb1b",
+        "candidate": "candidate-03",
+        "width": 4809,
+        "height": 5876
+      },
+      {
+        "id": "silver-fins",
+        "label": "金属折面",
+        "src": "/motion-preview/themes/silver-fins.webp",
+        "source": "https://unsplash.com/photos/minimalist-photography-of-white-and-blue-high-rise-building-92YZgZELFOM",
+        "original": "https://images.unsplash.com/photo-1721896550781-4283377fa3fb",
+        "candidate": "candidate-04",
+        "width": 3000,
+        "height": 4000
+      },
+      {
+        "id": "blue-facade",
+        "label": "蓝灰玻璃",
+        "src": "/motion-preview/themes/blue-facade.webp",
+        "source": "https://unsplash.com/photos/blue-glass-facade-of-a-modern-building-against-clear-sky-qsKgbz4LKRo",
+        "original": "https://images.unsplash.com/photo-1780561871431-0fcbb6404cea",
+        "candidate": "candidate-18",
+        "width": 3000,
+        "height": 4000
+      },
+      {
+        "id": "glass-rhythm",
+        "label": "立面节奏",
+        "src": "/motion-preview/themes/glass-rhythm.webp",
+        "source": "https://unsplash.com/photos/modern-glass-building-facade-against-a-clear-sky-wm1O_OC2DQc",
+        "original": "https://images.unsplash.com/photo-1775045308686-8071d2ca2dfe",
+        "candidate": "candidate-19",
+        "width": 3000,
+        "height": 4495
+      },
+      {
+        "id": "cloud-reflection",
+        "label": "云与玻璃",
+        "src": "/motion-preview/themes/cloud-reflection.webp",
+        "source": "https://unsplash.com/photos/blue-and-white-glass-building-di4XDdam8dA",
+        "original": "https://images.unsplash.com/photo-1616783749802-6c17126d80e6",
+        "candidate": "candidate-21",
+        "width": 3000,
+        "height": 4508
+      },
+      {
+        "id": "radio-telescope",
+        "label": "射电天线",
+        "src": "/motion-preview/themes/radio-telescope.webp",
+        "source": "https://unsplash.com/photos/white-satellite-dish-under-blue-sky-during-daytime-d666QC49zVE",
+        "original": "https://images.unsplash.com/photo-1631358429403-25d69fb4ce24",
+        "candidate": "candidate-25",
+        "width": 3000,
+        "height": 2342
+      },
+      {
+        "id": "wind-energy",
+        "label": "风力与天空",
+        "src": "/motion-preview/themes/wind-energy.webp",
+        "source": "https://unsplash.com/photos/wind-turbines-stand-tall-against-a-cloudy-blue-sky-sRCRUv9JJno",
+        "original": "https://images.unsplash.com/photo-1778350513803-011fb833fdd2",
+        "candidate": "candidate-28",
+        "width": 3000,
+        "height": 2000
+      },
+      {
+        "id": "antenna-structure",
+        "label": "天线结构",
+        "src": "/motion-preview/themes/antenna-structure.webp",
+        "source": "https://unsplash.com/s/photos/antenna",
+        "original": "https://images.unsplash.com/photo-1786820726335-2c706bab847b",
+        "candidate": "candidate-15",
+        "width": 3000,
+        "height": 2452
+      },
+      {
+        "id": "reflective-grid",
+        "label": "反射网格",
+        "src": "/motion-preview/themes/reflective-grid.webp",
+        "source": "https://unsplash.com/photos/glass-facade-reflects-the-sky-and-trees-TWmPsdxGPfA",
+        "original": "https://images.unsplash.com/photo-1747242897549-90a66c774aa0",
+        "candidate": "candidate-20",
+        "width": 3000,
+        "height": 5333
+      }
+    ]
+  }
+]
