@@ -60,7 +60,7 @@ export type CoachMessage = {
   replyToMessageId?: string;
   /** Quick follow-up: the card field the coach's question is about, when the model named one. */
   targetKey?: string;
-  action?: "quickFollowup" | "quickAnswer" | "opening" | "clarify" | "polish" | "check" | "express" | "chat" | "hint" | "attempt" | "ask";
+  action?: "quickFollowup" | "quickAnswer" | "quickAsk" | "opening" | "clarify" | "polish" | "check" | "express" | "chat" | "hint" | "attempt" | "ask";
   content: string;
   quote?: string;
   suggestionIds?: string[];

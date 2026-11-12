@@ -3,9 +3,10 @@ import { test } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
-import { QuickScreen } from "../../components/quick/quick-screen";
+import { QUICK_STARTERS, QuickScreen } from "../../components/quick/quick-screen";
 import { createSession } from "../../lib/pipeline/initial";
 import type { QuestionRequirements } from "../../lib/question-bank/types";
+import type { CoachMessage } from "../../lib/prototype/types";
 
 const requirements: QuestionRequirements = { id: "test", version: 1, layout: "two_questions", requiresOverallJudgement: false, subquestions: [{ key: "cause", en: "Why?", zh: "原因是什么？" }, { key: "effect", en: "What effect?", zh: "影响是什么？" }] };
 const router = { bfcacheId: "test", back() {}, forward() {}, refresh() {}, push() {}, replace() {}, prefetch: async () => {} };
@@ -39,4 +40,42 @@ test("supplemental check stays disabled until the client has checked the display
  const html = render("draft", "ok");
  assert.match(html, /<button[^>]*disabled[^>]*>申请补充检查<\/button>/);
  assert.match(html, /补充检查最早可申请/);
+});
+
+function renderCoach({ messages = [], operations = [], followups = 2 }: { messages?: CoachMessage[]; operations?: { id: string; kind: string; status: string }[]; followups?: number }) {
+  const session = createSession({ kind: "free", mode: "practice" }); session.activity = "quick"; session.stage = "quick"; session.messages = messages;
+  return renderToStaticMarkup(createElement(AppRouterContext.Provider, { value: router }, createElement(QuickScreen, { requirements, initial: {
+    session, card: { contentVersion: 1, content: { layout: "two_questions", parts: [] }, state: "draft" },
+    operations, budget: { remaining: { followups, checks: 2, retries: 1 }, nextSupplementalAt: null },
+  } })));
+}
+const askInput = "问教练，或者先说说你的想法", answerInput = "想到什么写什么，中英文都可以";
+const question: CoachMessage = { id: "q1", role: "coach", stage: "quick", action: "quickFollowup", afterFollowUp: 1, content: "你身边有谁离家上学？" };
+const asked = (content: string): CoachMessage => ({ id: "a1", role: "user", stage: "quick", action: "quickAsk", userId: "u", afterFollowUp: 0, content });
+
+test("coach panel bottom: a pending question gets the answer box only", () => {
+  const html = renderCoach({ messages: [question], operations: [{ id: "op", kind: "followup", status: "ok" }] });
+  assert.ok(html.includes(answerInput)); assert.ok(!html.includes(askInput)); assert.ok(!html.includes("可以这样问教练"));
+});
+test("coach panel bottom: a failed follow-up leaves only its retry row, no input or starters", () => {
+  const html = renderCoach({ operations: [{ id: "op", kind: "followup", status: "timeout" }] });
+  assert.match(html, /重试这次操作/);
+  assert.ok(!html.includes(askInput)); assert.ok(!html.includes(answerInput)); assert.ok(!html.includes("可以这样问教练"));
+});
+test("coach panel bottom: no follow-ups left shows the used-up line, no input", () => {
+  const html = renderCoach({ messages: [asked("我想从独立说起"), question, { id: "r1", role: "user", stage: "quick", action: "quickAnswer", replyToMessageId: "q1", content: "我表哥" }], operations: [{ id: "op", kind: "followup", status: "ok" }], followups: 0 });
+  assert.match(html, /这张卡的追问用完了/);
+  assert.ok(!html.includes(askInput)); assert.ok(!html.includes(answerInput)); assert.ok(!html.includes("可以这样问教练"));
+});
+test("coach panel bottom: otherwise starters sit above a free input", () => {
+  const html = renderCoach({});
+  const starters = html.indexOf(QUICK_STARTERS[0]), input = html.indexOf(askInput);
+  assert.ok(starters > 0 && input > starters, "starters above the input");
+  assert.ok(html.includes(QUICK_STARTERS[1])); assert.ok(!html.includes(answerInput));
+});
+test("a self-typed quickAsk bubble can go into the card; a starter click cannot", () => {
+  const own = renderCoach({ messages: [asked("我觉得离家上学能锻炼独立")], operations: [{ id: "op", kind: "followup", status: "running" }] });
+  assert.match(own, /我觉得离家上学能锻炼独立/); assert.match(own, /放进卡片/); assert.match(own, /data-answer="a1"/);
+  const starter = renderCoach({ messages: [asked(QUICK_STARTERS[0])], operations: [{ id: "op", kind: "followup", status: "running" }] });
+  assert.ok(starter.includes(QUICK_STARTERS[0])); assert.ok(!starter.includes("放进卡片")); assert.ok(!starter.includes("data-answer"));
 });

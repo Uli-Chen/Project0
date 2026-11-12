@@ -33,8 +33,13 @@ const operationLabels: Record<string, string> = { running: "处理中", ok: "已
 const stateLabels: Record<string, string> = { draft: "草稿", passed: "已通过检查", unchecked: "已修改，待复查", needs_development: "还需展开" };
 const MAX_CHARS = 600;
 const fieldClass = "block w-full resize-y rounded-lg border border-input bg-transparent px-3.5 py-3 text-[16px] leading-relaxed transition-[background-color,border-color,box-shadow] duration-(--dur-standard) outline-none placeholder:text-faint hover:border-foreground/35 focus:border-primary/70 focus:shadow-[0_0_0_3px_var(--coach-soft)] disabled:opacity-70";
+const bubbleClass = "max-w-[88%] rounded-[14px] rounded-br-[4px] border bg-sunk px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap";
 /** The server stores trimmed text, so trailing whitespace alone is not an unsaved change. */
 const sameText = (draft: string, saved: string) => draft === saved || draft.trim() === saved;
+/** Every starter the coach panel can offer. A student message equal to one of these is a
+ * starter click, not the student's own idea, so it gets no "放进卡片". */
+export const QUICK_STARTERS = ["我没什么思路，帮我分析一下", "这道题该从哪里想起？", "帮我把想法想得更深一点", "再问我一个问题"] as const;
+const isStarter = (text: string) => (QUICK_STARTERS as readonly string[]).includes(text);
 export function QuickScreen({ initial, requirements }: { initial: QuickData; requirements: QuestionRequirements }) {
   const router = useRouter();
   const [data, setData] = useState(initial);
@@ -51,6 +56,10 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   const [leaveIntent, setLeaveIntent] = useState<{ kind: "link"; href: string } | { kind: "deep"; explicitNew: boolean } | null>(null);
   const [selection, setSelection] = useState<{ messageId: string; start: number; end: number } | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
+  /** What the student just said to the coach, shown before the server snapshot has it. */
+  const [outgoing, setOutgoing] = useState<{ text: string; after: number } | null>(null);
+  /** One requestId per unsent text, so resending after a lost response hits the receipt. */
+  const askKey = useRef<{ text: string; cardVersion: number; id: string } | null>(null);
   const wide = useIsWide();
   const [panelOpen, setPanelOpen] = useState(true);
   const [sheet, setSheet] = useState(false);
@@ -120,17 +129,28 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     }, 1500);
     return () => { stopped = true; clearInterval(timer); };
   }, [running, endpoint, accept]);
-  async function request(body: Record<string, unknown>): Promise<QuickData | null> {
+  async function request(body: Record<string, unknown>, requestId: string = crypto.randomUUID()): Promise<QuickData | null> {
     setError("");
     epoch.current++;
+    let behind = false;
     try {
-      const r = await fetch(`${endpoint}/actions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, requestId: crypto.randomUUID() }) });
+      const r = await fetch(`${endpoint}/actions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, requestId }) });
       const value = await r.json();
-      if (!r.ok) { if (value.code === "default_child_gone") setChildGone(true); throw new Error(value.error ?? "操作未完成。"); }
+      if (!r.ok) {
+        if (value.code === "default_child_gone") setChildGone(true);
+        if (value.code === "idempotency_conflict") askKey.current = null;
+        // The coach thread moved on elsewhere (another tab, or a lost response): show the real state.
+        behind = value.code === "followup_pending" || value.code === "followup_unfinished";
+        throw new Error(value.error ?? "操作未完成。");
+      }
       epoch.current++;
       accept(value, { epoch: epoch.current, sequence: ++sequence.current });
       return value;
-    } catch (e) { setError(e instanceof Error ? e.message : "连接中断，已保存的内容仍在。请刷新状态确认结果。"); return null; }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "连接中断，已保存的内容仍在。请刷新状态确认结果。");
+      if (behind) void refresh(true);
+      return null;
+    }
   }
   /** Saves the latest draft. Reads refs, so an autosave already in flight is awaited rather than raced. */
   async function save(): Promise<QuickData | null> {
@@ -154,12 +174,31 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     const timer = setTimeout(() => { void saveRef.current(); }, 1200);
     return () => clearTimeout(timer);
   }, [draft, dirty, overLimit, active, transitioning, running]);
-  async function model(action: string, extra: Record<string, unknown> = {}) {
-    if (running || intentLatch.current.busy || !modelLatch.current.enter()) return;
+  async function model(action: string, extra: Record<string, unknown> = {}): Promise<QuickData | null> {
+    if (running || intentLatch.current.busy || !modelLatch.current.enter()) return null;
     const retryKind = action === "quickRetry" ? data.operations.find(o => o.id === extra.operationId)?.kind : null;
     setCalling(action === "quickSupplemental" ? "supplemental" : action === "quickFollowup" || retryKind === "followup" ? "followup" : "check");
-    try { const saved = await save(); if (!saved) return; await request({ action, cardVersion: action === "quickFollowup" || action === "quickCheck" ? saved.card.contentVersion : undefined, ...extra }); }
+    try {
+      const saved = await save(); if (!saved) return null;
+      const cardVersion = saved.card.contentVersion;
+      const text = action === "quickFollowup" && typeof extra.text === "string" ? extra.text : null;
+      if (text !== null && (askKey.current?.text !== text || askKey.current.cardVersion !== cardVersion)) askKey.current = { text, cardVersion, id: crypto.randomUUID() };
+      const result = await request({ action, cardVersion: action === "quickFollowup" || action === "quickCheck" ? cardVersion : undefined, ...extra }, text !== null ? askKey.current?.id : undefined);
+      if (result && text !== null) askKey.current = null;
+      return result;
+    }
     finally { modelLatch.current.leave(); setCalling(null); }
+  }
+  /** The student speaks first: typed text or a starter, sent as one quickFollowup with text. */
+  async function ask(raw: string, fromInput: boolean) {
+    const text = raw.trim();
+    if (!text || running || intentLatch.current.busy || modelLatch.current.busy) return;
+    setOutgoing({ text, after: quickMessages.length });
+    const result = await model("quickFollowup", { text });
+    setOutgoing(null);
+    if (result) { if (fromInput) setAnswer(current => current === raw ? "" : current); }
+    // A failed starter lands in the input so a resend reuses its requestId; typed text there is kept.
+    else if (!fromInput) setAnswer(current => current.trim() ? current : text);
   }
   /** Leaving saves the card first; only an unsent answer (or a failed save) needs a decision. */
   function allowNavigation(e: { preventDefault(): void }, href: string) {
@@ -237,8 +276,8 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     try { if (await request({ action: "quickAnswer", text: sent })) setAnswer(current => current === sent ? "" : current); }
     finally { answerLatch.current.leave(); setAnswering(false); }
   }
-  async function refresh() {
-    try { const ticket = { epoch: epoch.current, sequence: ++sequence.current }; const r = await fetch(`${endpoint}/quick`); const value = await r.json(); if (!r.ok) throw new Error(value.error); accept(value, ticket); setError(""); }
+  async function refresh(keepError = false) {
+    try { const ticket = { epoch: epoch.current, sequence: ++sequence.current }; const r = await fetch(`${endpoint}/quick`); const value = await r.json(); if (!r.ok) throw new Error(value.error); accept(value, ticket); if (!keepError) setError(""); }
     catch (e) { setError(e instanceof Error ? e.message : "读取失败"); }
   }
   const latest = data.checkResults?.filter(r => r.cardVersion === data.card.contentVersion).at(-1);
@@ -288,16 +327,20 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     return () => { document.removeEventListener("selectionchange", onSelection); document.removeEventListener("pointerdown", onPointerDown); };
   }, []);
   const coachBusy = running && runningKind === "followup";
-  const lastMessage = quickMessages.at(-1);
+  // Once the snapshot carries the sent text, the local bubble would only duplicate it.
+  const echo = outgoing && !quickMessages.slice(outgoing.after).some(m => m.role === "user" && m.action === "quickAsk" && m.content === outgoing.text) ? outgoing.text : null;
+  const lastMessage = echo ? { role: "user" as const } : quickMessages.at(-1);
   useEffect(() => {
     const el = scroller.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [quickMessages.length, coachBusy, pendingAnswer]);
+  }, [quickMessages.length, coachBusy, pendingAnswer, echo]);
   const retryable = (status: string) => ["invalid_output", "timeout", "indeterminate"].includes(status);
   const retriesLeft = data.budget?.remaining.retries ?? null;
   const failedChecks = failedOps.filter(o => o.kind === "check"), failedFollowups = failedOps.filter(o => o.kind !== "check");
   const filled = slots.filter(s => (draft[s.key] ?? "").trim()).length;
-  const starters = quickMessages.length ? ["再问我一个问题"] : filled === 0 ? ["我没什么思路，帮我分析一下", "这道题该从哪里想起？"] : ["帮我把想法想得更深一点"];
+  const starters = quickMessages.length ? [QUICK_STARTERS[3]] : filled === 0 ? [QUICK_STARTERS[0], QUICK_STARTERS[1]] : [QUICK_STARTERS[2]];
+  const lastFollowupOp = data.operations.filter(o => o.kind === "followup").at(-1);
+  const followupStuck = !!lastFollowupOp && !["ok", "running"].includes(lastFollowupOp.status);
   const deepLabel = data.defaultDeepId ? "打开作文" : "用这张卡写成作文";
   const statusText = coachBusy ? runningLabel : runningKind === "supplemental" ? runningLabel : saving ? "保存中" : overLimit ? `有一栏超过 ${MAX_CHARS} 字` : dirty ? "未保存" : notice || "已保存";
   const settled = !running && !saving && !dirty && !overLimit;
@@ -308,11 +351,13 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     </div>
   );
 
+  /** Composer clears itself on send; the text stays in `answer` until the server has it. */
+  const changeAnswer = (text: string) => { if (keepAnswer.current && text === "") { keepAnswer.current = false; return; } setAnswer(text); };
   const coach = (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-12 shrink-0 items-center border-b px-4"><h2 className="text-sm font-semibold">教练</h2></div>
       <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto px-4 pt-5 pb-6">
-        {quickMessages.length === 0 && !coachBusy && failedFollowups.length === 0 && (
+        {quickMessages.length === 0 && !echo && !coachBusy && failedFollowups.length === 0 && (
           <CoachEmpty />
         )}
         <div className="flex flex-col gap-5">
@@ -326,10 +371,11 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
             const asked = quickMessages.find(q => q.id === m.replyToMessageId);
             const suggested = asked?.targetKey && slots.some(s => s.key === asked.targetKey) ? asked.targetKey : null;
             const partial = selection?.messageId === m.id;
+            const placeable = !(m.action === "quickAsk" && isStarter(m.content));
             return (
               <div key={m.id} className="flex flex-col items-end gap-1.5">
-                <p data-answer={m.id} className="max-w-[88%] rounded-[14px] rounded-br-[4px] border bg-sunk px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap">{m.content}</p>
-                <DropdownMenu>
+                <p data-answer={placeable ? m.id : undefined} className={bubbleClass}>{m.content}</p>
+                {placeable && <DropdownMenu>
                   <DropdownMenuTrigger data-keep-selection render={<Button size="xs" variant="ghost" className="text-coach hover:text-coach" disabled={!active || transitioning} />}>
                     <CornerDownLeft />{partial ? "放入选中的部分" : "放进卡片"}
                   </DropdownMenuTrigger>
@@ -345,10 +391,11 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
                       </DropdownMenuGroup>
                     ))}
                   </DropdownMenuContent>
-                </DropdownMenu>
+                </DropdownMenu>}
               </div>
             );
           })}
+          {echo && <div className="flex flex-col items-end"><p className={bubbleClass}>{echo}</p></div>}
           {coachBusy && (
             <div className="flex flex-col gap-2">
               {lastMessage?.role !== "coach" && <CoachMark />}
@@ -360,11 +407,11 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
           {failedFollowups.map(failedRow)}
         </div>
       </div>
-      <div className="shrink-0 border-t bg-sheet px-3.5 pt-3 pb-3.5">
+      {(pendingAnswer || !followupStuck) && <div className="shrink-0 border-t bg-sheet px-3.5 pt-3 pb-3.5">
         {pendingAnswer ? (
           <Composer
             draft={answer}
-            onDraftChange={text => { if (keepAnswer.current && text === "") { keepAnswer.current = false; return; } setAnswer(text); }}
+            onDraftChange={changeAnswer}
             placeholder="想到什么写什么，中英文都可以"
             disabled={answering || transitioning || !active}
             onSend={() => { keepAnswer.current = true; void sendAnswer(); }}
@@ -372,12 +419,19 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
         ) : followupsLeft === 0 ? (
           <p className="py-1 text-sm text-muted-foreground">这张卡的追问用完了，可以接着改卡片，或直接检查。</p>
         ) : (
-          <>
-            <Starters items={starters} disabled={!active || transitioning || running} onPick={() => void model("quickFollowup")} />
-            {followupsLeft === 1 && <p className="mt-2.5 text-sm text-muted-foreground">还可以追问 1 次</p>}
-          </>
+          <div className="flex flex-col gap-2.5">
+            <Starters items={starters} disabled={!active || transitioning || running} onPick={text => void ask(text, false)} />
+            <Composer
+              draft={answer}
+              onDraftChange={changeAnswer}
+              placeholder="问教练，或者先说说你的想法"
+              disabled={transitioning || !active || running}
+              onSend={() => { keepAnswer.current = true; void ask(answer, true); }}
+            />
+            {followupsLeft === 1 && <p className="text-sm text-muted-foreground">还可以追问 1 次</p>}
+          </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 
