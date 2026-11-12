@@ -6,6 +6,7 @@ import { cardSlots } from "../lib/quick/layouts";
 import { recoverQuickOperations } from "../lib/pipeline/quick-model";
 import { recoverInflightCalls } from "../lib/llm/calls";
 import { table } from "./helpers/practice-db";
+import { prompt } from "../lib/llm/prompts";
 const f = quickFixture(), db = f.db.$client;
 process.env.LLM_API_KEY = "fake";
 const oldFetch = globalThis.fetch;
@@ -188,4 +189,116 @@ test("followup rejects multiple questions and retries once; missing requirements
     return Response.json({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify({ results: context.requirements.map((r: {id: string}) => ({ id: r.id, status: "gap", note: "请解释该理由如何支持回答。" })) }) } }], usage: { prompt_tokens: 500, completion_tokens: 40 } });
   };
   p = await action(filled, { action: "quickCheck", cardVersion: 1 }); assert.equal(p.card.state, "needs_development");
+});
+
+// Student speaks first: quickFollowup with text (docs/designs/quick_coach_free_input.md §4.2, §7.1).
+type Msg = { id: string; role: string; stage: string; action?: string; content: string; userId?: string; afterFollowUp?: number; replyToMessageId?: string };
+const askPrompt = prompt("quick/followup-ask"), followupPrompt = prompt("quick/followup");
+let sent: { system: string; context: { messages?: { role: string; content: string }[] } }[] = [];
+function coach(question = "你能想到一个身边的具体场景吗？") {
+  sent = [];
+  globalThis.fetch = async (_url, init) => {
+    calls++;
+    const body = JSON.parse(String(init?.body));
+    assert.equal(body.max_tokens, 512); assert.equal(db.inTransaction, false);
+    sent.push({ system: body.messages[0].content, context: JSON.parse(body.messages[1].content) });
+    return Response.json({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify({ question, targetKey: null }) } }], usage: { prompt_tokens: 500, completion_tokens: 40 } });
+  };
+}
+const quickMessages = (p: { session: { messages: Msg[] } }) => p.session.messages.filter(m => m.stage === "quick");
+const ask = (id: string, text: string, extra: Record<string, unknown> = {}, cardVersion = 1) => ({ action: "quickFollowup", cardVersion, text, ...extra });
+test("T1 quickFollowup with text stores the student message, then one coach question from the ask prompt", async () => {
+  const id = await create(); coach(); const before = calls, text = "我没什么思路，帮我分析一下";
+  const p = await action(id, ask(id, text));
+  assert.equal(calls, before + 1);
+  const [said, question, ...rest] = quickMessages(p);
+  assert.equal(rest.length, 0);
+  assert.deepEqual({ role: said.role, action: said.action, userId: said.userId, afterFollowUp: said.afterFollowUp, content: said.content, reply: said.replyToMessageId }, { role: "user", action: "quickAsk", userId: "u", afterFollowUp: 0, content: text, reply: undefined });
+  assert.deepEqual({ role: question.role, action: question.action, content: question.content }, { role: "coach", action: "quickFollowup", content: "你能想到一个身边的具体场景吗？" });
+  assert.equal(sent.length, 1); assert.ok(sent[0].system.includes(askPrompt)); assert.ok(!sent[0].system.includes(followupPrompt));
+  assert.deepEqual(sent[0].context.messages?.at(-1), { role: "user", content: text });
+  assert.equal(p.operations.length, 1); assert.equal(p.operations[0].slot, "followup:1"); assert.equal(p.operations[0].status, "ok");
+  assert.equal(JSON.parse((db.prepare("SELECT input_json FROM quick_operation_inputs WHERE operation_id=?").get(p.operations[0].id) as { input_json: string }).input_json).variant, "ask");
+  assert.equal(p.budget.remaining.followups, 1);
+});
+test("T2/T3 replaying a requestId adds nothing and calls no model; the same requestId with other text conflicts", async () => {
+  const id = await create(); coach(); const requestId = crypto.randomUUID();
+  await action(id, ask(id, "我觉得离家上学能锻炼独立", { requestId }));
+  const before = calls, snapshot = f.snapshot();
+  const replay = await action(id, ask(id, "我觉得离家上学能锻炼独立", { requestId }));
+  assert.equal(calls, before); assert.equal(quickMessages(replay).length, 2);
+  const { writing_sessions: sessionsAfter, ...restAfter } = f.snapshot(), { writing_sessions: sessionsBefore, ...restBefore } = snapshot;
+  assert.deepEqual(restAfter, restBefore);
+  // Existing replay bookkeeping (row 1) re-persists the session: version, timestamps and completedRequests move; messages do not.
+  const state = (rows: unknown) => (rows as { id: string; state_json: string }[]).filter(r => r.id === id).map(r => JSON.parse(r.state_json).messages);
+  assert.deepEqual(state(sessionsAfter), state(sessionsBefore));
+  const stable = f.snapshot();
+  const conflict = await action(id, ask(id, "换一句话", { requestId }), 409);
+  assert.equal(conflict.code, "idempotency_conflict"); assert.equal(calls, before); assert.deepEqual(f.snapshot(), stable);
+});
+test("T4 text while a coach question is pending is refused with followup_pending", async () => {
+  const id = await create(); coach(); f.followup(id); const before = calls, snapshot = f.snapshot();
+  const p = await action(id, ask(id, "直接给我三个理由"), 409);
+  assert.deepEqual(p, { error: "请先回答教练的上一个问题。", code: "followup_pending" });
+  assert.equal(calls, before); assert.deepEqual(f.snapshot(), snapshot);
+});
+let unfinished: { id: string; operationId: string; messageId: string } | undefined;
+test("T5 a network failure keeps the student message with a failed operation; new text is refused with followup_unfinished", async () => {
+  const id = await create(); const before = calls;
+  globalThis.fetch = async () => { calls++; throw new TypeError("fetch failed"); };
+  const p = await action(id, ask(id, "这道题到底在问什么"));
+  assert.equal(calls, before + 1);
+  const messages = quickMessages(p);
+  assert.equal(messages.length, 1); assert.equal(messages[0].action, "quickAsk"); assert.equal(messages[0].content, "这道题到底在问什么");
+  assert.equal(p.operations.length, 1); assert.equal(p.operations[0].status, "indeterminate"); assert.equal(p.budget.remaining.retries, 1);
+  coach(); const snapshot = f.snapshot();
+  const refused = await action(id, ask(id, "那我换个问法"), 409);
+  assert.deepEqual(refused, { error: "上一次追问还没有完成，请稍等或先重试。", code: "followup_unfinished" });
+  assert.equal(calls, before + 1); assert.deepEqual(f.snapshot(), snapshot);
+  unfinished = { id, operationId: p.operations[0].id, messageId: messages[0].id };
+});
+test("T6 quickRetry of the failed ask reuses the ask prompt and answers after the student message", async () => {
+  assert.ok(unfinished); const { id, operationId, messageId } = unfinished; coach("你觉得题目里哪个词最让你拿不准？"); const before = calls;
+  const p = await action(id, { action: "quickRetry", operationId });
+  assert.equal(calls, before + 1); assert.equal(sent.length, 1);
+  assert.ok(sent[0].system.includes(askPrompt)); assert.ok(!sent[0].system.includes(followupPrompt));
+  assert.deepEqual(sent[0].context.messages, [{ role: "user", content: "这道题到底在问什么" }]);
+  const messages = quickMessages(p);
+  assert.deepEqual(messages.map(m => [m.role, m.action]), [["user", "quickAsk"], ["coach", "quickFollowup"]]);
+  assert.equal(messages[0].id, messageId); assert.equal(p.operations[0].status, "ok"); assert.equal(p.budget.remaining.retries, 0);
+});
+test("T7 text after both follow-ups are used is refused with quota_exhausted and leaves no message", async () => {
+  const id = await create(); coach();
+  await action(id, { action: "quickFollowup", cardVersion: 1 }); await action(id, { action: "quickAnswer", text: "第一次回答" });
+  await action(id, { action: "quickFollowup", cardVersion: 1 }); await action(id, { action: "quickAnswer", text: "第二次回答" });
+  const before = calls, snapshot = f.snapshot();
+  const p = await action(id, ask(id, "再帮我想想"), 409);
+  assert.equal(p.code, "quota_exhausted"); assert.equal(calls, before); assert.deepEqual(f.snapshot(), snapshot);
+});
+test("T8 blank or over-long text is a 400 validation error with no change", async () => {
+  const id = await create(); coach(); const before = calls, snapshot = f.snapshot();
+  const invalidSave = await f.call("action", id, { action: "cardSave", cardVersion: 1, parts: [{ key: "reasons.answer", text: "长".repeat(601) }] });
+  for (const text of ["   \n ", "", "问".repeat(1001)]) assert.equal((await f.call("action", id, ask(id, text))).status, invalidSave.status);
+  assert.equal(invalidSave.status, 400); assert.equal(calls, before); assert.deepEqual(f.snapshot(), snapshot);
+});
+test("T9 cardExcerpt can take text from the student's own quickAsk message", async () => {
+  const id = await create(false); coach(); const text = "我觉得长时间久坐是主要原因";
+  const asked = await action(id, ask(id, text, {}, 0));
+  const said = quickMessages(asked)[0]; assert.equal(said.action, "quickAsk");
+  const key = cardSlots(cardRequirements(getCard("u", id)!))[0].key;
+  const p = await action(id, { action: "cardExcerpt", cardVersion: 0, key, messageId: said.id, start: 3, end: text.length });
+  const part = p.card.content.parts.find((x: { key: string }) => x.key === key);
+  assert.equal(part.text, text.slice(3)); assert.deepEqual(part.provenance, { kind: "excerpt", userId: "u", messageId: said.id, start: 3, end: text.length });
+});
+test("T10 ask, answer, ask, answer: the third ask is refused and there are exactly two coach questions", async () => {
+  const id = await create(); coach(); const before = calls;
+  let p = await action(id, ask(id, "我没什么思路"));
+  p = await action(id, { action: "quickAnswer", text: "可能是因为工作太忙" });
+  p = await action(id, ask(id, "那我还能从哪里想？"));
+  assert.equal(quickMessages(p).at(-2)?.afterFollowUp, 1);
+  p = await action(id, { action: "quickAnswer", text: "家里人做饭的时间也少了" });
+  const third = await action(id, ask(id, "再问一个"), 409);
+  assert.equal(third.code, "quota_exhausted"); assert.equal(calls, before + 2);
+  p = await f.call("quick", id).then(r => r.json());
+  assert.deepEqual(quickMessages(p).map(m => `${m.role}:${m.action}`), ["user:quickAsk", "coach:quickFollowup", "user:quickAnswer", "user:quickAsk", "coach:quickFollowup", "user:quickAnswer"]);
 });

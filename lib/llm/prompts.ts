@@ -13,7 +13,7 @@ export const promptNames = [
   "coach-v2/prewrite", "coach-v2/chat", "coach-v2/clarify", "coach-v2/polish", "coach-v2/express", "coach-v2/check", "coach-v2/issue", "coach-v2/nudge",
   "coach/prewrite", "coach/nudge", "coach/issue", "coach/clarify", "coach/polish", "coach/check", "coach/express", "coach/chat",
   "judge/evaluate", "judge/compare", "judge/finish", "judge/review",
-  "quick/followup", "quick/check",
+  "quick/followup", "quick/followup-ask", "quick/check",
 ] as const;
 export type PromptName = typeof promptNames[number];
 
