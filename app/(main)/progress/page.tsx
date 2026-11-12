@@ -87,7 +87,7 @@ export default async function ProgressPage() {
 function otherMockReason(reason: string | null | undefined) {
   switch (reason) {
     case "外部练习声明不符合资格": return "你在别处练过这道题";
-    case "开始时资格不符": return "这道题你之前接触过";
+    case "开始时资格不符": return "开始时还不能算作独立模考";
     case "超过 40 分钟提交": return "超过 40 分钟才提交";
     case "原稿接受前使用了辅导": return "写作时用了教练帮助";
     default: return "普通模考";
