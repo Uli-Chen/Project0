@@ -59,7 +59,7 @@ export default async function LibraryPage() {
           <section className="px-5 py-4">
             <h2 className="text-[14px] text-muted-foreground">目标分数</h2>
             <p className="mt-1 font-serif text-[40px] leading-none font-medium tracking-tight tabular-nums">{summary.target?.toFixed(1) ?? "—"}</p>
-            <p className="meta mt-1">{summary.examPassed ? <Link href="/onboarding" className="text-warn underline underline-offset-4">考试日期已过</Link> : `还有 ${summary.weeks} 周，每周 ${perWeek} 次`}</p>
+            <p className="meta mt-1">{summary.examPassed ? <Link href="/onboarding" className="text-warn underline underline-offset-4">考试日期已过</Link> : `${summary.timeLeft}，每周 ${perWeek} 次`}</p>
           </section>
           {issues.length > 0 && (
             <section className="px-5 py-4">

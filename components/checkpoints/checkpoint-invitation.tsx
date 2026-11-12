@@ -2,8 +2,9 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, RotateCw } from "lucide-react";
+import { RotateCw } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useStartEssay } from "@/components/shell/new-essay";
 
 type Status = { enabled: boolean; state: string; candidateQuestionId?: string; candidateText?: string; attemptId?: string };
@@ -69,35 +70,55 @@ export function CheckpointInvitation({ fallback = null }: { fallback?: React.Rea
   if (status.state === "not_due" || status.state === "deferred") return <>{fallback}</>;
   const failure = error || mock.error;
   return (
-    <section className="flex flex-wrap items-start gap-4 rounded-2xl bg-sunk px-6 py-5">
-      <span className="grid size-9 shrink-0 place-items-center rounded-full border bg-sheet text-muted-foreground" aria-hidden><Clock className="size-4.5" /></span>
-      <div className="min-w-0 flex-1">
-        <h2 className="font-medium">独立模考</h2>
-        <p className="mt-0.5 text-[15px] text-muted-foreground">40 分钟，不用教练，用一道你没练过的题。成绩单独记录，看你不靠帮助时写到什么水平。</p>
-        {status.state === "in_progress" ? (
-          <Link href={`/essays/${status.attemptId}`} className={buttonVariants({ variant: "outline", size: "sm", className: "mt-3" })}>继续独立模考</Link>
-        ) : status.state === "unavailable" ? (
-          <div className="mt-3 flex flex-col items-start gap-3">
-            <p className="text-[15px]">现在没有你没练过的题可用。可以先做一次普通模考：同样 40 分钟、会有反馈，但成绩不进入独立模考的变化。</p>
-            <Button size="sm" variant="outline" disabled={mock.busy} onClick={() => void mock.start({ kind: "free", mode: "mock" })}>开始普通模考</Button>
+    <section className="rounded-2xl bg-sunk px-6 py-5">
+      <CheckpointTitle />
+      {status.state === "in_progress" ? (
+        <Link href={`/essays/${status.attemptId}`} className={buttonVariants({ variant: "outline", size: "sm", className: "mt-3" })}>继续独立模考</Link>
+      ) : status.state === "unavailable" ? (
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-3">
+          <p className="text-[15px]">暂时没有你没练过的题</p>
+          <Button size="sm" variant="outline" disabled={mock.busy} onClick={() => void mock.start({ kind: "free", mode: "mock" })}>改做普通模考</Button>
+        </div>
+      ) : (
+        <div className="mt-4 border-l-2 pl-4">
+          <p className="font-serif text-[16px] leading-relaxed">{status.candidateText}</p>
+          <label className="mt-3 flex flex-wrap items-center gap-2 text-[15px]">
+            你在别处练过这道题吗？
+            <select className="h-8 rounded-md border border-input bg-sheet px-2 text-[15px]" value={declaration} onChange={e => setDeclaration(e.target.value)}>
+              <option value="">请选择</option><option value="no">没有</option><option value="yes">练过</option><option value="unsure">不确定</option>
+            </select>
+          </label>
+          <div className="mt-3 flex gap-2.5">
+            <Button size="sm" variant="outline" disabled={busy || !declaration} onClick={() => void act()}>开始独立模考</Button>
+            <Button size="sm" variant="ghost" disabled={busy} onClick={() => void act(true)}>七天后提醒</Button>
           </div>
-        ) : (
-          <div className="mt-4 border-l-2 pl-4">
-            <p className="font-serif text-[16px] leading-relaxed">{status.candidateText}</p>
-            <label className="mt-3 flex flex-wrap items-center gap-2 text-[15px]">
-              你在别处练过这道题吗？
-              <select className="h-8 rounded-md border border-input bg-sheet px-2 text-[15px]" value={declaration} onChange={e => setDeclaration(e.target.value)}>
-                <option value="">请选择</option><option value="no">没有</option><option value="yes">练过</option><option value="unsure">不确定</option>
-              </select>
-            </label>
-            <div className="mt-3 flex gap-2.5">
-              <Button size="sm" variant="outline" disabled={busy || !declaration} onClick={() => void act()}>开始独立模考</Button>
-              <Button size="sm" variant="ghost" disabled={busy} onClick={() => void act(true)}>七天后提醒</Button>
-            </div>
-          </div>
-        )}
-        {failure && <p role="alert" className="mt-2 text-[15px] text-destructive">{failure}</p>}
-      </div>
+        </div>
+      )}
+      {failure && <p role="alert" className="mt-2 text-[15px] text-destructive">{failure}</p>}
     </section>
   );
 }
+
+/** "独立模考 · 40 分钟" with its rules one click away, so nothing explains the feature permanently. */
+export function CheckpointTitle() {
+  return (
+    <div className="flex items-center gap-1.5">
+      <h2 className="font-medium">独立模考 · 40 分钟</h2>
+      <Popover>
+        <PopoverTrigger render={<Button size="sm" variant="ghost" className="h-7 px-2.5 text-[14px]" />}>规则</PopoverTrigger>
+        <PopoverContent align="start" className="w-80 max-w-[calc(100vw-2rem)] p-4">
+          <ul className="flex flex-col gap-2 text-[14px] leading-relaxed text-foreground">
+            {CHECKPOINT_RULES.map(rule => <li key={rule}>{rule}</li>)}
+          </ul>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+const CHECKPOINT_RULES = [
+  "40 分钟写一道你没练过的题，不用教练。成绩单独记录，看你不靠帮助时写到什么水平。",
+  "完成第一篇精练后开放，两次之间至少隔两周。",
+  "在别处练过这道题、超过 40 分钟提交或写作时用了教练，这次成绩不计入独立模考。",
+  "没有可用的题时，可以改做普通模考：同样 40 分钟，有反馈，成绩不计入独立模考。",
+];

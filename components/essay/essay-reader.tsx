@@ -7,11 +7,13 @@ import { cn } from "@/lib/utils";
 /**
  * 问题句统一用教练蓝：平时是浅底色加一条细下划线，选中或悬停时底色加深、下划线变粗。
  * 不同问题靠句前编号区分，不再按序号轮换颜色。--hl-1 浅底，--hl-2 选中底，--hl-3 下划线。
+ * 选中别的问题时（dim），只去掉底色、下划线变浅；正文和编号保持实色，照样好读。
  */
-export function issueMarkStyle(active: boolean): CSSProperties {
-  const wash = active ? "var(--hl-2)" : "var(--hl-1)";
+export function issueMarkStyle(active: boolean, dim = false): CSSProperties {
+  const wash = dim ? "transparent" : active ? "var(--hl-2)" : "var(--hl-1)";
+  const line = dim ? "var(--hl-2)" : "var(--hl-3)";
   return {
-    backgroundImage: `linear-gradient(var(--hl-3), var(--hl-3)), linear-gradient(${wash}, ${wash})`,
+    backgroundImage: `linear-gradient(${line}, ${line}), linear-gradient(${wash}, ${wash})`,
     backgroundRepeat: "no-repeat",
     backgroundPosition: "0 100%, 0 100%",
     backgroundSize: `100% ${active ? 2 : 1}px, 100% 100%`,
@@ -22,7 +24,7 @@ export function issueMarkStyle(active: boolean): CSSProperties {
 
 export type Mark = { sentenceId: number; rank: number };
 
-/** 按段落显示作文；被问题引用的句子用马克笔式的底色标出，并带上句号小字。 */
+/** 按段落显示作文；被问题引用的句子用马克笔式的底色标出，并带上句子编号。 */
 export function EssayReader({
   text,
   marks = [],
@@ -72,10 +74,11 @@ export function EssayReader({
                     onKeyDown={(e) => e.key === "Enter" && onMarkClick?.(rank)}
                     onMouseEnter={() => onMarkHover?.(rank)}
                     onMouseLeave={() => onMarkHover?.(null)}
-                    className={cn("rounded-[2px] transition-[background-size,opacity,box-shadow] duration-(--dur-layout) ease-(--ease-soft)", onMarkClick && "cursor-pointer", dim && "opacity-55")}
-                    style={issueMarkStyle(activeRank != null && Boolean(ranks?.includes(activeRank)))}
+                    className={cn("rounded-[2px] transition-[background-size] duration-(--dur-layout) ease-(--ease-soft)", onMarkClick && "cursor-pointer")}
+                    style={issueMarkStyle(activeRank != null && Boolean(ranks?.includes(activeRank)), dim)}
                   >
-                    <sup className="mr-0.5 font-sans text-[10px] font-medium text-coach not-italic">{s.id}</sup>
+                    {/* Raised by offset, not by vertical-align, so the 14px number never makes its line taller. */}
+                    <sup className="relative -top-[0.45em] mr-1 align-baseline font-sans text-[14px] leading-none font-medium text-coach not-italic tabular-nums">{s.id}</sup>
                     {s.text}
                   </span>
                 )}

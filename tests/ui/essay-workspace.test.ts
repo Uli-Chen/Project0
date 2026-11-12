@@ -8,7 +8,7 @@ import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared
 import { CheckpointClock } from "../../components/checkpoints/clock";
 import { CoachThread, replyAnnouncement } from "../../components/coach/coach-thread";
 import { EssayEditor } from "../../components/essay/essay-editor";
-import { issueMarkStyle } from "../../components/essay/essay-reader";
+import { EssayReader, issueMarkStyle } from "../../components/essay/essay-reader";
 import { SessionView } from "../../components/essay/session-view";
 import { IssueBadge, IssueList } from "../../components/feedback/issue-list";
 import { slotCancelRestore } from "../../components/outline/outline-board";
@@ -133,6 +133,16 @@ test("issues use one coach-blue system told apart by number and selection depth"
   const themes = [...css.matchAll(/--hl-1: rgb\((\d+ \d+ \d+)[^;]*;\s*--hl-2: rgb\((\d+ \d+ \d+)[^;]*;\s*--hl-3: rgb\((\d+ \d+ \d+)/g)];
   assert.equal(themes.length, 2, "light and dark tokens");
   for (const [, a, b, c] of themes) assert.ok(a === b && b === c, "one hue per theme");
+});
+
+test("selecting one issue dims only the other marks' wash; text and 14px numbers stay solid", () => {
+  const html = renderToStaticMarkup(jsx(EssayReader, { text: "He go to school. The rent is expensive. It rains.", marks: [{ sentenceId: 1, rank: 1 }, { sentenceId: 2, rank: 2 }], activeRank: 1 }));
+  assert.doesNotMatch(html, /opacity-/, "no opacity on marked sentences or their numbers");
+  assert.equal((html.match(/<sup[^>]*text-\[14px\]/g) ?? []).length, 2);
+  const dim = issueMarkStyle(false, true);
+  assert.match(String(dim.backgroundImage), /transparent/);
+  assert.doesNotMatch(String(dim.backgroundImage), /var\(--hl-3\)/);
+  assert.match(renderToStaticMarkup(jsx(IssueBadge, { rank: 3 })), /text-\[14px\]/);
 });
 
 test("the issue list is hairline rows with a coach-blue 改写方向 rule, not nested boxes", () => {

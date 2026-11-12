@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DEFAULT_PROFILE } from "../lib/auth/types";
-import { buildMemory, examDateFromWeeks, learningSummary, weeksLeft } from "../lib/learning/summary";
+import { buildMemory, examDateFromWeeks, examDateToSave, learningSummary, weeksLeft } from "../lib/learning/summary";
 import { createSession } from "../lib/pipeline/initial";
 import type { Evaluation, Issue } from "../lib/prototype/types";
 
@@ -63,4 +63,27 @@ test("备考周数保存为结束日期，此后每周递减；只存了周数�
   assert.equal(weeksLeft(legacy, new Date("2030-01-01T00:00:00Z")), 6, "old weeks-only profiles keep working");
   assert.equal(learningSummary([], legacy).examPassed, false);
   assert.equal(weeksLeft({ ...DEFAULT_PROFILE, timeBy: "date", examDate: "2026-11-27" }, setOn), 3);
+});
+
+test("保存资料时没改备考周数，结束日期不变；改了才重算；只有周数的旧档案显示为计划长度", () => {
+  const today = new Date("2026-11-13T04:00:00Z");
+  const plan = { timeBy: "weeks" as const, weeks: "3", examDate: "2026-12-01" };
+  assert.equal(weeksLeft(plan, today), 3);
+  // Untouched field: the end date stays 12 月 1 日 instead of moving to 12 月 3 日.
+  assert.equal(examDateToSave(plan, { timeBy: "weeks", examDate: "", weeks: "3", weeksChanged: false }, today), "2026-12-01");
+  assert.equal(examDateToSave(plan, { timeBy: "weeks", examDate: "", weeks: "5", weeksChanged: true }, today), examDateFromWeeks("5", today));
+  assert.equal(examDateToSave(plan, { timeBy: "date", examDate: "2027-02-01", weeks: "3", weeksChanged: false }, today), "2027-02-01");
+  // A plan that has run out shows a fresh count in the form, so saving it starts that count.
+  assert.equal(examDateToSave({ ...plan, examDate: "2026-11-01" }, { timeBy: "weeks", examDate: "", weeks: "1", weeksChanged: false }, today), examDateFromWeeks("1", today));
+  // Switching from an exam date to weeks starts the typed count.
+  assert.equal(examDateToSave({ timeBy: "date", weeks: "", examDate: "2027-02-01" }, { timeBy: "weeks", examDate: "", weeks: "4", weeksChanged: false }, today), examDateFromWeeks("4", today));
+  // A weeks-only profile stays a plan length until the learner changes the count.
+  const legacy = { timeBy: "weeks" as const, weeks: "8", examDate: "" };
+  assert.equal(examDateToSave(legacy, { timeBy: "weeks", examDate: "", weeks: "8", weeksChanged: false }, today), "");
+  assert.equal(examDateToSave(legacy, { timeBy: "weeks", examDate: "", weeks: "8", weeksChanged: true }, today), examDateFromWeeks("8", today));
+  const legacySummary = learningSummary([], { ...DEFAULT_PROFILE, ...legacy });
+  assert.equal(legacySummary.countsDown, false);
+  assert.equal(legacySummary.timeLeft, "计划备考 8 周");
+  assert.equal(learningSummary([], { ...DEFAULT_PROFILE, timeBy: "date", examDate: "2000-01-01" }).timeLeft, "考试日期已过");
+  assert.equal(learningSummary([], { ...DEFAULT_PROFILE, ...plan, examDate: examDateFromWeeks("3") }).timeLeft, "还有 3 周");
 });

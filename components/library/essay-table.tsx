@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import type { EssayStatus } from "@/lib/learning/summary";
 
@@ -39,13 +38,24 @@ export function EssayTable({ rows }: { rows: EssayRow[] }) {
 
   return (
     <div className="surface overflow-hidden">
-      <Tabs value={filter} onValueChange={(value) => setFilter(String(value))}>
-        <TabsList variant="line" className="w-full justify-start gap-5 rounded-none border-b px-5 group-data-horizontal/tabs:h-12">
-          {([["all", "全部"], ["active", "进行中"], ["done", "已完成"]] as const).map(([value, label]) => (
-            <TabsTrigger key={value} value={value} className="flex-none px-0 text-sm group-data-horizontal/tabs:after:bottom-[-7px] after:bg-foreground">{label}<span className="text-[14px] font-normal text-muted-foreground tabular-nums">{counts[value]}</span></TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      {/* A filter over the one list below, so pressed buttons rather than tabs with panels. */}
+      <div role="group" aria-label="筛选作文" className="flex h-12 items-stretch gap-5 border-b px-5">
+        {([["all", "全部"], ["active", "进行中"], ["done", "已完成"]] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={filter === value}
+            onClick={() => setFilter(value)}
+            className={cn(
+              "relative inline-flex items-center gap-1.5 rounded-sm text-sm font-medium whitespace-nowrap outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50",
+              "after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-foreground after:transition-opacity",
+              filter === value ? "text-foreground after:opacity-100" : "text-foreground/60 after:opacity-0 dark:text-muted-foreground",
+            )}
+          >
+            {label}<span className="text-[14px] font-normal text-muted-foreground tabular-nums">{counts[value]}</span>
+          </button>
+        ))}
+      </div>
       {visible.length === 0 ? (
         <p className="py-16 text-center text-sm text-muted-foreground">没有{filter === "done" ? "已完成" : "进行中"}的作文</p>
       ) : (<>

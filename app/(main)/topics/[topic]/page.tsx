@@ -49,9 +49,9 @@ export default async function TopicPage({ params }: { params: Promise<{ topic: s
             return (
               <li key={q.id} className="grid gap-x-10 gap-y-4 border-t py-7 md:grid-cols-[minmax(0,1fr)_auto]">
                 <div className="min-w-0">
-                  <p className="text-[15px] text-muted-foreground">{questionTypeLabels[q.questionType] ?? q.questionType}{done.has(q.id) && <span className="ml-3 font-medium text-good">已完成精练</span>}{q.pool === 'checkpoint_reserved' && <span className="ml-3 font-medium text-primary">留作模考</span>}</p>
+                  <p className="text-[15px] text-muted-foreground">{questionTypeLabels[q.questionType] ?? q.questionType}{done.has(q.id) && <span className="ml-3 font-medium text-good">已完成精练</span>}{q.pool === 'checkpoint_reserved' && <span className="ml-3 font-medium text-primary">留作独立模考</span>}</p>
                   <p className="mt-2 max-w-[40em] font-serif text-[19px] leading-[1.6]">{q.text}</p>
-                  {q.pool === 'checkpoint_reserved' && <p className="mt-2 text-[15px] text-muted-foreground">这道题留给 40 分钟的检查点模考。现在练了，它就不会再用来模考。</p>}
+                  {q.pool === 'checkpoint_reserved' && <p className="mt-2 text-[15px] text-muted-foreground">现在练了，这道题就不再用于独立模考。</p>}
                   {history.length > 0 && (
                     <details className="mt-3">
                       <summary className="w-fit cursor-pointer text-[15px] text-muted-foreground hover:text-foreground">练过 {history.length} 次</summary>
