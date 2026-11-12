@@ -1,5 +1,21 @@
 # project0.auglearn.org 部署
 
+## 主域名上的 project0 入口
+
+Nginx 从 `/etc/nginx/conf.d/project0-entry-redirects.conf` 加载同名部署文件。在接收主域名请求的 HTTP 和 HTTPS `server` 中使用以下规则。新增产品页面时同步更新路径清单。
+
+```nginx
+if ($project0_entry_redirect) {
+    return 308 https://project0.auglearn.org$request_uri;
+}
+```
+
+子域名首页还会把未登录访客送到 coming-soon。在线上 HTTPS 的 `location /` 中保留这一跳的查询参数：
+
+```nginx
+proxy_redirect ~^https://project0\.auglearn\.org/coming-soon$ https://project0.auglearn.org/coming-soon$is_args$args;
+```
+
 ## 当前发布（2026-11-05，coming soon 与开发者预览）
 
 已发布 `7e69111`（`redesign` 分支）：未登录访问 `/` 跳转到 coming soon 页，开发者密码登录后可打开 `/preview`（宣传页 v4），见下文“Coming soon 与开发者预览”。没有迁移和开关变化；服务器 `.env.local` 新增 `PREVIEW_PASSWORD_HASH`、`PREVIEW_SESSION_SECRET` 两行，改动前的副本存为 `/home/squareofchen/env-local-before-preview-*`。
