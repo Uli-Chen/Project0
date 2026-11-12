@@ -52,7 +52,7 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
 
   const tag = (m: CoachMessage) => m.stage === "issue" && m.issueRank ? (
     <span className="flex items-center gap-1 text-xs text-muted-foreground">
-      <IssueBadge rank={m.issueRank} className="size-4 text-[10px]" />
+      <IssueBadge rank={m.issueRank} />
       {m.role === "coach" && m.level ? `提示 ${m.level}/3` : null}
     </span>
   ) : null;
@@ -135,7 +135,7 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
             focusKey={ui.focusKey}
             top={(ui.quote || issue) ? <>
               {ui.quote && <Chip onRemove={() => ui.setQuote(null)}><span className="line-clamp-1 font-serif italic">{ui.quote}</span></Chip>}
-              {issue && !ui.quote && <Chip onRemove={can.chat ? () => ui.setIssueContext(null) : undefined}><IssueBadge rank={issue.rank} className="size-4 text-[10px]" /><span className="truncate">{issue.title}</span></Chip>}
+              {issue && !ui.quote && <Chip onRemove={can.chat ? () => ui.setIssueContext(null) : undefined}><IssueBadge rank={issue.rank} /><span className="truncate">{issue.title}</span></Chip>}
             </> : undefined}
             toolbar={<div className="flex items-center gap-1.5">
               {tutorV2Enabled && can.prewrite && <Button size="xs" variant="ghost" disabled={unavailable || (state.tutor?.threads.prewrite?.allowedHelp ?? 0) >= 2 || state.prewriteTurns >= 40} onClick={() => void actions.morePrewrite()}>{(state.tutor?.threads.prewrite?.allowedHelp ?? 0) >= 2 ? "试着先写下你的想法" : "给点提示"}</Button>}
@@ -153,7 +153,7 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
           />}
           {!can.chat && can.issue && !issue && (
             <div role="group" aria-label="选一个问题和教练讨论" className="flex flex-wrap gap-2">
-              {issues.map((item) => <button key={item.rank} type="button" onClick={() => ui.discussIssue(item.rank)} className="flex max-w-full items-center gap-2 rounded-full border border-input bg-sheet py-1.5 pr-3.5 pl-2 text-left text-sm leading-snug transition-colors duration-(--dur-fast) hover:border-coach-line hover:bg-coach-soft"><IssueBadge rank={item.rank} className="size-5 shrink-0 text-[11px]" /><span className="truncate">{item.title}</span></button>)}
+              {issues.map((item) => <button key={item.rank} type="button" onClick={() => ui.discussIssue(item.rank)} className="flex max-w-full items-center gap-2 rounded-full border border-input bg-sheet py-1.5 pr-3.5 pl-2 text-left text-sm leading-snug transition-colors duration-(--dur-fast) hover:border-coach-line hover:bg-coach-soft"><IssueBadge rank={item.rank} /><span className="truncate">{item.title}</span></button>)}
             </div>
           )}
         </div>

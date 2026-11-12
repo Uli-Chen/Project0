@@ -79,7 +79,7 @@ export function TopicHome({ user, quickEnabled }: { user: CurrentUser; quickEnab
           <Aside label="先复习" href={due > 0 ? '/cards' : undefined}>{due > 0 ? `${due} 条到期，约 ${Math.max(2, Math.round(due * 0.7))} 分钟` : '今天没有到期的内容'}</Aside>
           {summary.focus && <Aside label="这次留意" href="/progress">{summary.focus.title}</Aside>}
           {profile.onboardingCompleted
-            ? <Aside label="目标" href="/progress">{summary.target?.toFixed(1)} 分，{summary.examPassed ? '考试日期已过' : `还有 ${summary.weeks} 周`}</Aside>
+            ? <Aside label="目标" href="/progress">{summary.target?.toFixed(1)} 分，{summary.timeLeft}</Aside>
             : <Aside label="目标" href="/onboarding">设置目标分数和每周节奏</Aside>}
         </ul>
       </section>

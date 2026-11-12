@@ -8,7 +8,7 @@ import { z } from "zod";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
  try { assertSameOrigin(request); const user=await requireApiUser();
- if(!readFeatures().CHECKPOINTS_ENABLED) throw new SessionError("检查点尚未开放。",403,"feature_disabled");
+ if(!readFeatures().CHECKPOINTS_ENABLED) throw new SessionError("独立模考尚未开放。",403,"feature_disabled");
  z.object({}).strict().parse(await readJson(request)); return Response.json({deferredUntil:deferCheckpoint(user.id)});
  }catch(error){return sessionApiError(error);}
 }

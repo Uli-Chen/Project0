@@ -29,7 +29,7 @@ export function getCheckpointState(userId: string, now = new Date().toISOString(
   return {...state,candidateText:candidate?.text};
 }
 export function startCheckpoint(userId: string, input: {questionId: string; declaration: "no" | "yes" | "unsure"; idempotencyKey: string}, now = new Date().toISOString()) {
-  if (!readFeatures().CHECKPOINTS_ENABLED) throw new SessionError("检查点尚未开放。",403,"feature_disabled");
+  if (!readFeatures().CHECKPOINTS_ENABLED) throw new SessionError("独立模考尚未开放。",403,"feature_disabled");
   const db = getDb(), sqlite = db.$client, hash = createHash("sha256").update(JSON.stringify([input.questionId,input.declaration])).digest("hex");
   // Return a rejection value from the transaction so external declarations survive it.
   const result = sqlite.transaction(() => {
@@ -41,7 +41,7 @@ export function startCheckpoint(userId: string, input: {questionId: string; decl
       db.insert(familiarity).values({userId,exposureKey:q.exposureKey,firstAttemptId:"external-declaration",externalPractice:input.declaration}).onConflictDoUpdate({target:[familiarity.userId,familiarity.exposureKey],set:{externalPractice:input.declaration}}).run();
       return {error:"你已报告练过或不确定，请换一道题。"};
     }
-    if(getCheckpointState(userId,now).state !== "available" || !eligible(userId,q.exposureKey)) return {error:"当前没有资格开始这道检查点，请刷新候选题。"};
+    if(getCheckpointState(userId,now).state !== "available" || !eligible(userId,q.exposureKey)) return {error:"现在还不能用这道题开始独立模考，请刷新后重试。"};
     const session = createSession({kind:"free",mode:"mock",prompt:q.text});
     session.question = {id:q.id,version:q.version,exposureKey:q.exposureKey,bankVersion:q.bankVersion,primaryTopic:q.primaryTopic as NonNullable<SessionState["question"]>["primaryTopic"],questionType:q.questionType as SessionState["prompt"]["questionType"],text:q.text};
     session.prompt = {id:q.id,text:q.text,questionType:session.question.questionType,topicTags:[q.primaryTopic]};

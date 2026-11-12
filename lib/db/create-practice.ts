@@ -22,7 +22,7 @@ export function saveNewPractice(userId: string, session: SessionState) {
     const family = resolveAttempt(session, questionContext(sqlite)).exposureKey;
     if (family) {
       const active = getDb().select().from(checkpoints).where(and(eq(checkpoints.userId,userId),eq(checkpoints.exposureKey,family),eq(checkpoints.status,"in_progress"))).get();
-      if(active && active.attemptId !== session.id) throw new SessionError("这道题正在进行检查点，请先完成或关闭。",409,"checkpoint_family_busy");
+      if(active && active.attemptId !== session.id) throw new SessionError("这道题正在进行独立模考，请先完成或关闭。",409,"checkpoint_family_busy");
     }
     if (readFeatures().TUTOR_V2_ENABLED && !getSession(userId, session.id)) {
       const owner = userById(userId);
@@ -64,7 +64,7 @@ export function createQuestionPractice(userId: string, input: z.infer<typeof que
     activity: input.activity, mode: input.mode, rewriteOfDeepId: input.rewriteOfDeepId ?? null })).digest("hex");
   return sqlite.transaction(() => {
     if (input.activity === "quick" && !readFeatures().QUICK_ENABLED) throw new SessionError("速刷功能尚未开放。", 403, "feature_disabled");
-    if (input.mode === "mock") throw new SessionError("按题目模考需从检查点开始。", 409, "mock_requires_checkpoint");
+    if (input.mode === "mock") throw new SessionError("按题目模考需从独立模考入口开始。", 409, "mock_requires_checkpoint");
     const receipt = getRequestReceipt(sqlite, userId, input.idempotencyKey);
     if (receipt) {
       if (receipt.action !== "createQuestionPractice" || receipt.paramsHash !== paramsHash) throw new ReceiptConflict();
