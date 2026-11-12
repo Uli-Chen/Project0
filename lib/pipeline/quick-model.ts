@@ -65,14 +65,22 @@ export async function runQuickModel(userId: string, id: string, raw: QuickModelA
   const input = quickModelActionSchema.parse(raw), db = getDb();
   const prepared = db.$client.transaction(() => {
     const now = new Date().toISOString(), session = getSession(userId, id); assertQuickSession(session);
-    if (session.lifecycle === "closed") throw new SessionError("练习已关闭。", 409);
+    // Doc §4.2: a request with text settles its receipt first; without text the original order stays.
+    const askText = input.action === "quickFollowup" ? input.text : undefined;
+    const closed = () => { if (session.lifecycle === "closed") throw new SessionError("练习已关闭。", 409); };
+    if (askText === undefined) closed();
     const card = getCard(userId, id)!;
     const { requestId, idempotencyKey, ...params } = input;
     const hash = createHash("sha256").update(JSON.stringify(params)).digest("hex"), keys = [...new Set([requestId, idempotencyKey].filter((v): v is string => !!v))];
     const receipts = keys.map(key => getRequestReceipt(db.$client, userId, key)).filter(r => r !== null);
     for (const r of receipts) if (r.attemptId !== id || r.action !== input.action || r.paramsHash !== hash || r.resultRef !== receipts[0].resultRef) throw new ReceiptConflict();
     const receipt = (ref: string) => { for (const key of keys) writeRequestReceipt(db.$client, { userId, idempotencyKey: key, attemptId: id, action: input.action, paramsHash: hash, resultRef: ref, createdAt: now }); session.completedRequests = [...(session.completedRequests ?? []), ...keys].slice(-50); session.lastStudentActionAt = now; persist(userId, session, now); };
-    if (receipts.length) { receipt(receipts[0].resultRef); return null; }
+    if (receipts.length) {
+      // An identical replay of a text request is read-only: no new receipt rows, no session write.
+      if (askText !== undefined && receipts.length === keys.length) return null;
+      receipt(receipts[0].resultRef); return null;
+    }
+    if (askText !== undefined) closed();
     let p = pack(userId, id);
     if (input.action === "quickSupplemental") {
       if (!p || Date.parse(now) < Date.parse(p.grantedAt) + quickBudget.supplemental.cooldownMs) throw new SessionError(`补充检查需间隔 24 小时。可申请时间：${p ? new Date(Date.parse(p.grantedAt) + 86400000).toISOString() : "尚未开始初始包"}`, 409, "supplemental_cooldown");
@@ -99,7 +107,6 @@ export async function runQuickModel(userId: string, id: string, raw: QuickModelA
       const slot = kind === "check" ? `check:v${card.contentVersion}` : `followup:${pending ? followups.length : followups.length + 1}`;
       op = db.select().from(quickOperations).where(and(scope(userId, id), eq(quickOperations.slot, slot), eq(quickOperations.kind, kind))).get();
       // The student speaks first: refuse instead of replaying, so their text is never stored without a coach reply.
-      const askText = input.action === "quickFollowup" ? input.text : undefined;
       if (askText !== undefined) {
         if (pending) throw new SessionError("请先回答教练的上一个问题。", 409, "followup_pending");
         if (op) throw new SessionError("上一次追问还没有完成，请稍等或先重试。", 409, "followup_unfinished");
