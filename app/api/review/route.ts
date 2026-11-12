@@ -25,10 +25,10 @@ export async function POST(request: Request) {
     try { raw = JSON.parse(current.profileJson); } catch { /* Legacy empty profile. */ }
     const live = new Set(items.map(item => item.id));
     const review: ReviewState = Object.fromEntries(Object.entries(raw.review ?? {}).filter(([id]) => live.has(id)));
-    const { entry, applied } = gradeReview(review[input.id], input.result, input.key);
+    const { entry, applied, result } = gradeReview(review[input.id], input.result, input.key);
     review[input.id] = entry;
     if (applied) updateUserProfile(user.id, { ...DEFAULT_PROFILE, ...raw, review });
     // On a replay, `result` is the grade that was recorded for this presentation the first time.
-    return Response.json({ review: entry, result: entry.result ?? input.result, replayed: !applied });
+    return Response.json({ review: { box: entry.box, due: entry.due }, result, replayed: !applied });
   } catch (error) { return apiError(error); }
 }

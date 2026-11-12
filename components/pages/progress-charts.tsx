@@ -12,8 +12,12 @@ const Y_MAX = 9;
 const TICKS = [0, 3, 6, 9];
 // The SVG is drawn at its real pixel width (one viewBox unit = one CSS pixel), so this is the
 // size the text is actually shown at. Narrow charts drop labels instead of shrinking them.
-const AXIS_FONT = 13;
-const LABEL_SPACING = 64;
+export const AXIS_FONT = 14;
+const LABEL_SPACING = 72;
+/** Room one value label ("6.0") needs on a horizontal axis before neighbouring labels are dropped. */
+const TICK_SPACING = 44;
+/** Value labels to print on an axis `length` px long: all of them when they fit, else only the ends. */
+export const tickLabels = (length: number) => (length / (TICKS.length - 1) >= TICK_SPACING ? TICKS : [Y_MIN, Y_MAX]);
 
 /** Width of the chart's container in CSS pixels; desktop width until it has been measured. */
 function useChartWidth(fallback = 640) {
@@ -36,7 +40,7 @@ export function MockScoreChart({ points: allPoints, target }: { points: MockPoin
   const [measure, W] = useChartWidth();
   const points = allPoints.slice(-12);
   const H = 240;
-  const pad = { l: 36, r: 64, t: 16, b: 36 };
+  const pad = { l: 36, r: 72, t: 16, b: 36 };
   const x = (i: number) => pad.l + (points.length === 1 ? (W - pad.l - pad.r) / 2 : (i * (W - pad.l - pad.r)) / (points.length - 1));
   // Every `step`-th label counted back from the latest, so the newest point is always labelled.
   const step = Math.max(1, Math.ceil(points.length / Math.max(1, Math.floor((W - pad.l - pad.r) / LABEL_SPACING))));
@@ -44,6 +48,8 @@ export function MockScoreChart({ points: allPoints, target }: { points: MockPoin
   const value = (p: MockPoint) => (metric === "overall" ? p.overall : p.dims[metric]);
   const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${x(i)},${y(value(p))}`).join(" ");
   const last = points.at(-1)!;
+  // The latest score and the target share the right margin; when they would overlap, keep the target.
+  const showLast = target === undefined || Math.abs(y(value(last)) - y(target)) >= AXIS_FONT + 2;
 
   return (
     <div>
@@ -85,9 +91,9 @@ export function MockScoreChart({ points: allPoints, target }: { points: MockPoin
               </text>}
             </g>
           ))}
-          <text x={x(points.length - 1) + 10} y={y(value(last))} dy="0.32em" fontSize={AXIS_FONT} fontWeight={600} fill="var(--foreground)">
+          {showLast && <text x={x(points.length - 1) + 10} y={y(value(last))} dy="0.32em" fontSize={AXIS_FONT} fontWeight={600} fill="var(--foreground)">
             {value(last).toFixed(1)}
-          </text>
+          </text>}
         </svg>
         <PercentTooltip tip={tip} />
       </div>
@@ -122,6 +128,7 @@ export function PracticeDumbbell({ rows: allRows }: { rows: Array<{ date: string
   const pad = { l: 92, r: 24, t: 8, b: 28 };
   const H = pad.t + rows.length * rowH + pad.b;
   const x = (v: number) => pad.l + ((v - Y_MIN) / (Y_MAX - Y_MIN)) * (W - pad.l - pad.r);
+  const labelled = tickLabels(W - pad.l - pad.r);
 
   return (
     <div>
@@ -140,9 +147,9 @@ export function PracticeDumbbell({ rows: allRows }: { rows: Array<{ date: string
           {TICKS.map((t) => (
             <g key={t}>
               <line x1={x(t)} x2={x(t)} y1={pad.t} y2={H - pad.b} stroke="var(--border)" strokeWidth={1} />
-              <text x={x(t)} y={H - 8} textAnchor="middle" fontSize={AXIS_FONT} fill="var(--muted-foreground)">
+              {labelled.includes(t) && <text x={x(t)} y={H - 8} textAnchor="middle" fontSize={AXIS_FONT} fill="var(--muted-foreground)">
                 {t.toFixed(1)}
-              </text>
+              </text>}
             </g>
           ))}
           {rows.map((r, i) => {

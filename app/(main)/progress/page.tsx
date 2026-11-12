@@ -2,11 +2,11 @@ import { checkpointScorePoints } from "@/lib/learning/checkpoints";
 import { readFeatures } from "@/lib/config/features";
 import { getTopicData } from "@/lib/db/queries/topics";
 import { checkpointHistory } from "@/lib/db/checkpoints";
-import { CheckpointInvitation } from "@/components/checkpoints/checkpoint-invitation";
+import { CheckpointInvitation, CheckpointTitle } from "@/components/checkpoints/checkpoint-invitation";
 import Link from "next/link";
 import { MockScoreChart, PracticeDumbbell } from "@/components/pages/progress-charts";
 import { IssueMemory } from "@/components/progress/issue-memory";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { requireUser } from "@/lib/auth/server";
 import { listSessions } from "@/lib/db/queries/sessions";
@@ -41,7 +41,7 @@ export default async function ProgressPage() {
       <CheckpointInvitation fallback={checkpointsEnabled ? <CheckpointNote firstDeepDone={deepDone} nextAt={nextCheckpointAt} waiting={checkpointWaiting} /> : null} />
       <section aria-label="目标" className="grid grid-cols-2 gap-x-10 gap-y-8 border-y py-8 md:grid-cols-4">
         <Stat label="目标分" value={summary.target?.toFixed(1) ?? "—"} />
-        <Stat label="距考试" value={!user.profile.onboardingCompleted ? "—" : summary.examPassed ? "已过" : `${summary.weeks}`} unit={summary.examPassed ? undefined : "周"} />
+        <Stat label={summary.countsDown ? "距考试" : "计划备考"} value={!user.profile.onboardingCompleted ? "—" : summary.examPassed ? "已过" : `${summary.weeks}`} unit={summary.examPassed ? undefined : "周"} />
         <Stat label="每周" value={perWeek ? `${perWeek}` : "—"} unit="次" />
         <div>
           <p className="text-[15px] text-muted-foreground">本周</p>
@@ -55,7 +55,7 @@ export default async function ProgressPage() {
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <div className="surface p-6">
             {mockPoints.length ? <><h3 className="mb-4 text-[15px] font-semibold">{checkpointsEnabled ? "独立模考成绩" : "模考"}</h3><MockScoreChart points={mockPoints} target={summary.target ?? undefined} /></>
-              : practicePoints.length ? <><h3 className="text-[15px] font-semibold">练习原稿成绩</h3><p className="mt-1 mb-4 text-sm text-muted-foreground">练习有教练帮忙，分数只作参考。{checkpointsEnabled ? "完成一次独立模考后，这里会改为显示独立模考的成绩。" : "模考成绩会单独显示在这里。"}</p><MockScoreChart points={practicePoints} target={summary.target ?? undefined} /></>
+              : practicePoints.length ? <><h3 className="text-[15px] font-semibold">练习原稿成绩</h3><p className="mt-1 mb-4 text-sm text-muted-foreground">练习有教练帮忙，分数只作参考。</p><MockScoreChart points={practicePoints} target={summary.target ?? undefined} /></>
               : <><h3 className="mb-4 text-[15px] font-semibold">成绩变化</h3><Empty>完成第一篇作文的评估后，成绩会出现在这里。</Empty></>}
           </div>
           <div className="surface p-6"><h3 className="mb-4 text-[15px] font-semibold">改写前后</h3>{revisions.length ? <PracticeDumbbell rows={revisions} /> : <Empty>提交一篇改写稿后，这里会显示改写前后的分数。</Empty>}</div>
@@ -94,15 +94,17 @@ function otherMockReason(reason: string | null | undefined) {
   }
 }
 
-/** Shown while no independent mock is on offer, so the feature is visible before it is due. */
+/** Shown while no independent mock is on offer, so the feature is visible before it is due: the
+ * title (rules on demand), when it opens, and a start button that is not yet available. */
 function CheckpointNote({ firstDeepDone, nextAt, waiting }: { firstDeepDone: boolean; nextAt: string | null; waiting: boolean }) {
+  const when = !firstDeepDone ? "完成第一篇精练后开放" : waiting ? `${formatDate(nextAt!)} 起可以做` : "已选择稍后再做，到时会提醒你";
   return (
-    <section>
-      <h2 className="font-medium">独立模考</h2>
-      <p className="mt-1 text-[15px] text-muted-foreground">
-        40 分钟，不用教练。成绩单独记录，看你不靠帮助时写到什么水平。
-        {!firstDeepDone ? "完成第一篇精练后可以做。" : waiting ? `两次之间至少隔两周，${formatDate(nextAt!)} 之后可以做下一次。` : "你选择了稍后再做，到时会在这里和首页提醒你。"}
-      </p>
+    <section className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+      <CheckpointTitle />
+      <div className="flex items-center gap-3">
+        <p className="text-[15px]">{when}</p>
+        <Button size="sm" variant="outline" disabled>开始</Button>
+      </div>
     </section>
   );
 }

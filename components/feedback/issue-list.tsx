@@ -10,7 +10,7 @@ export function IssueBadge({ rank, active = false, className }: { rank: number; 
   return (
     <span
       className={cn(
-        "inline-flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums transition-colors duration-(--dur-fast)",
+        "inline-flex size-[22px] shrink-0 items-center justify-center rounded-full text-[14px] leading-none font-semibold tabular-nums transition-colors duration-(--dur-fast)",
         active ? "bg-coach text-sheet" : "bg-coach-soft text-coach shadow-[inset_0_0_0_1px_var(--coach-line)]",
         className,
       )}
@@ -61,7 +61,7 @@ export function IssueList({
         return (
           <li key={issue.rank} onMouseEnter={() => onHover(issue.rank)} onMouseLeave={() => onHover(null)} className="py-4">
             <button type="button" aria-pressed={active} onClick={() => { onSelect(issue.rank); if (issue.sentenceIds[0]) onJump(issue.sentenceIds[0]); }} className="flex w-full items-start gap-2.5 text-left">
-              <IssueBadge rank={issue.rank} active={active} className="mt-px size-[22px]" />
+              <IssueBadge rank={issue.rank} active={active} className="-mt-px" />
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-semibold leading-snug">{issue.title}</span>
                 {issue.recurring && <span className="mt-1 inline-block text-[14px] text-warn">上次也出现过</span>}

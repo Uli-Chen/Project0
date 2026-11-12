@@ -8,7 +8,7 @@ import { StatusButton } from "@/components/ui/status-button";
 import { Segmented } from "@/components/ui/segmented";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/lib/auth/types";
-import { examDateFromWeeks, weeksLeft } from "@/lib/learning/summary";
+import { examDateToSave, weeksLeft } from "@/lib/learning/summary";
 
 const DIFFICULTIES = ["没想法", "想法说不清", "英文表达不出来", "语法错误多", "写不完"];
 
@@ -19,6 +19,8 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
   const [examDate, setExamDate] = useState(initial.examDate);
   // Weeks are stored as the date they end on; show what is left of them, not the number first typed.
   const [weeks, setWeeks] = useState(() => initial.timeBy === "weeks" && initial.examDate ? String(Math.max(1, weeksLeft(initial))) : initial.weeks);
+  // Saving without touching the week count keeps the plan's end date where it is.
+  const [weeksChanged, setWeeksChanged] = useState(false);
   const [level, setLevel] = useState(initial.level);
   const [perWeek, setPerWeek] = useState(initial.perWeek);
   const [minutes, setMinutes] = useState(initial.minutes);
@@ -31,7 +33,7 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
     if (missing.length || busy) return;
     setBusy(true); setError("");
     try {
-      const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, timeBy, examDate: timeBy === "date" ? examDate : examDateFromWeeks(weeks), weeks: timeBy === "weeks" ? weeks : "", level, perWeek, minutes, difficulties, lang, onboardingCompleted: true }) });
+      const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, timeBy, examDate: examDateToSave(initial, { timeBy, examDate, weeks, weeksChanged }), weeks: timeBy === "weeks" ? weeks : "", level, perWeek, minutes, difficulties, lang, onboardingCompleted: true }) });
       const data = await response.json();
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "保存失败，请检查填写内容。");
       router.push("/");
@@ -86,7 +88,7 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
                     min={1}
                     max={52}
                     value={weeks}
-                    onChange={(e) => setWeeks(e.target.value)}
+                    onChange={(e) => { setWeeks(e.target.value); setWeeksChanged(true); }}
                     className={cn(inputClass, "w-24")}
                   />
                   周

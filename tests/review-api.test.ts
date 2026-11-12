@@ -52,6 +52,19 @@ test("评分响应丢失后重试同一次呈现：服务器只推进一次间�
   assert.equal(nextTime.body.review.box, 2); assert.equal(stored().box, 2);
 });
 
+test("两个标签页交错评分（A、B、重放 A）：重放 A 不再推进，返回 A 当时的结果", async () => {
+  const a = await grade({ id, result: "again", key: "tab-A" });
+  assert.equal(a.body.review.box, 0);
+  const b = await grade({ id, result: "good", key: "tab-B" });
+  assert.equal(b.body.review.box, 1);
+  const due = stored().due;
+  const replay = await grade({ id, result: "good", key: "tab-A" });
+  assert.equal(replay.status, 200);
+  assert.equal(replay.body.replayed, true);
+  assert.equal(replay.body.result, "again");
+  assert.equal(stored().box, 1, "box stays 1, not 2"); assert.equal(stored().due, due);
+});
+
 test("没有呈现键的请求照常评分；未知条目 404", async () => {
   assert.equal((await grade({ id, result: "again" })).body.review.box, 0);
   assert.equal((await grade({ id: "fix:missing:1", result: "good", key: "k" })).status, 404);

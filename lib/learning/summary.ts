@@ -47,7 +47,10 @@ export function learningSummary(sessions: SessionState[], profile: UserProfile, 
   const weekStart = new Date(Date.UTC(taipeiNow.getUTCFullYear(), taipeiNow.getUTCMonth(), taipeiNow.getUTCDate() - (taipeiNow.getUTCDay() + 6) % 7) - 8 * 60 * 60 * 1000);
   const weekCompleted = completionEvents ? practiceCounts(completionEvents, new Date()).weekCompleted : sessions.filter((session) => session.completedAt && new Date(session.completedAt) >= weekStart && new Date(session.completedAt).getTime() < weekStart.getTime() + 7 * 86400000).length;
   const examPassed = Boolean(profile.examDate) && weeks === 0;
-  return { evaluated, finished, resume, latest, totalMinutes, target, weeks, focus, weekCompleted, examPassed };
+  // Only a date counts down. A profile that has just a week count shows it as the plan's length.
+  const countsDown = Boolean(profile.examDate);
+  const timeLeft = examPassed ? "考试日期已过" : countsDown ? `还有 ${weeks} 周` : `计划备考 ${weeks} 周`;
+  return { evaluated, finished, resume, latest, totalMinutes, target, weeks, countsDown, timeLeft, focus, weekCompleted, examPassed };
 }
 
 const WEEK = 7 * 86400000;
@@ -60,8 +63,22 @@ export function examDateFromWeeks(weeks: number | string, now = new Date()) {
   return Number.isInteger(count) && count > 0 ? taipeiDay(now.getTime() + (count * 7 - 1) * 86400000) : "";
 }
 
+/** The end date to store when the profile form is saved. A weeks plan keeps the date it already ends
+ * on unless the learner changed the week count (or the plan has run out and the form shows a fresh
+ * count), so saving other settings never pushes the end date back. A profile that only has a week
+ * count stays that way until the learner changes it. */
+export function examDateToSave(initial: Pick<UserProfile, "timeBy" | "examDate" | "weeks">, form: { timeBy: UserProfile["timeBy"]; examDate: string; weeks: string; weeksChanged: boolean }, now = new Date()) {
+  if (form.timeBy === "date") return form.examDate;
+  if (!form.weeksChanged && initial.timeBy === "weeks") {
+    if (!initial.examDate) return "";
+    if (weeksLeft(initial, now) > 0) return initial.examDate;
+  }
+  return examDateFromWeeks(form.weeks, now);
+}
+
 /** Whole weeks left until the exam date (or the end of the planned weeks), 0 once it has passed.
- * Profiles saved before weeks were converted to a date have only the number; they keep showing it. */
+ * Profiles saved before weeks were converted to a date have only the number: that is the plan's
+ * length, not a countdown (see `countsDown` in the summary). */
 export function weeksLeft(profile: Pick<UserProfile, "timeBy" | "examDate" | "weeks">, now = new Date()) {
   if (profile.examDate) return Math.max(0, Math.ceil((new Date(`${profile.examDate}T23:59:59+08:00`).getTime() - now.getTime()) / WEEK));
   return Number(profile.weeks) || 8;

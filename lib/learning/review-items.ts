@@ -8,8 +8,11 @@ export type PhraseItem = { id: string; kind: "phrase"; prompt: string; answer: s
  * `revised` says whether the essay has a submitted revision at all. */
 export type FixItem = { id: string; kind: "fix"; prompt: string; answer: string | null; revised: boolean; issueTitle: string; hint: string; sessionId: string; rank: number; date: string };
 export type ReviewItem = PhraseItem | FixItem;
-/** `key`/`result` remember the last graded presentation of a card, so a retried grade is applied once. */
-export type ReviewEntry = { box: number; due: string; key?: string; result?: "good" | "again" };
+type Grade = "good" | "again";
+/** `graded` remembers the most recent presentations of a card that were graded (key and grade, oldest
+ * first, at most `GRADED_KEYS`), so a retried grade is applied once even when another tab graded the
+ * same card in between. `key`/`result` are the single-key form written before; they are still read. */
+export type ReviewEntry = { box: number; due: string; graded?: [string, Grade][]; key?: string; result?: Grade };
 export type ReviewState = Record<string, ReviewEntry>;
 
 /** Days until the next review after a correct recall, by box. */
@@ -83,14 +86,22 @@ export function dueItems(items: ReviewItem[], state: ReviewState, now = new Date
   return items.filter(item => { const entry = state[item.id]; return !entry || Date.parse(entry.due) <= now.getTime(); });
 }
 
-/** Apply one self-grade. A grade carrying the key of the presentation that was already applied is a
- * retry after a lost response: the stored entry comes back unchanged instead of advancing again. */
-export function gradeReview(entry: ReviewEntry | undefined, result: "good" | "again", key: string | undefined, now = new Date()): { entry: ReviewEntry; applied: boolean } {
-  if (key && entry?.key === key) return { entry, applied: false };
-  return { entry: { ...nextReview(entry, result, now), ...(key ? { key, result } : {}) }, applied: true };
+export const GRADED_KEYS = 20;
+
+/** Apply one self-grade. A grade carrying the key of a presentation that was already applied is a
+ * retry after a lost response: the stored entry comes back unchanged instead of advancing again, and
+ * `result` is the grade recorded for that presentation the first time. */
+export function gradeReview(entry: ReviewEntry | undefined, result: Grade, key: string | undefined, now = new Date()): { entry: ReviewEntry; applied: boolean; result: Grade } {
+  const graded: [string, Grade][] = entry?.graded ?? (entry?.key && entry.result ? [[entry.key, entry.result]] : []);
+  const earlier = key ? graded.find(([seen]) => seen === key) : undefined;
+  if (entry && earlier) return { entry, applied: false, result: earlier[1] };
+  const next: ReviewEntry = nextReview(entry, result, now);
+  const kept = key ? [...graded, [key, result] as [string, Grade]].slice(-GRADED_KEYS) : graded;
+  if (kept.length) next.graded = kept;
+  return { entry: next, applied: true, result };
 }
 
-export function nextReview(entry: { box: number } | undefined, result: "good" | "again", now = new Date()) {
+export function nextReview(entry: { box: number } | undefined, result: Grade, now = new Date()): ReviewEntry {
   if (result === "again") return { box: 0, due: now.toISOString() };
   const box = Math.min((entry?.box ?? 0) + 1, REVIEW_INTERVALS.length);
   return { box, due: new Date(now.getTime() + REVIEW_INTERVALS[box - 1] * DAY).toISOString() };

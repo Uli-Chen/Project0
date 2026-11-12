@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createSession } from "../lib/pipeline/initial";
-import { dueItems, gradeReview, matchRevision, nextReview, reviewItems } from "../lib/learning/review-items";
+import { dueItems, gradeReview, GRADED_KEYS, matchRevision, nextReview, reviewItems } from "../lib/learning/review-items";
 import { draftMarks, remainingByIssue } from "../lib/learning/revision-marks";
 
 function practised() {
@@ -59,11 +59,30 @@ test("评分重试：同一次呈现的评分只推进一次；下一次呈现�
   assert.equal(retry.applied, false);
   assert.deepEqual(retry.entry, first.entry, "a retried grade must not move 1 day to 3 days");
   // Even if the retry carries a different button, the grade recorded first stands.
-  assert.equal(gradeReview(first.entry, "again", "shown-1", now).entry.result, "good");
+  assert.equal(gradeReview(first.entry, "again", "shown-1", now).result, "good");
   const next = gradeReview(first.entry, "good", "shown-2", now);
   assert.equal(next.applied, true); assert.equal(next.entry.box, 2);
   // Requests without a key (pages loaded before keys existed) still grade.
   assert.equal(gradeReview(next.entry, "again", undefined, now).entry.box, 0);
+});
+
+test("评分重试：两个标签页交错（A、B、再重放 A），旧呈现键也只算一次", () => {
+  const now = new Date("2026-11-10T00:00:00Z");
+  const a = gradeReview(undefined, "again", "A", now);
+  const b = gradeReview(a.entry, "good", "B", now);
+  assert.equal(b.entry.box, 1);
+  const replayA = gradeReview(b.entry, "good", "A", now);
+  assert.equal(replayA.applied, false);
+  assert.equal(replayA.result, "again", "the grade recorded for A the first time");
+  assert.deepEqual(replayA.entry, b.entry);
+  // Entries written with the single-key form still recognise their key.
+  assert.equal(gradeReview({ box: 2, due: now.toISOString(), key: "old", result: "good" }, "good", "old", now).applied, false);
+  // The remembered keys are bounded: only the most recent ones are kept.
+  let entry = b.entry;
+  for (let i = 0; i < GRADED_KEYS + 5; i++) entry = gradeReview(entry, "good", `k${i}`, now).entry;
+  assert.equal(entry.graded?.length, GRADED_KEYS);
+  assert.equal(entry.graded?.at(-1)?.[0], `k${GRADED_KEYS + 4}`);
+  assert.equal(gradeReview(entry, "good", `k${GRADED_KEYS + 4}`, now).applied, false);
 });
 
 test("没改动的句子、完全无关的句子都不算“改法”", () => {
