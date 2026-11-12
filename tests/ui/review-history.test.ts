@@ -33,6 +33,6 @@ test("same-question attempts are distinguished by Taipei start times and trustwo
 test("Deep snapshot renders the frozen question version's bilingual subquestion context", async () => {
   const { CardSnapshotView } = await import("../../components/quick/card-readonly");
   const html = renderToStaticMarkup(jsx(CardSnapshotView, { snapshot: { cardId: "card", contentVersion: 1, state: "passed", lastCheckedVersion: 1, snapshotAt: "2026-11-01T00:00:00Z", content: { layout: "two_questions", parts: [{ key: "cause.answer", text: "学生原话", afterFollowUp: 0, provenance: { kind: "direct", userId: "u", editId: "edit", editedAt: "2026-11-01", contentVersion: 1 } }] } }, requirements: { id: "q", version: 1, layout: "two_questions", requiresOverallJudgement: false, subquestions: [{ key: "cause", en: "Why do people move?", zh: "人们搬家的原因是什么？" }, { key: "effect", en: "What are the consequences?", zh: "会带来什么影响？" }] } }));
-  for (const text of ["主题卡片快照", "Why do people move?", "人们搬家的原因是什么？", "What are the consequences?", "会带来什么影响？", "学生原话"]) assert.ok(html.includes(text), text);
+  for (const text of ["开始写作时的卡片", "Why do people move?", "人们搬家的原因是什么？", "What are the consequences?", "会带来什么影响？", "学生原话"]) assert.ok(html.includes(text), text);
   assert.ok(!/<textarea|<button|<input/.test(html));
 });

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import { quickFixture } from "./helpers/quick-api";
 import { getCard, cardRequirements } from "../lib/db/queries/cards";
+import { getSession, saveSession } from "../lib/db/queries/sessions";
 import { cardSlots } from "../lib/quick/layouts";
 import { recoverQuickOperations } from "../lib/pipeline/quick-model";
 import { recoverInflightCalls } from "../lib/llm/calls";
@@ -227,14 +228,25 @@ test("T2/T3 replaying a requestId adds nothing and calls no model; the same requ
   const before = calls, snapshot = f.snapshot();
   const replay = await action(id, ask(id, "我觉得离家上学能锻炼独立", { requestId }));
   assert.equal(calls, before); assert.equal(quickMessages(replay).length, 2);
-  const { writing_sessions: sessionsAfter, ...restAfter } = f.snapshot(), { writing_sessions: sessionsBefore, ...restBefore } = snapshot;
-  assert.deepEqual(restAfter, restBefore);
-  // Existing replay bookkeeping (row 1) re-persists the session: version, timestamps and completedRequests move; messages do not.
-  const state = (rows: unknown) => (rows as { id: string; state_json: string }[]).filter(r => r.id === id).map(r => JSON.parse(r.state_json).messages);
-  assert.deepEqual(state(sessionsAfter), state(sessionsBefore));
-  const stable = f.snapshot();
+  assert.deepEqual(f.snapshot(), snapshot);
   const conflict = await action(id, ask(id, "换一句话", { requestId }), 409);
-  assert.equal(conflict.code, "idempotency_conflict"); assert.equal(calls, before); assert.deepEqual(f.snapshot(), stable);
+  assert.equal(conflict.code, "idempotency_conflict"); assert.equal(calls, before); assert.deepEqual(f.snapshot(), snapshot);
+});
+test("receipts come before the closed and card-version checks for text requests; requests without text keep the old order", async () => {
+  const id = await create(); coach(); const requestId = crypto.randomUUID();
+  await action(id, ask(id, "我觉得离家上学能锻炼独立", { requestId }));
+  // A card edit after the send: the replay still carries the old cardVersion and must hit the receipt.
+  await action(id, { action: "cardSave", cardVersion: 1, parts: [{ key: "reasons.answer", text: "改过的原因" }] });
+  const state = getSession("u", id)!; state.lifecycle = "closed"; saveSession("u", state);
+  const before = calls, snapshot = f.snapshot();
+  const replay = await action(id, ask(id, "我觉得离家上学能锻炼独立", { requestId }));
+  assert.equal(quickMessages(replay).length, 2); assert.equal(calls, before); assert.deepEqual(f.snapshot(), snapshot);
+  const conflict = await action(id, ask(id, "换一句话", { requestId }), 409);
+  assert.equal(conflict.code, "idempotency_conflict");
+  const fresh = await action(id, ask(id, "新的一句", {}, 2), 409);
+  assert.equal(fresh.error, "练习已关闭。");
+  const plain = await action(id, { action: "quickFollowup", cardVersion: 2, requestId }, 409);
+  assert.equal(plain.error, "练习已关闭。"); assert.equal(calls, before); assert.deepEqual(f.snapshot(), snapshot);
 });
 test("T4 text while a coach question is pending is refused with followup_pending", async () => {
   const id = await create(); coach(); f.followup(id); const before = calls, snapshot = f.snapshot();

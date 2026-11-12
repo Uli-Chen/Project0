@@ -27,5 +27,5 @@ export function CardReadonly({ content, title = "主题卡片", requirements, pl
   </section>;
 }
 export function CardSnapshotView({ snapshot, requirements }: { snapshot: CardSnapshot; requirements?: QuestionRequirements }) {
-  return <CardReadonly content={snapshot.content} title="主题卡片快照" requirements={requirements} />;
+  return <CardReadonly content={snapshot.content} title="开始写作时的卡片" requirements={requirements} />;
 }

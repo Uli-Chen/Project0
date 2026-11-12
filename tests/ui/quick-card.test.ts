@@ -21,11 +21,11 @@ function render(session: ReturnType<typeof createSession>) {
 }
 for (const stage of ["prewriting", "writing"] as const) test(`精练 ${stage} 提纲区只读显示冻结卡片；无快照时原界面不变`, () => {
   const session = createSession({ kind: "free", mode: "practice" }); session.stage = stage;
-  const old = render(session); assert.ok(!old.includes("主题卡片快照"));
+  const old = render(session); assert.ok(!old.includes("开始写作时的卡片"));
   session.cardSnapshot = structuredClone(snapshot);
   const html = render(session), at = html.search(/<(aside|section) aria-label="提纲"/), aside = at < 0 ? undefined : html.slice(at, stage === "writing" ? html.indexOf("</aside>", at) : html.indexOf("</article>", at));
-  assert.ok(aside); assert.ok(aside.includes("主题卡片快照")); assert.ok(aside.includes("冻结的学生想法")); assert.ok(aside.includes("选中的用户原话"));
-  const card = aside.match(/<section aria-label="主题卡片快照"[\s\S]*?<\/section>/)![0];
+  assert.ok(aside); assert.ok(aside.includes("开始写作时的卡片")); assert.ok(aside.includes("冻结的学生想法")); assert.ok(aside.includes("选中的用户原话"));
+  const card = aside.match(/<section aria-label="开始写作时的卡片"[\s\S]*?<\/section>/)![0];
   assert.ok(!/<button|<textarea|<input|contenteditable|<script/.test(card));
   assert.ok(card.includes("&lt;script&gt;")); assert.ok(card.includes("摘自你的回答"));
   session.cardSnapshot = null; assert.equal(render(session), old);
