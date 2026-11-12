@@ -4,11 +4,14 @@ import { ChartNoAxesColumn, ChevronsUpDown, FileText, Layers, LogOut, PenLine, P
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail, SidebarTrigger } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { THEME_ICON, THEME_LABEL, useTheme, type Theme } from "@/components/theme/theme-toggle";
 import { NewEssayDialog } from "./new-essay";
 import { Wordmark } from "./wordmark";
+
+const LOGOUT_TOAST = "logout-failed";
 
 const NAV = [
   { href: "/", label: "作文", icon: FileText },
@@ -21,6 +24,9 @@ export function Avatar({ name, size = 24 }: { name: string; size?: number }) {
 
 export function AppSidebar({ user, focus, bankEnabled=false, reviewDue=0 }: { user: { name: string; email: string }; focus?: string; bankEnabled?: boolean; reviewDue?: number }) {
   const pathname = usePathname();
+  const { setOpenMobile } = useSidebar();
+  // On a phone the navigation is a sheet over the page; get it out of the way as soon as you pick a page.
+  const closeMobile = () => setOpenMobile(false);
   // 题库开启后“练习”就是开始写的地方，不再另放一个去同一处的“新建作文”
   const items = bankEnabled
     ? [{ href: "/", label: "练习", icon: PenLine }, { href: "/essays", label: "作文", icon: FileText }, { href: "/cards", label: "复习", icon: Layers, count: reviewDue }, NAV[1]]
@@ -48,9 +54,9 @@ export function AppSidebar({ user, focus, bankEnabled=false, reviewDue=0 }: { us
               const count = "count" in item ? item.count ?? 0 : 0;
               return (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton isActive={active} tooltip={item.label} className="h-10 gap-3 rounded-lg px-3 text-[15px] text-muted-foreground data-active:bg-sidebar-accent data-active:font-medium data-active:text-foreground [&_svg]:size-[18px]" render={<Link href={item.href} />}>
+                  <SidebarMenuButton isActive={active} tooltip={item.label} className="h-10 gap-3 rounded-lg px-3 text-[15px] text-muted-foreground data-active:bg-sidebar-accent data-active:font-medium data-active:text-foreground [&_svg]:size-[18px]" render={<Link href={item.href} onNavigate={closeMobile} />}>
                     <item.icon />{item.label}
-                    {count > 0 && <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground tabular-nums group-data-[collapsible=icon]:hidden" aria-label={`${count} 条待复习`}>{count}</span>}
+                    {count > 0 && <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-[14px] font-medium text-primary-foreground tabular-nums group-data-[collapsible=icon]:hidden" aria-label={`${count} 条待复习`}>{count}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );
@@ -59,24 +65,29 @@ export function AppSidebar({ user, focus, bankEnabled=false, reviewDue=0 }: { us
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="px-3 pb-3">
-        <AccountMenu user={user} />
+        <AccountMenu user={user} onNavigate={closeMobile} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );
 }
 
-function AccountMenu({ user }: { user: { name: string; email: string } }) {
+function AccountMenu({ user, onNavigate }: { user: { name: string; email: string }; onNavigate: () => void }) {
   const { theme, setTheme } = useTheme();
   const [busy, setBusy] = useState(false);
   async function logout() {
     setBusy(true);
+    toast.dismiss(LOGOUT_TOAST);
     try {
       const response = await fetch("/api/auth/logout", { method: "POST" });
       if (!response.ok) throw new Error();
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Clear cached private page state at the authentication boundary.
       window.location.assign("/login");
-    } catch { setBusy(false); }
+    } catch {
+      setBusy(false);
+      // The menu has already closed, so say plainly that nothing changed, and stay until handled.
+      toast.error("退出失败，你仍处于登录状态", { id: LOGOUT_TOAST, duration: Infinity, action: { label: "重试", onClick: () => void logout() } });
+    }
   }
   return (
     <SidebarMenu>
@@ -91,11 +102,11 @@ function AccountMenu({ user }: { user: { name: string; email: string } }) {
             <DropdownMenuGroup>
               <DropdownMenuLabel className="flex flex-col gap-0.5 py-2">
                 <span className="text-sm font-medium text-foreground">{user.name}</span>
-                <span className="truncate text-xs font-normal">{user.email}</span>
+                <span className="truncate text-[14px] font-normal">{user.email}</span>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem render={<Link href="/account" />}><Settings />账户设置</DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/account" onNavigate={onNavigate} />}><Settings />账户设置</DropdownMenuItem>
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>{(() => { const Icon = THEME_ICON[theme]; return <Icon />; })()}外观</DropdownMenuSubTrigger>
               <DropdownMenuSubContent>

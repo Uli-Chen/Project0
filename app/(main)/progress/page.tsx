@@ -54,15 +54,27 @@ export default async function ProgressPage() {
         <SectionTitle title="成绩" meta="分数由 AI 预估，不是官方成绩" />
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <div className="surface p-6">
-            {mockPoints.length ? <><h3 className="mb-4 text-[15px] font-semibold">{checkpointsEnabled ? "检查点成绩" : "模考"}</h3><MockScoreChart points={mockPoints} target={summary.target ?? undefined} /></>
-              : practicePoints.length ? <><h3 className="text-[15px] font-semibold">练习原稿成绩</h3><p className="mt-1 mb-4 text-sm text-muted-foreground">练习有教练帮忙，分数只作参考。{checkpointsEnabled ? "做一次 40 分钟独立完成的检查点，这里会换成真实水平的变化。" : "模考成绩会单独显示在这里。"}</p><MockScoreChart points={practicePoints} target={summary.target ?? undefined} /></>
+            {mockPoints.length ? <><h3 className="mb-4 text-[15px] font-semibold">{checkpointsEnabled ? "独立模考成绩" : "模考"}</h3><MockScoreChart points={mockPoints} target={summary.target ?? undefined} /></>
+              : practicePoints.length ? <><h3 className="text-[15px] font-semibold">练习原稿成绩</h3><p className="mt-1 mb-4 text-sm text-muted-foreground">练习有教练帮忙，分数只作参考。{checkpointsEnabled ? "完成一次独立模考后，这里会改为显示独立模考的成绩。" : "模考成绩会单独显示在这里。"}</p><MockScoreChart points={practicePoints} target={summary.target ?? undefined} /></>
               : <><h3 className="mb-4 text-[15px] font-semibold">成绩变化</h3><Empty>完成第一篇作文的评估后，成绩会出现在这里。</Empty></>}
           </div>
           <div className="surface p-6"><h3 className="mb-4 text-[15px] font-semibold">改写前后</h3>{revisions.length ? <PracticeDumbbell rows={revisions} /> : <Empty>提交一篇改写稿后，这里会显示改写前后的分数。</Empty>}</div>
         </div>
       </section>
 
-      {checkpointsEnabled && otherMocks.length > 0 && <section><SectionTitle title="其他模考" /><ul className="surface mt-3 divide-y">{otherMocks.map(s=><li key={s.id} className="px-5 py-3"><Link className="font-serif text-[15px] hover:underline" href={`/essays/${s.id}`}>{s.prompt.text.slice(0,60)}</Link><span className="ml-2 text-sm font-medium tabular-nums">{s.evaluation!.scores.overall}</span><span className="ml-1 text-xs text-faint">AI 实验性预估</span><p className="text-xs text-muted-foreground">{checkpoints.find(c=>c.attemptId===s.id)?.reason ?? "非合格检查点或旧记录资格未知"}</p></li>)}</ul><p className="mt-3 text-xs text-muted-foreground">{checkpoints.find(c=>c.isBaseline)?.evidenceDeleted ? "首个合格基线原文已删除；基线记录保留，不用后来的练习替换。" : "这些模考不是在检查点条件下完成的，不计入上面的成绩变化。"}</p></section>}
+      {checkpointsEnabled && otherMocks.length > 0 && <section>
+        <SectionTitle title="其他模考" meta="不计入独立模考成绩" />
+        <ul className="surface mt-3 divide-y">{otherMocks.map(s => (
+          <li key={s.id} className="flex items-baseline justify-between gap-4 px-5 py-3.5">
+            <div className="min-w-0">
+              <Link className="line-clamp-1 font-serif text-[15px] hover:underline" href={`/essays/${s.id}`}>{s.prompt.text}</Link>
+              <p className="mt-0.5 text-[14px] text-muted-foreground">{otherMockReason(checkpoints.find(c => c.attemptId === s.id)?.reason)}</p>
+            </div>
+            <span className="shrink-0 text-[15px] font-medium tabular-nums">{s.evaluation!.scores.overall.toFixed(1)}</span>
+          </li>
+        ))}</ul>
+        {checkpoints.find(c => c.isBaseline)?.evidenceDeleted && <p className="mt-3 text-[14px] text-muted-foreground">第一次独立模考的原文已删除，它的成绩仍保留在上面的变化里。</p>}
+      </section>}
       <section>
         <SectionTitle title="常见问题" />
         <div className="surface mt-3 px-5 pt-2 pb-4"><IssueMemory initial={buildMemory(sessions, user.profile)} excludedMemoryIds={user.profile.excludedMemoryIds} /></div>
@@ -71,14 +83,25 @@ export default async function ProgressPage() {
   );
 }
 
-/** Shown while no checkpoint is on offer, so the feature is visible before it is due. */
+/** Why a mock is not in the independent-mock scores, in the learner's terms (stored reasons are internal). */
+function otherMockReason(reason: string | null | undefined) {
+  switch (reason) {
+    case "外部练习声明不符合资格": return "你在别处练过这道题";
+    case "开始时资格不符": return "这道题你之前接触过";
+    case "超过 40 分钟提交": return "超过 40 分钟才提交";
+    case "原稿接受前使用了辅导": return "写作时用了教练帮助";
+    default: return "普通模考";
+  }
+}
+
+/** Shown while no independent mock is on offer, so the feature is visible before it is due. */
 function CheckpointNote({ firstDeepDone, nextAt, waiting }: { firstDeepDone: boolean; nextAt: string | null; waiting: boolean }) {
   return (
-    <section className="rounded-xl border border-dashed border-input px-5 py-4">
-      <h2 className="font-medium">写作检查点</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        40 分钟独立完成的模考，用来记录不靠教练时的真实水平。
-        {!firstDeepDone ? "完成第一篇精练后开放。" : waiting ? `两次检查点至少间隔两周，下一次在 ${formatDate(nextAt!)} 之后开放。` : "你选择了稍后再做，到时会在这里和首页提醒你。"}
+    <section>
+      <h2 className="font-medium">独立模考</h2>
+      <p className="mt-1 text-[15px] text-muted-foreground">
+        40 分钟，不用教练。成绩单独记录，看你不靠帮助时写到什么水平。
+        {!firstDeepDone ? "完成第一篇精练后可以做。" : waiting ? `两次之间至少隔两周，${formatDate(nextAt!)} 之后可以做下一次。` : "你选择了稍后再做，到时会在这里和首页提醒你。"}
       </p>
     </section>
   );
@@ -93,5 +116,5 @@ function Stat({ label, value, unit }: { label: string; value: string; unit?: str
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <div className="flex h-44 items-center justify-center rounded-lg border border-dashed border-input bg-sunk px-6 text-center text-sm text-muted-foreground">{children}</div>;
+  return <p className="flex h-44 items-center justify-center px-6 text-center text-[15px] text-muted-foreground">{children}</p>;
 }

@@ -33,6 +33,31 @@ export function saveNewPractice(userId: string, session: SessionState) {
   }).immediate();
 }
 
+/** Free practice (suggested, topic or pasted prompt) and plain mocks. With an intent key the creation
+ * is recorded as a receipt in the same transaction, so a retry after a lost response returns the
+ * essay that was already created instead of starting another one. */
+export function createFreePractice(userId: string, input: Parameters<typeof createSession>[0], idempotencyKey: string | undefined, prepare: (session: SessionState) => void = () => {}) {
+  const sqlite = getDb().$client;
+  const paramsHash = createHash("sha256").update(JSON.stringify({ kind: input.kind, mode: input.mode, prompt: input.prompt ?? null })).digest("hex");
+  return sqlite.transaction(() => {
+    if (idempotencyKey) {
+      const receipt = getRequestReceipt(sqlite, userId, idempotencyKey);
+      if (receipt) {
+        if (receipt.action !== "createFreePractice" || receipt.paramsHash !== paramsHash) throw new ReceiptConflict();
+        const session = getSession(userId, receipt.resultRef);
+        if (!session) throw new SessionError("这次练习已删除，请使用新请求键另开练习。", 409, "practice_deleted");
+        return { session, status: 200 };
+      }
+    }
+    const session = createSession(input);
+    prepare(session);
+    saveNewPractice(userId, session);
+    if (idempotencyKey) writeRequestReceipt(sqlite, { userId, idempotencyKey, attemptId: session.id,
+      action: "createFreePractice", paramsHash, resultRef: session.id, createdAt: session.createdAt });
+    return { session, status: 201 };
+  }).immediate();
+}
+
 export function createQuestionPractice(userId: string, input: z.infer<typeof questionCreateSessionSchema>) {
   const db = getDb(), sqlite = db.$client;
   const paramsHash = createHash("sha256").update(JSON.stringify({ questionId: input.questionId,

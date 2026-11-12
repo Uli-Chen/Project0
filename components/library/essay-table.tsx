@@ -42,20 +42,35 @@ export function EssayTable({ rows }: { rows: EssayRow[] }) {
       <Tabs value={filter} onValueChange={(value) => setFilter(String(value))}>
         <TabsList variant="line" className="w-full justify-start gap-5 rounded-none border-b px-5 group-data-horizontal/tabs:h-12">
           {([["all", "全部"], ["active", "进行中"], ["done", "已完成"]] as const).map(([value, label]) => (
-            <TabsTrigger key={value} value={value} className="flex-none px-0 text-sm group-data-horizontal/tabs:after:bottom-[-7px] after:bg-foreground">{label}<span className="text-xs font-normal text-faint tabular-nums">{counts[value]}</span></TabsTrigger>
+            <TabsTrigger key={value} value={value} className="flex-none px-0 text-sm group-data-horizontal/tabs:after:bottom-[-7px] after:bg-foreground">{label}<span className="text-[14px] font-normal text-muted-foreground tabular-nums">{counts[value]}</span></TabsTrigger>
           ))}
         </TabsList>
       </Tabs>
       {visible.length === 0 ? (
         <p className="py-16 text-center text-sm text-muted-foreground">没有{filter === "done" ? "已完成" : "进行中"}的作文</p>
-      ) : (
-        <Table className="table-fixed">
+      ) : (<>
+        {/* Phones: the title gets the whole first line; status, score and date share the second. */}
+        <ul className="divide-y sm:hidden">
+          {visible.map((row) => (
+            <li key={row.id}>
+              <Link href={`/essays/${row.id}`} className="block px-5 py-3.5 outline-none hover:bg-[color-mix(in_oklch,var(--sheet),var(--primary)_4%)] focus-visible:bg-[color-mix(in_oklch,var(--sheet),var(--primary)_6%)]">
+                <span className="line-clamp-2 font-serif text-[16px] leading-snug text-foreground">{row.prompt}</span>
+                <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5 text-foreground"><span className={cn("size-1.5 rounded-full", DOT[row.status])} aria-hidden />{row.statusLabel}</span>
+                  {row.original !== null && <span className="tabular-nums">AI 预估 <Score row={row} /></span>}
+                  <span className="tabular-nums">{row.date}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <Table className="hidden table-fixed sm:table">
           <TableHeader>
             <TableRow className="bg-sunk/60 hover:bg-sunk/60">
               <TableHead className="w-auto pl-5">题目</TableHead>
-              <TableHead className="hidden w-20 sm:table-cell">类型</TableHead>
-              <TableHead className="w-28 sm:w-36">状态</TableHead>
-              <TableHead className="w-24 text-right">分数<span className="block text-xs font-normal text-faint">AI 实验性预估</span></TableHead>
+              <TableHead className="w-20">类型</TableHead>
+              <TableHead className="w-32 lg:w-36">状态</TableHead>
+              <TableHead className="w-28 text-right">AI 预估分</TableHead>
               <TableHead className="hidden w-20 text-right md:table-cell">更新</TableHead>
               <TableHead className="w-10 pr-5" aria-hidden />
             </TableRow>
@@ -66,10 +81,10 @@ export function EssayTable({ rows }: { rows: EssayRow[] }) {
                 <TableCell className="pl-5">
                   <Link href={`/essays/${row.id}`} onClick={(event) => event.stopPropagation()} className="block truncate font-serif text-[16px] text-foreground outline-none focus-visible:underline">{row.prompt}</Link>
                 </TableCell>
-                <TableCell className="hidden text-muted-foreground sm:table-cell">{row.kind}{row.kind === "练习" && <span className="block text-xs text-faint">有辅导</span>}</TableCell>
+                <TableCell className="text-muted-foreground">{row.kind}</TableCell>
                 <TableCell><span className="inline-flex items-center gap-2"><span className={cn("size-1.5 rounded-full", DOT[row.status])} aria-hidden />{row.statusLabel}</span></TableCell>
                 <TableCell className="text-right text-sm font-medium tabular-nums">
-                  {row.original === null ? <span className="text-muted-foreground">—</span> : row.revision === null ? row.original.toFixed(1) : <><span className="text-muted-foreground">{row.original.toFixed(1)} → </span>{row.revision.toFixed(1)}</>}
+                  {row.original === null ? <span className="text-muted-foreground">—</span> : <Score row={row} />}
                 </TableCell>
                 <TableCell className="meta hidden text-right md:table-cell">{row.date}</TableCell>
                 <TableCell className="pr-5 text-right"><ArrowRight className="ml-auto size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" /></TableCell>
@@ -77,7 +92,12 @@ export function EssayTable({ rows }: { rows: EssayRow[] }) {
             ))}
           </TableBody>
         </Table>
-      )}
+      </>)}
     </div>
   );
+}
+
+function Score({ row }: { row: EssayRow }) {
+  if (row.original === null) return null;
+  return row.revision === null ? <>{row.original.toFixed(1)}</> : <><span className="text-muted-foreground">{row.original.toFixed(1)} → </span><span className="text-foreground">{row.revision.toFixed(1)}</span></>;
 }

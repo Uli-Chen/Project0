@@ -20,19 +20,26 @@ export function ReviewDeck({ items }: { items: ReviewItem[] }) {
   const [revealed, setRevealed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // One key per time a card is shown. A retry after a lost response reuses it, so the server
+  // records the grade once; the next card (or the same card coming back) gets a fresh key.
+  const [presentation, setPresentation] = useState(() => crypto.randomUUID());
   const total = round.length;
   const item = queue[0];
   const waiting = items.filter(next => !cleared.includes(next.id));
 
-  async function grade(result: "good" | "again") {
+  async function grade(choice: "good" | "again") {
     if (!item || busy) return;
     setBusy(true); setError("");
     try {
-      const response = await fetch("/api/review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: item.id, result }) });
-      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error ?? "没有保存成功，请重试。");
+      const response = await fetch("/api/review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: item.id, result: choice, key: presentation }) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "没有保存成功，请重试。");
+      // A replayed request reports the grade that was recorded the first time.
+      const result: "good" | "again" = data.result === "good" || data.result === "again" ? data.result : choice;
       // 没记住的排到这一轮最后再来一次
       setQueue(([head, ...rest]) => result === "again" ? [...rest, head] : rest);
       if (result === "good") { setDone(n => n + 1); setCleared(ids => [...ids, item.id]); }
+      setPresentation(crypto.randomUUID());
       setAttempt(""); setRevealed(false);
       // The due count in the sidebar and on the tabs comes from the server.
       router.refresh();
@@ -73,7 +80,10 @@ export function ReviewDeck({ items }: { items: ReviewItem[] }) {
                 {phrase && item.note && <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{item.note}</p>}
               </>
             ) : (
-              <p className="text-[15px] leading-relaxed">这一句当时没有改写稿可以对照。按上面的方向自己判断改得对不对，拿不准可以<Link href={`/essays/${item.sessionId}`} className="underline underline-offset-4">回到这篇和教练讨论</Link>。</p>
+              <>
+                <p className="text-sm font-medium text-muted-foreground">尚未改写</p>
+                <p className="mt-2 text-[15px] leading-relaxed">{item.kind === "fix" && item.revised ? "改写稿里这一句还没有改过，" : "这篇还没有改写稿，"}没有你自己的改法可以对照。按上面的方向判断改得对不对。</p>
+              </>
             )}
             {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
             <div className="mt-6 flex flex-wrap justify-end gap-2.5">
