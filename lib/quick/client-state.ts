@@ -98,6 +98,13 @@ export function settleAsk(request: PendingAsk, outcome: Outcome, sent: { text: s
     default: return { pending: { ...request, status: "failed" }, restore: typed, error: outcome.message, refresh: outcome.uncertain, newIntent: false, clear: null };
   }
 }
+/** Put unsent ask text back into the box without losing what the student typed meanwhile:
+ * the returned text comes first (it was written earlier), then the new draft. */
+export function restoreInto(current: string, text: string) {
+  const now = current.trim(), back = text.trim();
+  if (!back || now === back || now.startsWith(`${back}\n`)) return current;
+  return now ? `${back}\n${current}` : text;
+}
 /** After a snapshot: a failed ask the server already has is done, and its text leaves the ask box. */
 export function reconcileAsk(pending: PendingAsk | null, askDraft: string, messages: readonly Message[]): { pending: PendingAsk | null; askDraft: string } {
   if (!pending || pending.status === "sending" || !askDelivered(pending, messages)) return { pending, askDraft };

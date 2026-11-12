@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { acceptQuickSnapshot, createIntentLatch, unchangedDraft, persistedIntentKey, QUICK_STARTERS, ASK_LIMIT, placeable, validateAsk, askDelivered, echoText, planAsk, settleAsk, reconcileAsk, answerDelivered, stableRequestId, coachBottom, mergeCard, mergeSnapshot, unsentCoachText, type PendingAsk, type Outcome } from '../lib/quick/client-state';
+import { acceptQuickSnapshot, createIntentLatch, unchangedDraft, persistedIntentKey, QUICK_STARTERS, ASK_LIMIT, placeable, validateAsk, askDelivered, echoText, planAsk, settleAsk, reconcileAsk, answerDelivered, stableRequestId, coachBottom, mergeCard, mergeSnapshot, unsentCoachText, restoreInto, type PendingAsk, type Outcome } from '../lib/quick/client-state';
 const snapshot = (version: number, contentVersion = version) => ({ session: { version }, card: { contentVersion } });
 test('Delayed GET before save cannot roll back saved card; same-version operation results invalidate pending reads', () => {
  assert.equal(acceptQuickSnapshot(snapshot(3), snapshot(2), {epoch:1,sequence:5}, {epoch:2,sequence:4}), false);
@@ -199,4 +199,12 @@ test('leaving needs a decision for unsent answers, ask text, and an ask still sa
  // Failed: a typed ask is back in the box, which protects it; the failed request alone does not.
  assert.equal(unsentCoachText({ ...none, pendingAsk: { status: 'failed' }, askDraft: '我想从独立说起' }), true);
  assert.equal(unsentCoachText({ ...none, pendingAsk: { status: 'failed' } }), false);
+});
+
+test('restoring an unsent ask keeps what the student typed meanwhile', () => {
+ assert.equal(restoreInto('', '我想从独立说起'), '我想从独立说起');
+ assert.equal(restoreInto('新的想法', '我想从独立说起'), '我想从独立说起\n新的想法');
+ assert.equal(restoreInto('我想从独立说起', '我想从独立说起'), '我想从独立说起');
+ // Restoring twice does not stack copies.
+ assert.equal(restoreInto(restoreInto('新的想法', 'A'), 'A'), 'A\n新的想法');
 });

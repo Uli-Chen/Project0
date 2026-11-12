@@ -13,6 +13,7 @@ import {
   QUICK_STARTERS, ASK_LIMIT, REQUEST_TIMEOUT_MS, TIMEOUT_MESSAGE, OFFLINE_MESSAGE,
   placeable, validateAsk, echoText, planAsk, settleAsk, reconcileAsk, answerDelivered, coachBottom, mergeSnapshot, unsentCoachText, sameText,
   type PendingAsk, type FieldConflict,
+  restoreInto,
 } from "@/lib/quick/client-state";
 import { CoachEmpty, CoachMark } from "@/components/coach/coach-thread";
 import { Composer } from "@/components/coach/composer";
@@ -286,7 +287,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     }
     finally { modelLatch.current.leave(); setCalling(null); }
   }
-  const restoreAsk = (text: string) => setAskDraft(current => current.trim() ? current : text);
+  const restoreAsk = (text: string) => setAskDraft(current => restoreInto(current, text));
   /** The student speaks first: typed text or a starter, sent as one quickFollowup with text.
    * An unconfirmed earlier ask is replayed unchanged first (same text, cardVersion and requestId). */
   async function ask(raw: string, typed: boolean) {
