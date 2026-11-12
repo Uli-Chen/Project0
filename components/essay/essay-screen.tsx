@@ -5,12 +5,12 @@ import { CardSnapshotView } from "@/components/quick/card-readonly";
 import { DeepLeaveGuard } from "./deep-leave-guard";
 import { DeepLifecycleBar } from "./deep-lifecycle-bar";
 import { X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { OutlineBoard, outlineProgress } from "@/components/outline/outline-board";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Panel } from "@/lib/learning/essay-view";
 import { checkInput } from "@/lib/rules";
 import { useSession } from "@/lib/prototype/session-store";
@@ -26,11 +26,11 @@ import { cn } from "@/lib/utils";
 
 const PANEL_LABEL: Record<Panel, string> = { coach: "教练", feedback: "反馈", compare: "对比" };
 
-export function EssayScreen({ cardRequirements }: { cardRequirements?: QuestionRequirements } = {}) {
-  return <EssayUiProvider><Screen cardRequirements={cardRequirements} /></EssayUiProvider>;
+export function EssayScreen({ cardRequirements, banner }: { cardRequirements?: QuestionRequirements; banner?: ReactNode } = {}) {
+  return <EssayUiProvider><Screen cardRequirements={cardRequirements} banner={banner} /></EssayUiProvider>;
 }
 
-function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements }) {
+function Screen({ cardRequirements, banner }: { cardRequirements?: QuestionRequirements; banner?: ReactNode }) {
   const { state, actions, essayKind, error, coachBusy, lifecycleBusy, failedInput } = useSession();
   const ui = useEssayUi();
   const { centerRef, editorRef } = useEssayRefs();
@@ -124,8 +124,8 @@ function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements 
 
   const errorNotice = error && !state.evalError && (
     <div role="alert" className="flex shrink-0 flex-wrap items-center gap-3 border-b border-destructive/20 bg-destructive/5 px-4 py-2 text-[14px]">
-      <div className="min-w-0 flex-1"><p>{error}</p>{failedInput && <p className="mt-0.5 truncate text-xs text-muted-foreground">未完成的消息：{failedInput}</p>}</div>
-      <Button size="xs" variant="outline" onClick={actions.downloadDraft}>下载草稿</Button>
+      <div className="min-w-0 flex-1"><p>{error}</p>{failedInput && <p className="mt-0.5 truncate text-sm text-muted-foreground">未完成的消息：{failedInput}</p>}</div>
+      <Button size="xs" variant="outline" onClick={actions.downloadDraft}>备份当前内容</Button>
       <Button size="xs" variant="outline" disabled={coachBusy} onClick={() => void actions.retry()}>{state.pendingAction?.retryable === false ? "重新发送" : "重试"}</Button>
       <Button size="icon-xs" variant="ghost" aria-label="关闭" onClick={actions.clearError}><X /></Button>
     </div>
@@ -139,17 +139,20 @@ function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements 
         </TabsList>
       </div>
       {!ui.wide && errorNotice}
-      <div className="min-h-0 flex-1">
-        {ui.panel === "coach" && <CoachTab onAccept={accept} onUndo={undo} notices={notices} />}
-        {ui.panel === "feedback" && <FeedbackTab />}
-        {ui.panel === "compare" && <CompareTab />}
-      </div>
+      {ui.panels.map((panel) => (
+        <TabsContent key={panel} value={panel} className="min-h-0 flex-1 text-base">
+          {panel === "coach" && <CoachTab onAccept={accept} onUndo={undo} notices={notices} />}
+          {panel === "feedback" && <FeedbackTab />}
+          {panel === "compare" && <CompareTab />}
+        </TabsContent>
+      ))}
     </Tabs>
   );
 
   return (
     <div className="desk flex h-dvh flex-col overflow-hidden">
       <EssayTopbar onSubmit={submit} hasLeft={hasLeft} />
+      {banner}
       <DeepLeaveGuard />
       <DeepLifecycleBar lifecycle={state.lifecycle} checkpoint={Boolean(state.checkpointId)} busy={coachBusy || lifecycleBusy} onResume={() => void actions.changeLifecycle("resume")} />
       {(ui.wide || ui.sheet !== "right") && errorNotice}

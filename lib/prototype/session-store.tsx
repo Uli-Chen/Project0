@@ -4,7 +4,8 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import type { EssayKind } from "./types";
 import type { SessionState } from "@/lib/pipeline/types";
 import type { AgentAction } from "@/lib/pipeline/schemas";
-import { setSlot } from "@/lib/pipeline/outline";
+import { getSlot, setSlot } from "@/lib/pipeline/outline";
+import { outlineGroups } from "@/lib/learning/prewrite-guidance";
 import { mergeSessionState, type EditGenerations } from "@/lib/pipeline/client-state";
 export type { SessionState } from "@/lib/pipeline/types";
 export { getSlot, setSlot } from "@/lib/pipeline/outline";
@@ -16,7 +17,8 @@ async function requestJson(url: string, options?: RequestInit, timeout = 15000):
   try {
     const response = await fetch(url, { ...options, signal: options?.signal ?? AbortSignal.timeout(timeout) });
     let data: ApiResult;
-    try { data = await response.json(); } catch { throw new RequestError("服务返回异常，请稍后重试。你的文字仍在当前页面。"); }
+    // Keep the HTTP status even for a non-JSON body (e.g. a proxy's 413 page) so callers can tell a rejection from a lost response.
+    try { data = await response.json(); } catch { throw new RequestError("服务返回异常，请稍后重试。你的文字仍在当前页面。", response.ok ? 0 : response.status); }
     if (!response.ok) throw new RequestError(data.error ?? "请求未完成，请重试。", response.status, data);
     return data;
   } catch (error) {
@@ -24,6 +26,47 @@ async function requestJson(url: string, options?: RequestInit, timeout = 15000):
     if (error instanceof Error && /timeout|abort/i.test(error.name)) throw new RequestError("连接超时，请重试。你的文字仍在当前页面。");
     throw new RequestError("网络连接中断，请检查网络后重试。你的文字仍在当前页面。");
   }
+}
+/** Server-side draft limit (draftSchema in lib/pipeline/schemas.ts); the editor shows and enforces it. */
+export const DRAFT_MAX_CHARS = 30000;
+/** After a failed autosave, resend the exact same write (same request ID) only when the outcome is
+ * unknown. A definite rejection was never written: drop it so the next save is built from the
+ * current text instead of resending the rejected snapshot forever. */
+export function pendingWriteAfterFailure(status: number, conflictSession: boolean): "keep" | "drop" | "conflict" {
+  if (status === 409) return conflictSession ? "conflict" : "drop";
+  if (status === 400 || status === 413 || status === 422) return "drop";
+  return "keep";
+}
+/** The textarea pushes every keystroke here, so outline text is dirty, autosaved and leave-protected while it is typed. */
+export function applyOutlineEdit(state: SessionState, path: string, text: string): SessionState {
+  return { ...state, outline: { ...setSlot(state.outline, path, text, "用户编辑"), userEdited: true } };
+}
+/** Plain-text backup of everything that may exist only in this tab: essay, outline and unsent coach text. */
+export function draftBackupText(s: Pick<SessionState, "prompt" | "outline" | "drafts">, unsent: { composer?: string; failed?: string | null } = {}): string {
+  const outline = outlineGroups(s.prompt.questionType).flatMap(group => group.slots.flatMap(slot => {
+    const text = getSlot(s.outline, slot.path)?.text;
+    return text ? [`${group.title}${slot.label ? ` · ${slot.label}` : ""}：${text}`] : [];
+  }));
+  const coach = [...new Set([unsent.failed, unsent.composer].map(t => t?.trim() ?? "").filter(Boolean))];
+  return [s.prompt.text, `提纲\n${outline.length ? outline.join("\n") : "（空）"}`, `原稿\n${s.drafts.original}`, `改写稿\n${s.drafts.revision}`,
+    ...(coach.length ? [`未发送给教练的文字\n${coach.join("\n\n")}`] : [])].join("\n\n");
+}
+/** Whether the server has recorded this request (pending, failed with a stored error, or done). */
+export function serverHasRequest(session: SessionState | undefined | null, requestId: string): boolean {
+  return Boolean(session && (session.pendingAction?.requestId === requestId || session.completedRequests?.includes(requestId)));
+}
+/** Where a failed coach message lives after the failure.
+ * "server": recorded there; retry reuses its request ID.
+ * "absent": the server certainly never got it (pre-send save failed, or the server answered without recording it),
+ *   so the text goes back into the composer.
+ * "unknown": it may have arrived; keep a leave-protected local copy and retry with the same ID. */
+export function failedSendState({ acknowledged, sent, knownAbsent, status, answeredWithSession }: {
+  acknowledged: boolean; sent: boolean; knownAbsent: boolean; status: number; answeredWithSession: boolean;
+}): "server" | "absent" | "unknown" {
+  if (acknowledged) return "server";
+  if (!sent) return knownAbsent ? "absent" : "unknown";
+  if (answeredWithSession || (status >= 400 && status < 500)) return "absent";
+  return "unknown";
 }
 /** A failed request must not replace the student's newer unsent message. */
 export function recoverComposerDraft(currentDraft: string, input: AgentAction): string {
@@ -41,6 +84,14 @@ function useSessionController(initialState: SessionState) {
   const [composerDraft, setComposerDraftState] = useState(initialPending?.retryable === false && "text" in initialPending.input ? initialPending.input.text ?? "" : "");
   const composerDraftRef = useRef(composerDraft);
   const setComposerDraft = useCallback((text: string) => { composerDraftRef.current = text; setComposerDraftState(text); }, []);
+  // A sent coach message the server has not confirmed yet. The composer is already empty, so this is
+  // the only copy: it counts as unsent text for leave protection and the backup until the server has it.
+  const unconfirmed = useRef<{ requestId: string; text: string } | null>(null);
+  const [unconfirmedInput, setUnconfirmedInputState] = useState<string | null>(null);
+  const setUnconfirmed = useCallback((next: { requestId: string; text: string } | null) => { unconfirmed.current = next; setUnconfirmedInputState(next?.text ?? null); }, []);
+  const confirmDelivered = useCallback((session: SessionState | undefined | null) => {
+    if (unconfirmed.current && serverHasRequest(session, unconfirmed.current.requestId)) setUnconfirmed(null);
+  }, [setUnconfirmed]);
   const [lifecycleBusy, setLifecycleBusy] = useState(false);
   const lifecycleChanging = useRef(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
@@ -62,7 +113,7 @@ function useSessionController(initialState: SessionState) {
   const merge = useCallback((incoming: SessionState, generation: number) => update(local => mergeSessionState(local, incoming, changed.current, generation)), [update]);
 
   const saveNow = useCallback(async () => {
-    if (conflict.current) throw new RequestError("练习已在其他页面更新。请下载当前草稿后刷新，避免覆盖其他页面的修改。");
+    if (conflict.current) throw new RequestError("练习已在其他页面更新。请先备份当前内容再刷新，避免覆盖其他页面的修改。");
     setSaveStatus("saving");
     try {
       // Keep the same write ID after an ambiguous network failure. The server can safely acknowledge it twice.
@@ -76,7 +127,15 @@ function useSessionController(initialState: SessionState) {
         let data: ApiResult;
         try { data = await requestJson(`/api/sessions/${ref.current.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: write.body }); }
         catch (failure) {
-          if (failure instanceof RequestError && failure.status === 409) { if (failure.data.session) conflict.current = true; else pendingWrite.current = null; }
+          if (failure instanceof RequestError) {
+            const next = pendingWriteAfterFailure(failure.status, Boolean(failure.data.session));
+            if (next === "conflict") conflict.current = true;
+            else if (next === "drop") pendingWrite.current = null;
+            const s = ref.current;
+            if (next === "drop" && failure.status !== 409 && (failure.status === 413 || s.drafts.original.length > DRAFT_MAX_CHARS || s.drafts.revision.length > DRAFT_MAX_CHARS)) {
+              throw new RequestError(`正文超过 ${DRAFT_MAX_CHARS.toLocaleString()} 字符，无法保存。删减后会自动保存。`, failure.status, failure.data);
+            }
+          }
           throw failure;
         }
         if (!data.session) throw new RequestError("保存响应不完整，请重试。");
@@ -90,7 +149,7 @@ function useSessionController(initialState: SessionState) {
     if (lifecycleChanging.current) return false;
     if (ref.current.lifecycle !== "open" && edits.current === savedEdits.current && !pendingWrite.current) return true;
     if (busy.current && !actionController.current) { setError("教练正在处理上次请求。完成后会自动保存，请稍候再离开。"); return false; }
-    try { await enqueue(saveNow); if (edits.current !== savedEdits.current) { setError("还有未保存的修改，请稍候重试或下载草稿。"); return false; } if (!lastAction.current) setError(null); return true; }
+    try { await enqueue(saveNow); if (edits.current !== savedEdits.current) { setError("还有未保存的修改，请稍候重试或备份当前内容。"); return false; } if (!lastAction.current) setError(null); return true; }
     catch (err) { setError(err instanceof Error ? err.message : "保存失败，请检查网络后重试。"); return false; }
   }, [enqueue, saveNow]);
   const edit = useCallback((field: keyof EditGenerations, fn: (s: SessionState) => SessionState) => {
@@ -107,10 +166,16 @@ function useSessionController(initialState: SessionState) {
     busy.current = true; setCoachBusy(true); setPendingActionName(input.action); setError(null);
     lastAction.current = input; lastRequestId.current = requestId; setFailedInput("text" in input ? input.text ?? null : null);
     if (saveTimer.current) clearTimeout(saveTimer.current);
+    // The composer clears itself right after onSend; keep the typed text until the server has it.
+    const typed = recoverComposerDraft("", input);
+    if (typed && !recovering) setUnconfirmed({ requestId, text: typed });
+    const progress = { sent: false, knownAbsent: !recovering, acknowledged: false, answeredWithSession: false, status: 0 };
     try {
       await enqueue(async () => {
         if (recovering) {
           const latest = await requestJson(`/api/sessions/${ref.current.id}`, { cache: "no-store" });
+          progress.acknowledged = serverHasRequest(latest.session, requestId); progress.knownAbsent = !progress.acknowledged;
+          confirmDelivered(latest.session);
           if (latest.session?.completedRequests?.includes(requestId)) { merge(latest.session, savedEdits.current); return; }
           if (latest.session?.pendingAction?.requestId === requestId) {
             merge(latest.session, savedEdits.current);
@@ -127,29 +192,48 @@ function useSessionController(initialState: SessionState) {
         }
         if (input.action === "evaluate") update(s => ({ ...s, stage: input.kind === "revision" ? "re_evaluating" : "evaluating", submitted: { ...s.submitted, [input.kind]: s.submitted[input.kind] ?? s.drafts[input.kind] }, evalStep: "scoring", evalError: null }));
         const controller = new AbortController(); actionController.current = controller;
+        progress.sent = true;
         try {
           const data = await requestJson(`/api/sessions/${ref.current.id}/actions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...input, requestId }), signal: AbortSignal.any([controller.signal, AbortSignal.timeout(280000)]) });
           if (!data.session) throw new RequestError("请求响应不完整，请重试。");
           merge(data.session, generation);
         } catch (failure) {
-          if (failure instanceof RequestError && failure.data.session) merge(failure.data.session, generation);
+          if (failure instanceof RequestError) {
+            progress.status = failure.status;
+            if (failure.data.session) {
+              progress.acknowledged = serverHasRequest(failure.data.session, requestId); progress.answeredWithSession = !progress.acknowledged;
+              confirmDelivered(failure.data.session);
+              merge(failure.data.session, generation);
+            }
+          }
           if (!ref.current.completedRequests?.includes(requestId)) throw failure;
         } finally { actionController.current = null; }
       });
       lastAction.current = null; setFailedInput(null); setError(null);
+      if (unconfirmed.current?.requestId === requestId) setUnconfirmed(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : "请求失败，请检查网络后重试。";
       setError(message);
       update(s => s.messages.some(m => m.id.startsWith("pending-")) ? { ...s, messages: s.messages.filter(m => !m.id.startsWith("pending-")) } : s);
-      if (ref.current.pendingAction?.retryable === false) {
+      const where = failedSendState(progress);
+      if (where === "server" && ref.current.pendingAction?.requestId === requestId && ref.current.pendingAction.retryable === false) {
         const recovered = recoverComposerDraft(composerDraftRef.current, input);
         if (recovered !== composerDraftRef.current) setComposerDraft(recovered);
+      } else if (where === "absent" && typed) {
+        // The server never got it: put the words back where the student typed them, unless they already
+        // started a new message. Then the failed text stays in the notice and leave protection, and 重试 resends it.
+        const recovered = recoverComposerDraft(composerDraftRef.current, input);
+        if (recovered !== composerDraftRef.current) {
+          setComposerDraft(recovered); setUnconfirmed(null);
+          lastAction.current = null; lastRequestId.current = null; setFailedInput(null);
+          update(s => s.pendingAction?.requestId === requestId ? { ...s, pendingAction: null } : s);
+        }
       }
       if (input.action === "evaluate") update(s => ["evaluating", "re_evaluating"].includes(s.stage) ? ({ ...s, evalError: message }) : s);
     } finally { busy.current = false; setCoachBusy(false); setPendingActionName(null); }
     if (ref.current.completedRequests?.includes(requestId) && edits.current !== savedEdits.current) void save();
     return ref.current.completedRequests?.includes(requestId) ?? false;
-  }, [enqueue, merge, saveNow, update, save, setComposerDraft]);
+  }, [enqueue, merge, saveNow, update, save, setComposerDraft, setUnconfirmed, confirmDelivered]);
 
   const changeLifecycle = useCallback(async (action: "setAside" | "resume" | "close") => {
     if (busy.current || lifecycleChanging.current) return false;
@@ -160,7 +244,7 @@ function useSessionController(initialState: SessionState) {
         // Freeze new local edits until both the existing save queue and this
         // transition finish. A failed/conflicted save must never close the draft.
         if (edits.current !== savedEdits.current || pendingWrite.current) await saveNow();
-        if (edits.current !== savedEdits.current) throw new RequestError("还有未保存的修改，请先保存或下载草稿。");
+        if (edits.current !== savedEdits.current) throw new RequestError("还有未保存的修改，请先保存或备份当前内容。");
         const generation = savedEdits.current;
         const data = await requestJson(`/api/sessions/${ref.current.id}/lifecycle`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
         if (!data.session) throw new RequestError("状态更新响应不完整，请重试。");
@@ -174,7 +258,7 @@ function useSessionController(initialState: SessionState) {
   }, [enqueue, merge, saveNow]);
 
   useEffect(() => {
-    const warn = (event: BeforeUnloadEvent) => { if (edits.current !== savedEdits.current || composerDraftRef.current.trim()) { event.preventDefault(); event.returnValue = ""; } };
+    const warn = (event: BeforeUnloadEvent) => { if (edits.current !== savedEdits.current || composerDraftRef.current.trim() || unconfirmed.current) { event.preventDefault(); event.returnValue = ""; } };
     window.addEventListener("beforeunload", warn);
     return () => { window.removeEventListener("beforeunload", warn); if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, []);
@@ -198,6 +282,7 @@ function useSessionController(initialState: SessionState) {
           if (evaluating && !next.evalError) next.evalError = next.pendingAction?.error ?? "上次评估已中断。作文已保存，可以重新评估。";
         }
         merge(next, savedEdits.current);
+        confirmDelivered(next);
         if (next.completedRequests?.includes(lastRequestId.current ?? "")) {
           actionController.current?.abort();
           if (!actionController.current) { busy.current = false; setCoachBusy(false); setPendingActionName(null); lastAction.current = null; setFailedInput(null); setError(null); }
@@ -216,18 +301,19 @@ function useSessionController(initialState: SessionState) {
     const initialTimer = setTimeout(() => { void poll(); }, 1500);
     const timer = setInterval(() => { void poll(); }, 3000);
     return () => { alive = false; clearTimeout(initialTimer); clearInterval(timer); };
-  }, [needsSync, initialState.id, merge, update, save]);
+  }, [needsSync, initialState.id, merge, update, save, confirmDelivered]);
 
   const essayKind: EssayKind = state.stage === "revising" || state.stage === "re_evaluating" ? "revision" : "original";
   const setDraft = useCallback((kind: EssayKind, text: string) => edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: text } })), [edit]);
   const tick = useCallback((kind: EssayKind) => update(s => ({ ...s, elapsed: { ...s.elapsed, [kind]: s.elapsed[kind] + 1 } })), [update]);
-  return { state, coachBusy, lifecycleBusy, composerDraft, pendingActionName, essayKind, error, saveStatus, failedInput,
+  const failedText = () => unconfirmed.current?.text || (lastAction.current ? recoverComposerDraft("", lastAction.current) : "");
+  return { state, coachBusy, lifecycleBusy, composerDraft, unconfirmedInput, pendingActionName, essayKind, error, saveStatus, failedInput,
     actions: {
       changeLifecycle, setComposerDraft,
-      hasUnsentComposer: () => Boolean(composerDraftRef.current.trim()),
+      hasUnsentComposer: () => Boolean(composerDraftRef.current.trim() || unconfirmed.current),
       morePrewrite: () => perform({ action: "prewrite", text: "", intent: "more" }),
       sendPrewrite: (text: string) => perform({ action: "prewrite", text }),
-      editOutline: (path: string, text: string) => edit("outline", s => ({ ...s, outline: { ...setSlot(s.outline, path, text, "用户编辑"), userEdited: true } })),
+      editOutline: (path: string, text: string) => edit("outline", s => applyOutlineEdit(s, path, text)),
       startWriting: () => perform({ action: "startWriting" }), setDraft, tick, markSaved: save, save,
       assist: (action: "clarify" | "polish" | "check", selection: string) => perform({ action, selection }),
       express: (text: string) => perform({ action: "express", text }),
@@ -245,7 +331,12 @@ function useSessionController(initialState: SessionState) {
       finish: () => perform({ action: "finish" }),
       rate: (useful: number | null, mine: "yes" | "partly" | "no" | null, comment: string) => perform({ action: "rating", useful, mine, comment }),
       retry: () => lastAction.current ? perform(lastAction.current, ref.current.pendingAction?.retryable === false ? undefined : lastRequestId.current ?? undefined) : save(),
-      downloadDraft: () => { const s = ref.current; const blob = new Blob([`${s.prompt.text}\n\n原稿\n${s.drafts.original}\n\n改写稿\n${s.drafts.revision}`], { type: "text/plain;charset=utf-8" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `writemind-${s.id}.txt`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); },
+      downloadDraft: () => {
+        const s = ref.current;
+        const blob = new Blob([draftBackupText(s, { composer: composerDraftRef.current, failed: failedText() })], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `writemind-${s.id}.txt`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+        if (conflict.current) setError("已下载备份。刷新页面即可载入其他页面的最新内容。");
+      },
       hasUnsaved: () => edits.current !== savedEdits.current,
       clearError: () => setError(null),
     },

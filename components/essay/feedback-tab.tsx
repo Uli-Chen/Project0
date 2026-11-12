@@ -55,7 +55,7 @@ export function FeedbackTab() {
           <>
             <IssueList issues={folded} {...listProps} />
             {expanded && others.length > 0 && (
-              <div id={othersId} className="motion-expand"><div><div className="pt-2"><IssueList issues={others} {...listProps} /></div></div></div>
+              <div id={othersId} className="motion-expand"><div><div className="-mt-px"><IssueList issues={others} {...listProps} /></div></div></div>
             )}
           </>
         )}

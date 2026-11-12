@@ -21,7 +21,9 @@ export function DeepLeaveNotice({ saving, draftDirty, message = "", onCancel, on
 /** Capture all page links, including portalled FinishDialog links, before Next's
  * router handlers. New tabs keep this page intact; reload/close uses beforeunload. */
 export function DeepLeaveGuard() {
-  const { actions, composerDraft } = useSession(), router = useRouter();
+  const { actions, composerDraft, unconfirmedInput } = useSession(), router = useRouter();
+  // 已发出但服务器还没确认收到的消息，和输入框里的文字一样只存在于这个页面
+  const unsent = [...new Set([unconfirmedInput ?? "", composerDraft].map(t => t.trim()).filter(Boolean))].join("\n\n");
   const current = useRef(actions);
   const [destination, setDestination] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -57,6 +59,6 @@ export function DeepLeaveGuard() {
   }, []);
   return <Dialog open={destination !== null} onOpenChange={open => { if (!open && !saving) setDestination(null); }}><DialogContent>
     <DialogHeader><DialogTitle>还有未发送的教练文字</DialogTitle></DialogHeader>
-    <DeepLeaveNotice message={composerDraft} saving={saving} draftDirty={actions.hasUnsaved()} onCancel={() => setDestination(null)} onLeave={() => { if (destination) void navigate(destination, true); }} />
+    <DeepLeaveNotice message={unsent} saving={saving} draftDirty={actions.hasUnsaved()} onCancel={() => setDestination(null)} onLeave={() => { if (destination) void navigate(destination, true); }} />
   </DialogContent></Dialog>;
 }

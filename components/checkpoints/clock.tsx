@@ -31,6 +31,8 @@ export function CheckpointClock({ deadlineAt, serverNow, sessionId, originalSubm
     const first = setTimeout(() => void poll(), 0), timer = setInterval(() => void poll(), 1500);
     return () => { cancelled = true; controller.abort(); clearTimeout(first); clearInterval(timer); };
   }, [sessionId, submittedAt]);
-  if (submittedAt) return <div className="sunk mb-4 px-5 py-3.5 text-sm font-medium" role="status">检查点已提交，计时结束<p className="mt-0.5 text-xs font-normal text-muted-foreground">{Date.parse(submittedAt) <= Date.parse(deadlineAt) ? "原稿已在截止前提交；等待评分不会占用作答时间。" : "原稿在截止后提交，仍可获得反馈，但不计入基线与趋势。"} AI 实验性预估。</p></div>;
-  return <div className="surface mb-4 flex flex-wrap items-baseline gap-x-3 px-5 py-3.5 text-sm" role="timer"><span className="font-medium">检查点剩余</span><span className="font-serif text-[22px] leading-none font-medium tabular-nums">{Math.floor(remaining / 60000)}:{String(Math.floor(remaining / 1000) % 60).padStart(2, "0")}</span><p className="w-full pt-1 text-xs text-muted-foreground">40 分钟从开始计时，刷新不重置。超时仍可提交评分，但不计入基线与趋势。AI 实验性预估。</p></div>;
+  // 放在作文工作区的同一列里，作为固定的一行；不额外占一屏高度
+  const bar = "flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-0.5 border-b bg-sheet px-4 py-2 text-sm";
+  if (submittedAt) return <div className={bar} role="status"><span className="font-medium">独立模考已提交，计时结束</span><span className="text-muted-foreground">{Date.parse(submittedAt) <= Date.parse(deadlineAt) ? "按时提交，等待评分不会占用作答时间。" : "超时提交：本次仍会获得反馈，但不会加入成绩趋势。"}</span></div>;
+  return <div className={bar} role="timer"><span className="font-medium">独立模考剩余</span><span className="font-serif text-[20px] leading-none font-medium tabular-nums">{Math.floor(remaining / 60000)}:{String(Math.floor(remaining / 1000) % 60).padStart(2, "0")}</span><span className="text-muted-foreground">刷新、离开或暂放都不会暂停；超时仍可提交并获得反馈，但不会加入成绩趋势。</span></div>;
 }

@@ -1,11 +1,24 @@
 "use client";
 
-import { Fragment, useMemo } from "react";
+import { Fragment, useMemo, type CSSProperties } from "react";
 import { splitSentences } from "@/lib/rules";
 import { cn } from "@/lib/utils";
 
-export const ISSUE_TONES = ["var(--hl-1)", "var(--hl-2)", "var(--hl-3)"];
-export const ISSUE_SOLID = ["rgb(233 185 73 / 0.7)", "rgb(229 140 138 / 0.7)", "rgb(127 182 133 / 0.7)"];
+/**
+ * 问题句统一用教练蓝：平时是浅底色加一条细下划线，选中或悬停时底色加深、下划线变粗。
+ * 不同问题靠句前编号区分，不再按序号轮换颜色。--hl-1 浅底，--hl-2 选中底，--hl-3 下划线。
+ */
+export function issueMarkStyle(active: boolean): CSSProperties {
+  const wash = active ? "var(--hl-2)" : "var(--hl-1)";
+  return {
+    backgroundImage: `linear-gradient(var(--hl-3), var(--hl-3)), linear-gradient(${wash}, ${wash})`,
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "0 100%, 0 100%",
+    backgroundSize: `100% ${active ? 2 : 1}px, 100% 100%`,
+    boxDecorationBreak: "clone",
+    WebkitBoxDecorationBreak: "clone",
+  };
+}
 
 export type Mark = { sentenceId: number; rank: number };
 
@@ -59,17 +72,10 @@ export function EssayReader({
                     onKeyDown={(e) => e.key === "Enter" && onMarkClick?.(rank)}
                     onMouseEnter={() => onMarkHover?.(rank)}
                     onMouseLeave={() => onMarkHover?.(null)}
-                    className={cn("rounded-[3px] transition-[background-size,opacity,box-shadow] duration-(--dur-layout) ease-(--ease-soft)", onMarkClick && "cursor-pointer", dim && "opacity-55")}
-                    style={{
-                      backgroundImage: `linear-gradient(${ISSUE_TONES[(rank - 1) % 3]}, ${ISSUE_TONES[(rank - 1) % 3]})`,
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "0 100%",
-                      backgroundSize: activeRank != null && ranks?.includes(activeRank) ? "100% 100%" : "100% 42%",
-                      boxDecorationBreak: "clone",
-                      WebkitBoxDecorationBreak: "clone",
-                    }}
+                    className={cn("rounded-[2px] transition-[background-size,opacity,box-shadow] duration-(--dur-layout) ease-(--ease-soft)", onMarkClick && "cursor-pointer", dim && "opacity-55")}
+                    style={issueMarkStyle(activeRank != null && Boolean(ranks?.includes(activeRank)))}
                   >
-                    <sup className="mr-0.5 font-sans text-[10px] font-medium text-muted-foreground not-italic">{s.id}</sup>
+                    <sup className="mr-0.5 font-sans text-[10px] font-medium text-coach not-italic">{s.id}</sup>
                     {s.text}
                   </span>
                 )}

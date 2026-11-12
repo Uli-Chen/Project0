@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { CoachMessage, Suggestion } from "@/lib/prototype/types";
 import { cn } from "@/lib/utils";
 import { CoachMarkdown } from "./coach-markdown";
@@ -21,6 +22,19 @@ export function CoachEmpty() {
       <span className="grid size-14 place-items-center rounded-full bg-coach-soft font-serif text-[34px] leading-none text-coach italic">0</span>
     </div>
   );
+}
+
+/** 读屏播报文字：只播报挂载之后新到的教练回复，不重读已有的对话 */
+export function replyAnnouncement(messages: Pick<CoachMessage, "id" | "role" | "content">[], seenCoachId: string | null): string {
+  const latest = messages.findLast((m) => m.role === "coach");
+  if (!latest || latest.id === seenCoachId) return "";
+  const plain = latest.content.replace(/[*_`#>|~[\]]/g, "").replace(/\s+/g, " ").trim();
+  return `教练已回复：${plain.length > 160 ? `${plain.slice(0, 160)}…` : plain}`;
+}
+
+function useReplyAnnouncement(messages: CoachMessage[]) {
+  const [seenCoachId] = useState(() => messages.findLast((m) => m.role === "coach")?.id ?? null);
+  return replyAnnouncement(messages, seenCoachId);
 }
 
 const STAGE_GROUP: Record<CoachMessage["stage"], string> = { quick: "速刷", prewriting: "写前", writing: "写作", issue: "反馈与改写", revision: "反馈与改写" };
@@ -50,9 +64,11 @@ export function CoachThread({
   className?: string;
 }) {
   const last = messages.at(-1);
+  const announcement = useReplyAnnouncement(messages);
 
   return (
     <div className={cn("flex flex-col gap-5", className)}>
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
       {messages.map((m, i) => {
         const group = STAGE_GROUP[m.stage];
         const divider = showStages && i > 0 && STAGE_GROUP[messages[i - 1].stage] !== group

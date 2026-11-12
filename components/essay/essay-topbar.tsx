@@ -67,7 +67,20 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
     else ui.setSheet(ui.sheet === side ? null : side);
   };
 
+  const revisionToggle = hasRevision(state) ? (
+    <ToggleGroup aria-label="版本" size="sm" spacing={0} variant="outline" value={[ui.version]} onValueChange={(value) => { if (value[0]) ui.setVersion(value[0] as EssayKind); }}>
+      {(["original", "revision"] as const).map((kind) => (
+        <ToggleGroupItem key={kind} value={kind} className="gap-1.5 px-2.5 text-sm">
+          {kind === "original" ? "原稿" : "改写稿"}
+          {scores[kind] !== undefined && <span className="text-muted-foreground tabular-nums">{scores[kind]!.toFixed(1)}</span>}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  ) : null;
+  const status = editing ? <WritingStatus countdown={countdown} overtime={overtime} elapsed={elapsed} essayKind={essayKind} words={words} short={short} saveStatus={saveStatus} /> : null;
+
   return (
+    <>
     <header className="relative z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-sheet px-3">
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
         <Link href="/essays" onClick={leave} className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
@@ -84,27 +97,10 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
         <Badge variant="outline" className="hidden shrink-0 sm:inline-flex">{essayKindLabel(state)}</Badge>
       </div>
 
-      {hasRevision(state) && (
-        <ToggleGroup aria-label="版本" size="sm" spacing={0} variant="outline" value={[ui.version]} onValueChange={(value) => { if (value[0]) ui.setVersion(value[0] as EssayKind); }} className="hidden md:flex">
-          {(["original", "revision"] as const).map((kind) => (
-            <ToggleGroupItem key={kind} value={kind} className="gap-1.5 px-2.5 text-xs">
-              {kind === "original" ? "原稿" : "改写稿"}
-              {scores[kind] !== undefined && <span className="text-muted-foreground tabular-nums">{scores[kind]!.toFixed(1)}</span>}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-      )}
+      {revisionToggle && <div className="hidden md:flex">{revisionToggle}</div>}
 
       <div className="flex flex-1 items-center justify-end gap-1.5">
-        {editing && (
-          <div className="meta mr-2 hidden items-center gap-3.5 sm:flex">
-            {countdown
-              ? <span className={cn("tabular-nums", overtime ? "font-medium text-warn" : elapsed > 2100 && "text-warn")} title="模考限时 40 分钟">{overtime ? `已超时 ${formatClock(elapsed - 2400)}` : `剩余 ${formatClock(2400 - elapsed)}`}</span>
-              : <span className={cn("tabular-nums", overtime && "text-warn")} title={essayKind === "revision" ? "改写用时" : "考场建议 40 分钟"}>{overtime ? "超过 40 分钟，" : ""}{formatClock(elapsed)}</span>}
-            <span className={cn("tabular-nums", short && "text-warn")} title={`题目要求至少 ${MIN_WORDS} 词`}>{words}{short ? ` / ${MIN_WORDS}` : ""} 词</span>
-            <span className={cn("inline-flex items-center gap-1", saveStatus === "error" ? "text-destructive" : saveStatus === "saved" && "text-good")}>{saveStatus === "saved" && <Check className="size-3.5" />}{saveStatus === "saving" ? "保存中" : saveStatus === "unsaved" ? "未保存" : saveStatus === "error" ? "保存失败" : "已保存"}</span>
-          </div>
-        )}
+        {status && <div className="meta mr-2 hidden items-center gap-3.5 sm:flex">{status}</div>}
         {hasLeft && <IconButton label="提纲" onClick={() => togglePanel("left")} active={ui.wide ? ui.leftOpen : ui.sheet === "left"}><PanelLeft /></IconButton>}
         {ui.panels.length > 0 && <IconButton label="检查面板" onClick={() => togglePanel("right")} active={ui.wide ? ui.rightOpen : ui.sheet === "right"}><PanelRight /></IconButton>}
         <MoreMenu assessment={assessment} />
@@ -112,11 +108,34 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
       </div>
       <Dialog open={mockLeave} onOpenChange={setMockLeave}>
         <DialogContent>
-          <DialogHeader><DialogTitle>模考还没写完</DialogTitle><DialogDescription>{state.checkpointId ? "检查点的 40 分钟不会暂停，离开期间时间照常走。" : "离开后计时会暂停，回来可以接着写，但这样就不是一次连续 40 分钟的模考了。"}草稿会先保存。</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>模考还没写完</DialogTitle><DialogDescription>{state.checkpointId ? "独立模考的 40 分钟不会暂停，离开期间时间照常走。" : "离开后计时会暂停，回来可以接着写，但这样就不是一次连续 40 分钟的模考了。"}草稿会先保存。</DialogDescription></DialogHeader>
           <DialogFooter><Button variant="outline" disabled={leaving} onClick={() => setMockLeave(false)}>继续写</Button><Button disabled={leaving} onClick={() => void saveAndLeave()}>{leaving ? "正在保存…" : "保存并离开"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </header>
+    {/* 窄屏：版本切换和写作状态放到顶栏下的一行，不靠隐藏来省位置 */}
+    {(revisionToggle || status) && (
+      <div className={cn("flex shrink-0 items-center gap-3 border-b bg-sheet px-3 py-1.5", revisionToggle ? "md:hidden" : "sm:hidden")}>
+        {revisionToggle}
+        {status && <div className="meta ml-auto flex items-center gap-3 sm:hidden">{status}</div>}
+      </div>
+    )}
+    </>
+  );
+}
+
+/** 用时或倒计时、字数、保存状态；顶栏和窄屏状态行共用 */
+function WritingStatus({ countdown, overtime, elapsed, essayKind, words, short, saveStatus }: {
+  countdown: boolean; overtime: boolean; elapsed: number; essayKind: EssayKind; words: number; short: boolean; saveStatus: "saved" | "saving" | "unsaved" | "error";
+}) {
+  return (
+    <>
+      {countdown
+        ? <span className={cn("tabular-nums", overtime ? "font-medium text-warn" : elapsed > 2100 && "text-warn")} title="模考限时 40 分钟">{overtime ? `已超时 ${formatClock(elapsed - 2400)}` : `剩余 ${formatClock(2400 - elapsed)}`}</span>
+        : <span className={cn("tabular-nums", overtime && "text-warn")} title={essayKind === "revision" ? "改写用时" : "考场建议 40 分钟"}>{overtime ? "超过 40 分钟，" : ""}{formatClock(elapsed)}</span>}
+      <span className={cn("tabular-nums", short && "text-warn")} title={`题目要求至少 ${MIN_WORDS} 词`}>{words}{short ? ` / ${MIN_WORDS}` : ""} 词</span>
+      <span role={saveStatus === "error" ? "alert" : undefined} className={cn("inline-flex items-center gap-1", saveStatus === "error" ? "font-medium text-destructive" : saveStatus === "saved" && "text-good")}>{saveStatus === "saved" && <Check className="size-3.5" />}{saveStatus === "saving" ? "保存中" : saveStatus === "unsaved" ? "未保存" : saveStatus === "error" ? "保存失败" : "已保存"}</span>
+    </>
   );
 }
 
@@ -155,7 +174,7 @@ function MoreMenu({ assessment }: { assessment: boolean }) {
       </DropdownMenuContent>
     </DropdownMenu>
     <Dialog open={closing} onOpenChange={setClosing}>
-      <DialogContent><DialogHeader><DialogTitle>关闭这次练习？</DialogTitle><DialogDescription>会先保存当前草稿；未发送的教练文字不会一起保存，离开前请发送或复制。关闭后不再推荐继续，正文和反馈保留，仍可从历史中恢复。{state.checkpointId ? "这会结束当前检查点占位；恢复不会重置计时或重新取得检查点资格。" : "如果只是稍后继续，可以取消并选择暂放。"}</DialogDescription></DialogHeader>
+      <DialogContent><DialogHeader><DialogTitle>关闭这次练习？</DialogTitle><DialogDescription>会先保存作文和提纲；教练输入框里没发送的文字不会保存。关闭后首页不再提示继续，正文和反馈都会保留，之后仍可恢复。{state.checkpointId ? "这次独立模考会就此结束，成绩不会加入趋势；之后恢复也不会重新计时。" : "如果只是稍后继续，可以取消并选择暂放。"}</DialogDescription></DialogHeader>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <DialogFooter><Button variant="outline" disabled={lifecycleBusy} onClick={() => setClosing(false)}>取消</Button><Button disabled={unavailable} onClick={async () => { if (await actions.changeLifecycle("close")) setClosing(false); }}>{lifecycleBusy ? "正在保存…" : "保存并关闭"}</Button></DialogFooter>
       </DialogContent>
