@@ -86,7 +86,11 @@ export type AskSettlement = {
  * `messages` is the latest snapshot: an ask it already holds is done even if the response was lost.
  */
 export function settleAsk(request: PendingAsk, outcome: Outcome, sent: { text: string; typed: boolean }, messages: readonly Message[]): AskSettlement {
-  if (outcome.ok || askDelivered(request, messages)) return { pending: null, restore: sent.typed && sent.text !== request.text ? sent.text : null, error: null, refresh: false, newIntent: false, clear: request.text };
+  if (outcome.ok || askDelivered(request, messages)) {
+    // The typed text was not sent (an older ask was replayed instead); it goes back without that ask's copy.
+    const rest = sent.typed && sent.text !== request.text ? withoutDelivered(sent.text, request.text) : "";
+    return { pending: null, restore: rest.trim() ? rest : null, error: null, refresh: false, newIntent: false, clear: request.text };
+  }
   const typed = sent.typed ? sent.text : null;
   switch (outcome.code) {
     case "card_conflict": return { pending: null, restore: null, error: null, refresh: false, newIntent: true, clear: null };

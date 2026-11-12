@@ -217,3 +217,12 @@ test('once a restored ask is delivered, only its copy leaves the box and newer t
  assert.equal(withoutDelivered('B', 'A'), 'B');
  assert.equal(reconcileAsk({ text: 'A', cardVersion: 1, requestId: 'r', after: 0, status: 'failed' }, 'A\nB', [{ id: 'm', role: 'user', stage: 'quick', action: 'quickAsk', content: 'A' }] as never).askDraft, 'B');
 });
+
+test('sending a restored "A\\nB" replays A first; B comes back without the delivered A', () => {
+ const failed: PendingAsk = { text: 'A', cardVersion: 1, requestId: 'r', after: 0, status: 'failed' };
+ const { request } = planAsk(failed, 'A\nB', 1, 0, () => 'new');
+ const done = settleAsk(request, ok, typed('A\nB'), []);
+ assert.deepEqual([done.restore, done.clear], ['B', 'A']);
+ assert.equal(withoutDelivered(restoreInto('C', done.restore!), 'A'), 'B\nC');
+ assert.equal(settleAsk(request, ok, typed('A'), []).restore, null);
+});
