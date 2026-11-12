@@ -42,10 +42,11 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
     } catch (error) { setError(error instanceof Error ? error.message : "网络连接失败，请重试。"); setBusy(false); }
   }
 
+  // An ended weeks plan that the learner leaves untouched keeps its date, so other settings can still be saved.
+  const keepsPlan = initial.timeBy === "weeks" && !!initial.examDate && !weeksChanged;
   const missing = [
     !target && "目标分",
-    // An ended weeks plan that the learner leaves untouched keeps its date, so other settings can still be saved.
-    !(timeBy === "date" ? examDate : weeks || (initial.timeBy === "weeks" && initial.examDate && !weeksChanged)) && "备考时间",
+    !(timeBy === "date" ? examDate : weeks || keepsPlan) && "备考时间",
     !level && "目前水平",
     !perWeek && "每周次数",
     !minutes && "每次时长",
@@ -80,13 +81,13 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
             />
             <div className="mt-3">
               {timeBy === "date" ? (
-                <input aria-label="考试日期" type="date" required min={new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" })} value={examDate} onChange={(e) => setExamDate(e.target.value)} className={inputClass} />
+                <input aria-label="考试日期" type="date" required min={examDate && examDate === initial.examDate ? undefined : new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" })} value={examDate} onChange={(e) => setExamDate(e.target.value)} className={inputClass} />
               ) : (
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="number"
                     aria-label="准备周数"
-                    required
+                    required={!keepsPlan}
                     min={1}
                     max={52}
                     value={weeks}
