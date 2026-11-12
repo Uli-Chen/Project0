@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RotateCw } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
 import { useStartEssay } from "@/components/shell/new-essay";
 
 type Status = { enabled: boolean; state: string; candidateQuestionId?: string; candidateText?: string; attemptId?: string };
@@ -107,6 +107,7 @@ export function CheckpointTitle() {
       <Popover>
         <PopoverTrigger render={<Button size="sm" variant="ghost" className="h-7 px-2.5 text-[14px]" />}>规则</PopoverTrigger>
         <PopoverContent align="start" className="w-80 max-w-[calc(100vw-2rem)] p-4">
+          <PopoverTitle className="sr-only">独立模考规则</PopoverTitle>
           <ul className="flex flex-col gap-2 text-[14px] leading-relaxed text-foreground">
             {CHECKPOINT_RULES.map(rule => <li key={rule}>{rule}</li>)}
           </ul>

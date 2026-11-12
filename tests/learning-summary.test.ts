@@ -73,8 +73,9 @@ test("保存资料时没改备考周数，结束日期不变；改了才重算�
   assert.equal(examDateToSave(plan, { timeBy: "weeks", examDate: "", weeks: "3", weeksChanged: false }, today), "2026-12-01");
   assert.equal(examDateToSave(plan, { timeBy: "weeks", examDate: "", weeks: "5", weeksChanged: true }, today), examDateFromWeeks("5", today));
   assert.equal(examDateToSave(plan, { timeBy: "date", examDate: "2027-02-01", weeks: "3", weeksChanged: false }, today), "2027-02-01");
-  // A plan that has run out shows a fresh count in the form, so saving it starts that count.
-  assert.equal(examDateToSave({ ...plan, examDate: "2026-11-01" }, { timeBy: "weeks", examDate: "", weeks: "1", weeksChanged: false }, today), examDateFromWeeks("1", today));
+  // A plan that has already ended keeps its date too: only changing the week count renews it.
+  assert.equal(examDateToSave({ ...plan, examDate: "2026-11-01" }, { timeBy: "weeks", examDate: "", weeks: "1", weeksChanged: false }, today), "2026-11-01");
+  assert.equal(examDateToSave({ ...plan, examDate: "2026-11-01" }, { timeBy: "weeks", examDate: "", weeks: "2", weeksChanged: true }, today), examDateFromWeeks("2", today));
   // Switching from an exam date to weeks starts the typed count.
   assert.equal(examDateToSave({ timeBy: "date", weeks: "", examDate: "2027-02-01" }, { timeBy: "weeks", examDate: "", weeks: "4", weeksChanged: false }, today), examDateFromWeeks("4", today));
   // A weeks-only profile stays a plan length until the learner changes the count.

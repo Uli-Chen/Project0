@@ -64,14 +64,13 @@ export function examDateFromWeeks(weeks: number | string, now = new Date()) {
 }
 
 /** The end date to store when the profile form is saved. A weeks plan keeps the date it already ends
- * on unless the learner changed the week count (or the plan has run out and the form shows a fresh
- * count), so saving other settings never pushes the end date back. A profile that only has a week
- * count stays that way until the learner changes it. */
+ * on, even one that has passed, unless the learner changed the week count, so saving other settings
+ * never moves the end date. A profile that only has a week count stays that way until the learner
+ * changes it. */
 export function examDateToSave(initial: Pick<UserProfile, "timeBy" | "examDate" | "weeks">, form: { timeBy: UserProfile["timeBy"]; examDate: string; weeks: string; weeksChanged: boolean }, now = new Date()) {
   if (form.timeBy === "date") return form.examDate;
   if (!form.weeksChanged && initial.timeBy === "weeks") {
-    if (!initial.examDate) return "";
-    if (weeksLeft(initial, now) > 0) return initial.examDate;
+    return initial.examDate;
   }
   return examDateFromWeeks(form.weeks, now);
 }

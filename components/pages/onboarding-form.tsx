@@ -18,7 +18,8 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
   const [timeBy, setTimeBy] = useState(initial.timeBy);
   const [examDate, setExamDate] = useState(initial.examDate);
   // Weeks are stored as the date they end on; show what is left of them, not the number first typed.
-  const [weeks, setWeeks] = useState(() => initial.timeBy === "weeks" && initial.examDate ? String(Math.max(1, weeksLeft(initial))) : initial.weeks);
+  // A plan that has already ended shows an empty count, so the learner enters a new one instead of seeing a made-up "1".
+  const [weeks, setWeeks] = useState(() => initial.timeBy === "weeks" && initial.examDate ? (weeksLeft(initial) > 0 ? String(weeksLeft(initial)) : "") : initial.weeks);
   // Saving without touching the week count keeps the plan's end date where it is.
   const [weeksChanged, setWeeksChanged] = useState(false);
   const [level, setLevel] = useState(initial.level);

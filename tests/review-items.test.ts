@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createSession } from "../lib/pipeline/initial";
-import { dueItems, gradeReview, GRADED_KEYS, matchRevision, nextReview, reviewItems } from "../lib/learning/review-items";
+import { dueItems, gradeReview, GRADED_KEEP_DAYS, GRADED_KEYS, matchRevision, nextReview, reviewItems } from "../lib/learning/review-items";
 import { draftMarks, remainingByIssue } from "../lib/learning/revision-marks";
 
 function practised() {
@@ -83,6 +83,14 @@ test("评分重试：两个标签页交错（A、B、再重放 A），旧呈现�
   assert.equal(entry.graded?.length, GRADED_KEYS);
   assert.equal(entry.graded?.at(-1)?.[0], `k${GRADED_KEYS + 4}`);
   assert.equal(gradeReview(entry, "good", `k${GRADED_KEYS + 4}`, now).applied, false);
+  // Interleaved tabs: A, then twenty other presentations, then A again is still a replay.
+  let mixed = gradeReview(undefined, "good", "A", now).entry;
+  for (let i = 0; i < 20; i++) mixed = gradeReview(mixed, "again", `other-${i}`, now).entry;
+  assert.equal(gradeReview(mixed, "good", "A", now).applied, false);
+  // Receipts expire after the keep window, so the list cannot grow without bound.
+  const later = new Date(now.getTime() + (GRADED_KEEP_DAYS + 1) * 86_400_000);
+  const aged = gradeReview(mixed, "good", "fresh", later).entry;
+  assert.deepEqual(aged.graded?.map(([k]) => k), ["fresh"]);
 });
 
 test("没改动的句子、完全无关的句子都不算“改法”", () => {

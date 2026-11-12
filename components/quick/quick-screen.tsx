@@ -189,6 +189,8 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   /** Until the server confirms it, an ask cannot be abandoned, like an answer in flight. */
   const askInFlight = preparingAsk || pendingAsk?.status === "sending";
   const unsent = unsentCoachText({ answer, askDraft, preparingAsk, pendingAsk });
+  // A confirmation opened while an ask was sending goes away once nothing is left to lose.
+  if (leaveIntent && !unsent && (leaveIntent.kind === "deep" || (!dirty && !saving))) setLeaveIntent(null);
   useEffect(() => {
     if (!dirty && !unsent) return;
     const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); };
