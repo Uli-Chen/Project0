@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DEFAULT_PROFILE } from "../lib/auth/types";
-import { buildMemory, learningSummary } from "../lib/learning/summary";
+import { buildMemory, examDateFromWeeks, learningSummary, weeksLeft } from "../lib/learning/summary";
 import { createSession } from "../lib/pipeline/initial";
 import type { Evaluation, Issue } from "../lib/prototype/types";
 
@@ -45,4 +45,22 @@ test("empty profile has no invented score goal or progress; expired dates reach 
   const expired = learningSummary([], { ...DEFAULT_PROFILE, timeBy: "date", examDate: "2000-01-01" });
   assert.equal(expired.weeks, 0);
   assert.equal(expired.examPassed, true);
+});
+
+test("备考周数保存为结束日期，此后每周递减；只存了周数的旧档案照旧显示", () => {
+  const setOn = new Date("2026-11-13T04:00:00Z"); // 台北 11 月 13 日中午
+  const examDate = examDateFromWeeks("8", setOn);
+  assert.equal(examDate, "2027-01-07");
+  const profile = { ...DEFAULT_PROFILE, timeBy: "weeks" as const, weeks: "8", examDate };
+  assert.equal(weeksLeft(profile, setOn), 8, "the day it is set it reads the weeks the student typed");
+  assert.equal(weeksLeft(profile, new Date("2026-11-19T15:00:00Z")), 8);
+  assert.equal(weeksLeft(profile, new Date("2026-11-20T04:00:00Z")), 7, "one week later, one week fewer");
+  assert.equal(weeksLeft(profile, new Date("2027-01-07T15:00:00Z")), 1);
+  assert.equal(weeksLeft(profile, new Date("2027-01-08T04:00:00Z")), 0);
+  assert.equal(learningSummary([], { ...profile, examDate: "2000-01-01" }).examPassed, true);
+  assert.equal(examDateFromWeeks("", setOn), "");
+  const legacy = { ...DEFAULT_PROFILE, timeBy: "weeks" as const, weeks: "6", examDate: "" };
+  assert.equal(weeksLeft(legacy, new Date("2030-01-01T00:00:00Z")), 6, "old weeks-only profiles keep working");
+  assert.equal(learningSummary([], legacy).examPassed, false);
+  assert.equal(weeksLeft({ ...DEFAULT_PROFILE, timeBy: "date", examDate: "2026-11-27" }, setOn), 3);
 });

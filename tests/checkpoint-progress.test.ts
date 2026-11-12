@@ -14,6 +14,6 @@ test("checkpoint trend follows immutable completion chronology, never creation o
   ];
   const points = checkpointScorePoints([earlyStart, lateStart], checkpoints);
   assert.deepEqual(points.map(p => p.date), ["2026-11-01T16:01:00Z", "2026-11-03T02:00:00Z"]);
-  assert.deepEqual(points.map(p => p.overall), [6, 6.5]); assert.equal(points[0].label, "基线");
+  assert.deepEqual(points.map(p => p.overall), [6, 6.5]); assert.equal(points[0].label, "第 1 次");
   earlyStart.updatedAt = "2027-01-01T00:00:00Z"; assert.deepEqual(checkpointScorePoints([lateStart, earlyStart], checkpoints), points);
 });

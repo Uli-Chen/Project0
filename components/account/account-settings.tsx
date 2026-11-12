@@ -116,7 +116,7 @@ function Row({ title, children }: { title: string; children: React.ReactNode }) 
 }
 
 function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: React.ReactNode }) {
-  return <div className="flex flex-col gap-1.5"><Label htmlFor={htmlFor} className="text-xs font-normal text-muted-foreground">{label}</Label>{children}</div>;
+  return <div className="flex flex-col gap-1.5"><Label htmlFor={htmlFor} className="text-[14px] font-normal text-muted-foreground">{label}</Label>{children}</div>;
 }
 
 function statusOf(busy: boolean, message: string, error: string): AsyncStatus {

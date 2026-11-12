@@ -10,7 +10,7 @@ const unexpected = () => assert.fail("SSR must not navigate");
 const router = { back: unexpected, forward: unexpected, refresh: unexpected, push: unexpected, replace: unexpected, prefetch: unexpected };
 const render = (items: ReviewItem[]) => renderToStaticMarkup(jsx(AppRouterContext.Provider, { value: router, children: jsx(ReviewDeck, { items }) }));
 
-const fix: ReviewItem = { id: "fix:s:1", kind: "fix", prompt: "He go to school every day.", answer: "He goes to school every day.", issueTitle: "主谓一致", hint: "先找主语", sessionId: "s", rank: 1, date: "2026-11-10" };
+const fix: ReviewItem = { id: "fix:s:1", kind: "fix", prompt: "He go to school every day.", answer: "He goes to school every day.", revised: true, issueTitle: "主谓一致", hint: "先找主语", sessionId: "s", rank: 1, date: "2026-11-10" };
 const phrase: ReviewItem = { id: "phrase:s:p", kind: "phrase", prompt: "没人管之后学习变差", answer: "Without supervision, their studies get worse.", note: "直接对应", sessionId: "s", date: "2026-11-09" };
 
 test("复习卡片先只给题面：自己的答案在对照之前不出现，进度按本轮张数计", () => {

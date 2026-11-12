@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createSession } from "../lib/pipeline/initial";
-import { dueItems, matchRevision, nextReview, reviewItems } from "../lib/learning/review-items";
+import { dueItems, gradeReview, matchRevision, nextReview, reviewItems } from "../lib/learning/review-items";
 import { draftMarks, remainingByIssue } from "../lib/learning/revision-marks";
 
 function practised() {
@@ -28,6 +28,42 @@ test("复习内容只来自学生自己的练习：采纳的表达配上原来�
   assert.equal(fixes[1].answer, "Some students feel homesick at first.");
   session.submitted.revision = null;
   assert.equal(reviewItems([session]).find(item => item.kind === "fix")!.answer, null);
+});
+
+test("提交改写稿后，没改的错句仍留在复习里：同一个 id，answer 为 null，已有进度不丢", () => {
+  const session = practised();
+  session.submitted.revision = null;
+  const before = reviewItems([session]).filter(item => item.kind === "fix");
+  assert.deepEqual(before.map(item => item.id), [`fix:${session.id}:1`, `fix:${session.id}:3`]);
+  const now = new Date("2026-11-10T00:00:00Z");
+  const state = { [before[0].id]: nextReview(undefined, "good", now) };
+  // Only the third sentence is rewritten; the first one is left exactly as it was.
+  session.submitted.revision = "He go to school every day. The rent is expensive.\n\nSome students feel homesick at first.";
+  const after = reviewItems([session]).filter(item => item.kind === "fix");
+  assert.deepEqual(after.map(item => item.id), before.map(item => item.id));
+  assert.equal(after[0].kind === "fix" && after[0].answer, null);
+  assert.equal(after[0].kind === "fix" && after[0].revised, true);
+  assert.equal(after[1].answer, "Some students feel homesick at first.");
+  assert.equal(dueItems(after, state, now).length, after.length - 1, "progress keyed by id survives the revision");
+  // A rewrite that leaves nothing matching still removes no card.
+  session.submitted.revision = "Completely different text about technology.";
+  assert.deepEqual(reviewItems([session]).filter(item => item.kind === "fix").map(item => [item.id, item.answer]), before.map(item => [item.id, null]));
+});
+
+test("评分重试：同一次呈现的评分只推进一次；下一次呈现照常推进", () => {
+  const now = new Date("2026-11-10T00:00:00Z");
+  const first = gradeReview(undefined, "good", "shown-1", now);
+  assert.equal(first.applied, true);
+  assert.deepEqual({ box: first.entry.box, due: first.entry.due }, { box: 1, due: "2026-11-11T00:00:00.000Z" });
+  const retry = gradeReview(first.entry, "good", "shown-1", now);
+  assert.equal(retry.applied, false);
+  assert.deepEqual(retry.entry, first.entry, "a retried grade must not move 1 day to 3 days");
+  // Even if the retry carries a different button, the grade recorded first stands.
+  assert.equal(gradeReview(first.entry, "again", "shown-1", now).entry.result, "good");
+  const next = gradeReview(first.entry, "good", "shown-2", now);
+  assert.equal(next.applied, true); assert.equal(next.entry.box, 2);
+  // Requests without a key (pages loaded before keys existed) still grade.
+  assert.equal(gradeReview(next.entry, "again", undefined, now).entry.box, 0);
 });
 
 test("没改动的句子、完全无关的句子都不算“改法”", () => {

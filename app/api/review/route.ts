@@ -4,10 +4,11 @@ import { requireApiUser } from "@/lib/auth/server";
 import { listSessions } from "@/lib/db/queries/sessions";
 import { updateUserProfile, userById } from "@/lib/db/queries/users";
 import { DEFAULT_PROFILE, type UserProfile } from "@/lib/auth/types";
-import { nextReview, reviewItems, type ReviewState } from "@/lib/learning/review-items";
+import { gradeReview, reviewItems, type ReviewState } from "@/lib/learning/review-items";
 
 export const runtime = "nodejs";
-const inputSchema = z.object({ id: z.string().min(1).max(200), result: z.enum(["good", "again"]) }).strict();
+// `key` names one presentation of a card; the client reuses it when it retries the same grade.
+const inputSchema = z.object({ id: z.string().min(1).max(200), result: z.enum(["good", "again"]), key: z.string().min(1).max(100).optional() }).strict();
 
 /** Record one self-graded review. The schedule lives in the user's profile, next to their other preferences. */
 export async function POST(request: Request) {
@@ -24,8 +25,10 @@ export async function POST(request: Request) {
     try { raw = JSON.parse(current.profileJson); } catch { /* Legacy empty profile. */ }
     const live = new Set(items.map(item => item.id));
     const review: ReviewState = Object.fromEntries(Object.entries(raw.review ?? {}).filter(([id]) => live.has(id)));
-    review[input.id] = nextReview(review[input.id], input.result);
-    updateUserProfile(user.id, { ...DEFAULT_PROFILE, ...raw, review });
-    return Response.json({ review: review[input.id] });
+    const { entry, applied } = gradeReview(review[input.id], input.result, input.key);
+    review[input.id] = entry;
+    if (applied) updateUserProfile(user.id, { ...DEFAULT_PROFILE, ...raw, review });
+    // On a replay, `result` is the grade that was recorded for this presentation the first time.
+    return Response.json({ review: entry, result: entry.result ?? input.result, replayed: !applied });
   } catch (error) { return apiError(error); }
 }

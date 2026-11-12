@@ -8,6 +8,7 @@ import { StatusButton } from "@/components/ui/status-button";
 import { Segmented } from "@/components/ui/segmented";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/lib/auth/types";
+import { examDateFromWeeks, weeksLeft } from "@/lib/learning/summary";
 
 const DIFFICULTIES = ["没想法", "想法说不清", "英文表达不出来", "语法错误多", "写不完"];
 
@@ -16,7 +17,8 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
   const [target, setTarget] = useState(initial.target);
   const [timeBy, setTimeBy] = useState(initial.timeBy);
   const [examDate, setExamDate] = useState(initial.examDate);
-  const [weeks, setWeeks] = useState(initial.weeks);
+  // Weeks are stored as the date they end on; show what is left of them, not the number first typed.
+  const [weeks, setWeeks] = useState(() => initial.timeBy === "weeks" && initial.examDate ? String(Math.max(1, weeksLeft(initial))) : initial.weeks);
   const [level, setLevel] = useState(initial.level);
   const [perWeek, setPerWeek] = useState(initial.perWeek);
   const [minutes, setMinutes] = useState(initial.minutes);
@@ -29,7 +31,7 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
     if (missing.length || busy) return;
     setBusy(true); setError("");
     try {
-      const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, timeBy, examDate: timeBy === "date" ? examDate : "", weeks: timeBy === "weeks" ? weeks : "", level, perWeek, minutes, difficulties, lang, onboardingCompleted: true }) });
+      const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, timeBy, examDate: timeBy === "date" ? examDate : examDateFromWeeks(weeks), weeks: timeBy === "weeks" ? weeks : "", level, perWeek, minutes, difficulties, lang, onboardingCompleted: true }) });
       const data = await response.json();
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "保存失败，请检查填写内容。");
       router.push("/");
@@ -154,7 +156,7 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
             {initial.onboardingCompleted ? "取消" : "稍后"}
           </Link>
         </div>
-        {missing.length > 0 && <p className="mt-3 text-xs text-muted-foreground">还需要填写：{missing.join("、")}</p>}
+        {missing.length > 0 && <p className="mt-3 text-[14px] text-muted-foreground">还需要填写：{missing.join("、")}</p>}
       </form>
     </div>
   );
@@ -167,7 +169,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
     <div role="group" aria-label={label}>
       <p className="mb-2.5 text-sm text-foreground/80">
         {label}
-        {hint && <span className="ml-2 text-xs text-muted-foreground">{hint}</span>}
+        {hint && <span className="ml-2 text-[14px] text-muted-foreground">{hint}</span>}
       </p>
       {children}
     </div>

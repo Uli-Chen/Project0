@@ -4,8 +4,10 @@ type CheckpointEvidence = { attemptId: string; status: string; completedAt: stri
 export function checkpointScorePoints(sessions: SessionState[], checkpoints: CheckpointEvidence[]) {
   return checkpoints.filter(c => c.status === "eligible" && c.completedAt)
     .sort((a,b) => a.completedAt!.localeCompare(b.completedAt!) || a.attemptId.localeCompare(b.attemptId))
-    .flatMap((checkpoint, index) => {
+    .flatMap(checkpoint => {
       const evaluation = sessions.find(s => s.id === checkpoint.attemptId)?.evaluation;
-      return evaluation ? [{ date: checkpoint.completedAt!, label: checkpoint.isBaseline ? "基线" : `检查点 ${index + 1}`, overall: evaluation.scores.overall, dims: evaluation.scores.dims }] : [];
-    });
+      return evaluation ? [{ date: checkpoint.completedAt!, overall: evaluation.scores.overall, dims: evaluation.scores.dims }] : [];
+    })
+    // Learners see "the Nth independent mock" on the chart, never baseline/checkpoint terms.
+    .map((point, index) => ({ ...point, label: `第 ${index + 1} 次` }));
 }

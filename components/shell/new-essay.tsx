@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { LoaderCircle, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, type ReactElement } from "react";
+import { useRef, useState, type ReactElement } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,12 +22,20 @@ export function useStartEssay() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // One key per creation intent. Retrying the same choice after a lost response reuses it, so the
+  // server returns the essay it already created; a different choice is a new intent.
+  const intent = useRef<{ signature: string; key: string } | null>(null);
   async function start(input: { kind: SessionKind; mode: Mode; prompt?: string }) {
     setBusy(true); setError("");
+    const signature = JSON.stringify([input.kind, input.mode, input.prompt ?? null]);
+    if (intent.current?.signature !== signature) intent.current = { signature, key: crypto.randomUUID() };
     try {
-      const response = await fetch("/api/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
+      const response = await fetch("/api/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...input, idempotencyKey: intent.current.key }) });
       const data = await response.json();
+      // A rejected request created nothing, so the next attempt may start fresh.
+      if (response.status >= 400 && response.status < 500) intent.current = null;
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "暂时无法开始，请稍后重试。");
+      intent.current = null;
       router.push(`/essays/${data.session.id}`);
     } catch (failure) { setError(failure instanceof Error ? failure.message : "网络连接失败，请重试。"); setBusy(false); }
   }
@@ -39,7 +47,7 @@ export function StartEssayButton({ kind, mode, children, variant = "default" }: 
   const { busy, error, start } = useStartEssay();
   return <div className="flex flex-col items-start gap-2">
     <Button variant={variant} disabled={busy} onClick={() => start({ kind, mode })}>{busy && <LoaderCircle className="animate-spin" />}{children}</Button>
-    {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+    {error && <p role="alert" className="text-[14px] text-destructive">{error}</p>}
   </div>;
 }
 
@@ -90,7 +98,7 @@ export function NewEssayDialog({ trigger, focus, pasteOnly = false }: { trigger:
           </TabsList>
           <TabsContent value="suggested" className="min-h-28 rounded-lg border border-dashed px-4 py-3.5">
             <p className="text-sm">从题库中随机一道题</p>
-            {mode === "practice" && focus && <p className="mt-2 text-xs text-muted-foreground">本次重点 <span className="text-coach">{focus}</span></p>}
+            {mode === "practice" && focus && <p className="mt-2 text-[14px] text-muted-foreground">本次重点 <span className="text-coach">{focus}</span></p>}
           </TabsContent>
           <TabsContent value="topic" className="min-h-28">
             <div role="radiogroup" aria-label="话题" className="flex flex-col divide-y rounded-lg border">
@@ -99,7 +107,7 @@ export function NewEssayDialog({ trigger, focus, pasteOnly = false }: { trigger:
                   className={cn("flex items-start gap-3 px-3.5 py-2.5 text-left first:rounded-t-lg last:rounded-b-lg", topic === index ? "bg-secondary/60" : "hover:bg-secondary/30")}>
                   <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", topic === index ? "bg-primary" : "bg-border")} aria-hidden />
                   <span className="min-w-0">
-                    <span className="block text-xs font-medium">{item.name}</span>
+                    <span className="block text-[14px] font-medium">{item.name}</span>
                     <span className="mt-0.5 line-clamp-2 block font-serif text-[14px] leading-snug text-muted-foreground">{item.text}</span>
                   </span>
                 </button>

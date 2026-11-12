@@ -41,15 +41,30 @@ export function learningSummary(sessions: SessionState[], profile: UserProfile, 
   const latest = evaluated[0];
   const totalMinutes = Math.round(sessions.reduce((sum, session) => sum + session.elapsed.original + session.elapsed.revision, 0) / 60);
   const target = profile.target ? Number(profile.target) : null;
-  const weeks = profile.timeBy === "date" && profile.examDate
-    ? Math.max(0, Math.ceil((new Date(`${profile.examDate}T23:59:59+08:00`).getTime() - Date.now()) / (7 * 86400000)))
-    : (Number(profile.weeks) || 8);
+  const weeks = weeksLeft(profile);
   const focus = evaluated.flatMap((session) => session.evaluation?.issues ?? []).find((issue) => !profile.excludedMemoryIds.includes(`issue:${issue.code || issue.title}`));
   const taipeiNow = new Date(Date.now() + 8 * 60 * 60 * 1000);
   const weekStart = new Date(Date.UTC(taipeiNow.getUTCFullYear(), taipeiNow.getUTCMonth(), taipeiNow.getUTCDate() - (taipeiNow.getUTCDay() + 6) % 7) - 8 * 60 * 60 * 1000);
   const weekCompleted = completionEvents ? practiceCounts(completionEvents, new Date()).weekCompleted : sessions.filter((session) => session.completedAt && new Date(session.completedAt) >= weekStart && new Date(session.completedAt).getTime() < weekStart.getTime() + 7 * 86400000).length;
-  const examPassed = profile.timeBy === "date" && Boolean(profile.examDate) && weeks === 0;
+  const examPassed = Boolean(profile.examDate) && weeks === 0;
   return { evaluated, finished, resume, latest, totalMinutes, target, weeks, focus, weekCompleted, examPassed };
+}
+
+const WEEK = 7 * 86400000;
+const taipeiDay = (time: number) => new Date(time + 8 * 60 * 60_000).toISOString().slice(0, 10);
+
+/** "N weeks to prepare" is saved as the last day of those weeks (Asia/Taipei, today counts as day
+ * one), so it counts down like an exam date and reads N weeks on the day it is set. */
+export function examDateFromWeeks(weeks: number | string, now = new Date()) {
+  const count = Number(weeks);
+  return Number.isInteger(count) && count > 0 ? taipeiDay(now.getTime() + (count * 7 - 1) * 86400000) : "";
+}
+
+/** Whole weeks left until the exam date (or the end of the planned weeks), 0 once it has passed.
+ * Profiles saved before weeks were converted to a date have only the number; they keep showing it. */
+export function weeksLeft(profile: Pick<UserProfile, "timeBy" | "examDate" | "weeks">, now = new Date()) {
+  if (profile.examDate) return Math.max(0, Math.ceil((new Date(`${profile.examDate}T23:59:59+08:00`).getTime() - now.getTime()) / WEEK));
+  return Number(profile.weeks) || 8;
 }
 
 export function buildMemory(sessions: SessionState[], profile: UserProfile): MemoryItem[] {

@@ -5,6 +5,7 @@ import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
+import { usePathname } from "next/navigation"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Button } from "@/components/ui/button"
@@ -68,6 +69,15 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
+
+  // The mobile sheet covers the page, so arriving on a new page closes it (links also close it
+  // as soon as navigation starts; this catches every other way of changing pages).
+  const pathname = usePathname()
+  const [shownPath, setShownPath] = React.useState(pathname)
+  if (pathname !== shownPath) {
+    setShownPath(pathname)
+    setOpenMobile(false)
+  }
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
