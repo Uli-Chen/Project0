@@ -15,6 +15,11 @@ const ALL_PATHS = GROUPS.flatMap((g) => g.slots.map((s) => s.path as string));
 
 const COVERAGE_LABEL = { written: "已写进文章", partly: "写了一部分", missing: "没有写到" } as const;
 
+/** Escape 撤销本次编辑：文字已逐字同步到共享草稿，所以要把进入编辑前的值写回去；没改动就什么都不做 */
+export function slotCancelRestore(before: string | null, current: string | null): string | null {
+  return (current ?? "") === (before ?? "") ? null : before ?? "";
+}
+
 export function outlineProgress(outline: Outline) {
   return { filled: ALL_PATHS.filter((p) => getSlot(outline, p)).length, total: ALL_PATHS.length };
 }
@@ -88,16 +93,25 @@ function SlotRow({
   onSave?: (text: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  // 输入框显示原样文字（含正在打的空格）；每次输入都同步到共享草稿，由统一的防抖保存和离开保护负责
   const [draft, setDraft] = useState(text ?? "");
+  const before = useRef<string | null>(null);
 
   const start = () => {
     if (!onSave) return;
+    before.current = text;
     setDraft(text ?? "");
     setEditing(true);
   };
-  const commit = () => {
+  const change = (value: string) => {
+    setDraft(value);
+    if (value.trim() !== (text ?? "")) onSave?.(value);
+  };
+  const commit = () => setEditing(false);
+  const cancel = () => {
     setEditing(false);
-    if (draft.trim() !== (text ?? "")) onSave?.(draft);
+    const restore = slotCancelRestore(before.current, text);
+    if (restore !== null) onSave?.(restore);
   };
 
   return (
@@ -110,7 +124,7 @@ function SlotRow({
           aria-label={accessibleLabel}
           maxLength={2000}
           rows={2}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => change(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => {
             if (e.nativeEvent.isComposing) return;
@@ -118,7 +132,7 @@ function SlotRow({
               e.preventDefault();
               commit();
             }
-            if (e.key === "Escape") setEditing(false);
+            if (e.key === "Escape") cancel();
           }}
           className="mt-0.5 w-full resize-none rounded-md border border-coach/40 bg-sheet px-2 py-1 text-sm outline-none"
         />

@@ -9,14 +9,19 @@ import { SessionProvider } from "../../lib/prototype/session-store";
 import { createSession } from "../../lib/pipeline/initial";
 import { coachCapabilities } from "../../lib/learning/essay-view";
 
-test("Deep lifecycle status exposes recovery with honest checkpoint timing and qualification copy", () => {
+test("Deep lifecycle status exposes recovery with plain independent-mock consequences", () => {
   const render = (lifecycle: "open" | "set_aside" | "closed", checkpoint = false, busy = false) => renderToStaticMarkup(jsx(DeepLifecycleBar, { lifecycle, checkpoint, busy, onResume: () => {} }));
   assert.equal(render("open"), "");
+  // The running clock bar carries the timing rules; the open state adds no second caption.
+  assert.equal(render("open", true), "");
   assert.match(render("set_aside"), /已暂放/); assert.match(render("set_aside"), /恢复练习/);
   assert.match(render("closed"), /已关闭/); assert.match(render("closed"), /已保存的内容仍可查看/);
-  assert.match(render("open", true), /暂放或离开页面不会暂停/);
-  assert.match(render("set_aside", true), /暂放不会延长截止时间/);
-  assert.match(render("closed", true), /恢复不会重置检查点时间或资格/);
+  assert.match(render("set_aside", true), /暂放不会延长时间/);
+  assert.match(render("closed", true), /独立模考已结束，成绩不会加入趋势/);
+  for (const html of [render("set_aside", true), render("closed", true)]) {
+    assert.doesNotMatch(html, /检查点|基线|占位|资格/);
+    assert.doesNotMatch(html, /text-xs/);
+  }
   assert.match(render("closed", true, true), /disabled=""/);
 });
 

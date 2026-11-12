@@ -119,7 +119,7 @@ function RevisionGuide({ marks }: { marks: DraftMark[] }) {
           const on = issue.rank === active.rank;
           return (
             <button key={issue.rank} type="button" onClick={() => go(issue.rank)} aria-pressed={on} className={cn("flex max-w-full items-center gap-2 rounded-full border bg-sheet py-1 pr-3 pl-1.5 text-[14px] transition-colors hover:border-foreground/30", on ? "border-foreground/40 font-medium" : "text-muted-foreground")}>
-              <IssueBadge rank={issue.rank} />
+              <IssueBadge rank={issue.rank} active={on} />
               <span className="truncate">{issue.title}</span>
               {row.total > 0 && (row.remaining === 0 ? <Check className="size-3.5 shrink-0 text-good" aria-label="都改过了" /> : <span className="shrink-0 tabular-nums">还剩 {row.remaining} 句</span>)}
             </button>

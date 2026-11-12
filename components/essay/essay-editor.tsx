@@ -6,7 +6,11 @@ import { countWords } from "@/lib/rules";
 import { cn } from "@/lib/utils";
 import type { DraftMark } from "@/lib/learning/revision-marks";
 import { caretCoordinates } from "./caret";
-import { ISSUE_TONES } from "./essay-reader";
+import { DRAFT_MAX_CHARS } from "@/lib/prototype/session-store";
+import { issueMarkStyle } from "./essay-reader";
+
+/** 接近保存上限时才显示字符数 */
+const LENGTH_NOTICE_AT = DRAFT_MAX_CHARS - 3000;
 
 function markSegments(text: string, marks: DraftMark[]) {
   const out: { text: string; rank: number | null }[] = [];
@@ -115,7 +119,7 @@ export function EssayEditor({
       {marks && marks.length > 0 && (
         <div aria-hidden className="prose-essay pointer-events-none absolute inset-0 overflow-hidden break-words whitespace-pre-wrap text-transparent select-none">
           {markSegments(value, marks).map((segment, i) => segment.rank == null ? <span key={i}>{segment.text}</span> : (
-            <span key={i} className="rounded-[3px] transition-[background-size] duration-(--dur-layout) ease-(--ease-soft)" style={{ backgroundImage: `linear-gradient(${ISSUE_TONES[(segment.rank - 1) % 3]}, ${ISSUE_TONES[(segment.rank - 1) % 3]})`, backgroundRepeat: "no-repeat", backgroundPosition: "0 100%", backgroundSize: activeRank === segment.rank ? "100% 100%" : "100% 42%", boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone" }}>{segment.text}</span>
+            <span key={i} className="rounded-[2px] transition-[background-size] duration-(--dur-layout) ease-(--ease-soft)" style={issueMarkStyle(activeRank === segment.rank)}>{segment.text}</span>
           ))}
         </div>
       )}
@@ -134,8 +138,14 @@ export function EssayEditor({
         onMouseUp={(e) => { readSelection(); onCaret?.(e.currentTarget.selectionStart); }}
         onKeyUp={(e) => { if (e.shiftKey) readSelection(); onCaret?.(e.currentTarget.selectionStart); }}
         onBlur={(e) => { if (toolbarRef.current?.contains(e.relatedTarget as Node)) return; setTimeout(() => setToolbar(null), 160); }}
+        maxLength={DRAFT_MAX_CHARS}
         className="prose-essay relative block w-full resize-none overflow-hidden bg-transparent text-foreground outline-none placeholder:text-muted-foreground/60"
       />
+      {value.length >= LENGTH_NOTICE_AT && (
+        <p role="status" className={cn("meta mt-3 text-right", value.length >= DRAFT_MAX_CHARS && "text-warn")}>
+          {value.length.toLocaleString()} / {DRAFT_MAX_CHARS.toLocaleString()} 字符{value.length > DRAFT_MAX_CHARS ? "，超出部分无法保存" : ""}
+        </p>
+      )}
       {toolbar && onAction && (
         <div
           ref={toolbarRef}

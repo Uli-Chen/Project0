@@ -10,5 +10,10 @@ test("checkpoint waits for server acceptance, then replaces countdown with submi
   const submitted = renderToStaticMarkup(jsx(CheckpointClock, { ...timing, originalSubmittedAt: "2026-11-01T00:39:59Z" }));
   assert.match(submitted, /已提交，计时结束/); assert.match(submitted, /等待评分不会占用作答时间/); assert.ok(!submitted.includes('role="timer"')); assert.ok(!submitted.includes("剩余"));
   const late = renderToStaticMarkup(jsx(CheckpointClock, { ...timing, originalSubmittedAt: "2026-11-01T00:40:01Z" }));
-  assert.match(late, /截止后提交/); assert.match(late, /不计入基线与趋势/);
+  assert.match(late, /超时提交/); assert.match(late, /不会加入成绩趋势/);
+  for (const html of [writing, submitted, late]) {
+    assert.match(html, /独立模考/); assert.doesNotMatch(html, /检查点|基线/);
+    // A fixed row inside the workspace column, not a card that adds height outside it.
+    assert.match(html, /shrink-0/); assert.doesNotMatch(html, /mb-4|surface|text-xs/);
+  }
 });
