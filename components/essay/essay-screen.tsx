@@ -114,11 +114,10 @@ function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements 
   );
   const centerOutlinePanel = centerOutline ? (
     <section aria-label="提纲" className="mt-9 border-t pt-7">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
+      <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="text-[19px] font-semibold tracking-tight">提纲</h2>
         {outlineCount}
       </div>
-      <p className="mt-1.5 mb-6 text-[15px] text-muted-foreground">和教练聊，你说到的想法会自动记到这里；也可以点任意一格自己写。</p>
       {outlineBody}
     </section>
   ) : null;

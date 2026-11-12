@@ -3,8 +3,9 @@
 import { openingForDisplay, prewriteOpening } from "@/lib/learning/prewrite-guidance";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { CoachThread } from "@/components/coach/coach-thread";
+import { CoachEmpty, CoachMark, CoachThread } from "@/components/coach/coach-thread";
 import { Composer } from "@/components/coach/composer";
+import { Starters } from "@/components/coach/starters";
 import { IssueBadge } from "@/components/feedback/issue-list";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -65,6 +66,21 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
     if (el && (nearBottom.current || last?.role === "user")) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [state.messages.length, last?.content, last?.role, coachBusy]);
 
+  // 示范问题：这个阶段还没开口时，给几句可以直接发出去的话
+  const spoke = state.messages.some((m) => m.role === "user" && m.stage === (can.prewrite ? "prewriting" : "writing"));
+  const starters = spoke || coachBusy || ui.quote || issue ? []
+    : can.prewrite ? (state.outline.stance || state.outline.reasons.some((r) => r.claim)
+      ? ["帮我看看提纲哪里还单薄", "帮我给理由想一个例子"]
+      : ["我没什么思路，帮我分析一下", "我有个初步立场，帮我看看站不站得住"])
+    : stage === "writing" && can.chat ? (state.drafts.original.trim()
+      ? ["下一段该写什么？", "帮我看看论证有没有漏洞"]
+      : ["不知道怎么开头，给我一点方向", "帮我看看提纲能不能撑起全文"])
+    : [];
+  const pick = (text: string) => {
+    if (unavailable) return;
+    if (can.prewrite) actions.sendPrewrite(text); else actions.chat(text);
+  };
+
   const showStartWriting = stage === "prewriting" && Boolean(state.outline.stance);
   const [nudgeOpen, setNudgeOpen] = useState(true);
   const nudge = stage !== "prewriting" && state.nudge && !state.nudge.dismissed && nudgeOpen ? state.nudge : null;
@@ -75,9 +91,8 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
         {tutorV2Enabled && state.messages.some(m => m.role === "coach" && m.lang === "en" && m.action !== "opening") && <EnglishNotice />}
         {state.focus && state.mode === "practice" && ["prewriting", "writing", "revising"].includes(stage) && (
           <section className="mb-5 rounded-lg bg-sunk px-3.5 py-3 shadow-[inset_0_0_0_1px_var(--border)]">
-            <p className="text-xs text-muted-foreground">本次重点</p>
-            <p className="mt-0.5 text-sm font-semibold">{state.focus.name}</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{state.focus.instruction}</p>
+            <p className="text-sm font-semibold"><span className="mr-2 font-normal text-muted-foreground">本次重点</span>{state.focus.name}</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{state.focus.instruction}</p>
           </section>
         )}
         {nudge && (
@@ -87,7 +102,9 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
           </div>
         )}
         {state.messages.length === 0 && !coachBusy ? (
-          <p className="text-[14px] text-muted-foreground">{stage === "writing" ? "选中正文，可以让教练理清、润色或检查。" : stage === "feedback" ? "在反馈里点“讨论”，就某个问题和教练聊。" : stage === "prewriting" ? prewriteOpening(state.prompt.questionType) : ""}</p>
+          stage === "prewriting"
+            ? <div className="flex flex-col gap-2 text-sm leading-[1.7]"><CoachMark /><p>{prewriteOpening(state.prompt.questionType)}</p></div>
+            : !state.focus && !nudge && <CoachEmpty />
         ) : (
           <CoachThread
             messages={state.messages.map(message => openingForDisplay(message, state.prompt.questionType))}
@@ -108,6 +125,7 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
 
       {(canSend || (can.issue && issues.length > 0)) && (
         <div className="shrink-0 border-t bg-sheet px-3.5 pt-3 pb-3.5">
+          {starters.length > 0 && <div className="mb-2.5"><Starters items={starters} disabled={unavailable} onPick={pick} /></div>}
           {canSend && <Composer
             draft={composerDraft}
             onDraftChange={actions.setComposerDraft}
@@ -134,8 +152,8 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
             </div>}
           />}
           {!can.chat && can.issue && !issue && (
-            <div className="flex flex-wrap gap-1.5">
-              {issues.map((item) => <button key={item.rank} type="button" onClick={() => ui.discussIssue(item.rank)} className="flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground"><IssueBadge rank={item.rank} className="size-3.5 text-[9px]" />{item.title}</button>)}
+            <div role="group" aria-label="选一个问题和教练讨论" className="flex flex-wrap gap-2">
+              {issues.map((item) => <button key={item.rank} type="button" onClick={() => ui.discussIssue(item.rank)} className="flex max-w-full items-center gap-2 rounded-full border border-input bg-sheet py-1.5 pr-3.5 pl-2 text-left text-sm leading-snug transition-colors duration-(--dur-fast) hover:border-coach-line hover:bg-coach-soft"><IssueBadge rank={item.rank} className="size-5 shrink-0 text-[11px]" /><span className="truncate">{item.title}</span></button>)}
             </div>
           )}
         </div>
@@ -166,5 +184,5 @@ function EnglishNotice() {
     try { shown = shown || localStorage.getItem("tutor-english-notice") === "shown"; if (!shown) localStorage.setItem("tutor-english-notice", "shown"); } catch { /* Once per mounted practice when storage is unavailable. */ }
     setVisible(!shown);
   }, [state.id]);
-  return visible ? <p className="mb-4 text-xs text-muted-foreground">教练目前用英文讲解，可以在<a href="/account" className="underline">用户中心</a>改为中文。<button className="ml-2 underline" onClick={() => setVisible(false)}>知道了</button></p> : null;
+  return visible ? <p className="mb-4 text-sm text-muted-foreground">教练目前用英文讲解，可以在<a href="/account" className="underline">用户中心</a>改为中文。<button className="ml-2 underline" onClick={() => setVisible(false)}>知道了</button></p> : null;
 }

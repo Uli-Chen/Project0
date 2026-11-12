@@ -14,6 +14,15 @@ export function CoachMark() {
   );
 }
 
+/** 还没有对话时面板中间的记号；说明交给输入区的示范问题 */
+export function CoachEmpty() {
+  return (
+    <div className="grid h-full place-items-center" aria-hidden>
+      <span className="grid size-14 place-items-center rounded-full bg-coach-soft font-serif text-[34px] leading-none text-coach italic">0</span>
+    </div>
+  );
+}
+
 const STAGE_GROUP: Record<CoachMessage["stage"], string> = { quick: "速刷", prewriting: "写前", writing: "写作", issue: "反馈与改写", revision: "反馈与改写" };
 
 export function CoachThread({

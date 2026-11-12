@@ -42,7 +42,7 @@ export function EssayBody({ prewrite }: { prewrite?: React.ReactNode } = {}) {
       <article className="paper min-h-[calc(100dvh-10rem)] px-6 pt-8 pb-14 sm:px-14 sm:pt-11">
         {stage === "prewriting" ? (
           <>
-            <p className="font-serif text-[26px] leading-[1.45] tracking-[-0.005em] text-pretty">{state.prompt.text}</p>
+            <p className="font-serif text-[21px] leading-[1.45] tracking-[-0.005em] text-pretty sm:text-[26px]">{state.prompt.text}</p>
             {prewrite}
           </>
         ) : (

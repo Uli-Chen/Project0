@@ -101,8 +101,8 @@ function SlotRow({
   };
 
   return (
-    <div className={cn("group -mx-2 rounded-md px-2 py-1.5 transition-colors duration-700", flash && "bg-coach-soft")}>
-      {label && <p className="text-[13px] text-muted-foreground">{label}</p>}
+    <div className={cn("group -mx-2 rounded-md px-2 py-1.5 transition-colors", flash ? "bg-coach-soft duration-700" : onSave && !editing && "duration-(--dur-fast) hover:bg-sunk")}>
+      {label && <p className="text-[14px] text-muted-foreground">{label}</p>}
       {editing ? (
         <textarea
           autoFocus
@@ -134,7 +134,7 @@ function SlotRow({
             onSave && "cursor-text",
           )}
         >
-          <span className="flex-1">{text ?? "还没想好"}</span>
+          <span className="flex-1">{text ?? (onSave ? <><span className="group-hover:hidden">还没想好</span><span className="hidden group-hover:inline">点这里写</span></> : "还没想好")}</span>
           {coverage && text && <CoverageMark status={coverage} />}
         </button>
       )}
