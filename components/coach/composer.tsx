@@ -11,6 +11,7 @@ export function Composer({
   top,
   toolbar,
   draft, onDraftChange,
+  maxLength = 12000,
 }: {
   placeholder: string;
   onSend: (text: string) => void;
@@ -21,6 +22,8 @@ export function Composer({
   toolbar?: ReactNode;
   draft?: string;
   onDraftChange?: (text: string) => void;
+  /** 输入上限；到约 92%（12,000 时为 11,000）才显示计数 */
+  maxLength?: number;
 }) {
   const [localText, setLocalText] = useState("");
   const text = draft ?? localText;
@@ -53,7 +56,7 @@ export function Composer({
         rows={2}
         value={text}
         aria-label={placeholder}
-        maxLength={12000}
+        maxLength={maxLength}
         placeholder={placeholder}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {
@@ -66,7 +69,7 @@ export function Composer({
       />
       <div className="flex items-center gap-2 px-2 pb-2">
         <div className="min-w-0 flex-1">{toolbar}</div>
-        {text.length >= 11000 && <span role="status" className="meta">{text.length.toLocaleString()} / 12,000</span>}
+        {text.length >= Math.round(maxLength * 11 / 12) && <span role="status" className="meta">{text.length.toLocaleString()} / {maxLength.toLocaleString("en-US")}</span>}
         <button
           type="button"
           onClick={send}

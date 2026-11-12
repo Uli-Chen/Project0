@@ -73,6 +73,10 @@ test("coach panel bottom: otherwise starters sit above a free input", () => {
   assert.ok(starters > 0 && input > starters, "starters above the input");
   assert.ok(html.includes(QUICK_STARTERS[1])); assert.ok(!html.includes(answerInput));
 });
+test("the ask box carries the 1,000-character server limit itself; other composers keep the shared 12,000 default", () => {
+  assert.match(renderCoach({}), new RegExp(`aria-label="${askInput}" maxLength="1000"`));
+  assert.match(renderCoach({ messages: [question], operations: [{ id: "op", kind: "followup", status: "ok" }] }), new RegExp(`aria-label="${answerInput}" maxLength="12000"`));
+});
 test("a self-typed quickAsk bubble can go into the card; a starter click cannot", () => {
   const own = renderCoach({ messages: [asked("我觉得离家上学能锻炼独立")], operations: [{ id: "op", kind: "followup", status: "running" }] });
   assert.match(own, /我觉得离家上学能锻炼独立/); assert.match(own, /放进卡片/); assert.match(own, /data-answer="a1"/);

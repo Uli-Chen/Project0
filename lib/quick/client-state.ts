@@ -36,10 +36,9 @@ export function stableRequestId(previous: { key: string; id: string } | null, ke
  * starter click, not the student's own idea, so it gets no "放进卡片". */
 export const QUICK_STARTERS = ["我没什么思路，帮我分析一下", "这道题该从哪里想起？", "帮我把想法想得更深一点", "再问我一个问题"] as const;
 export const isStarter = (text: string) => (QUICK_STARTERS as readonly string[]).includes(text);
-/** Server limit for what the student says to the coach (lib/quick/schemas.ts counts JS string length). */
+/** Server limit for what the student says to the coach (lib/quick/schemas.ts counts JS string length).
+ * Also the ask box's input limit, so its counter shows the one limit that applies. */
 export const ASK_LIMIT = 1000;
-/** Show the count only near the limit, like the card fields. */
-export const ASK_COUNT_FROM = 900;
 
 type Message = { id?: string; role: string; stage?: string; action?: string; content: string; replyToMessageId?: string };
 /** A student message may go into the card unless it is a starter click. */
@@ -107,6 +106,16 @@ export function answerDelivered(sent: { text: string; questionId: string }, mess
   return messages.some(m => m.role === "user" && m.replyToMessageId === sent.questionId && m.content === sent.text.trim());
 }
 
+/**
+ * Leaving needs a decision while coach text the server does not have yet would be lost:
+ * an unsent answer (it stays in its box until confirmed), text in the ask box, or an ask that
+ * left the box and is not confirmed yet: still saving the card before it (`preparingAsk`) or
+ * in flight. A failed typed ask is back in the box, so the box covers it.
+ */
+export function unsentCoachText({ answer, askDraft, preparingAsk, pendingAsk }: { answer: string; askDraft: string; preparingAsk: boolean; pendingAsk: Pick<PendingAsk, "status"> | null }) {
+  return Boolean(answer.trim() || askDraft.trim() || preparingAsk || pendingAsk?.status === "sending");
+}
+
 export type CoachBottom = "answer" | "stuck" | "used_up" | "ask";
 /** Doc §4.5 bottom area, judged in order. */
 export function coachBottom({ pendingAnswer, followupStuck, followupsLeft }: { pendingAnswer: boolean; followupStuck: boolean; followupsLeft: number | null }): CoachBottom {
@@ -134,4 +143,26 @@ export function mergeCard(keys: readonly string[], base: Record<string, string>,
     conflicts[key] = { mine: l, theirs: r };
   }
   return { draft, conflicts };
+}
+
+type CardSnapshot = { version: number; texts: Record<string, string> };
+/**
+ * What any newer snapshot does to the draft: a GET, or the response to one of this page's
+ * own POSTs (answer, ask, check, receipt replay...), which can carry another tab's card edit.
+ * Every one goes through the same three-way merge. Only this page's own writes count as local:
+ * `sent`, a cardSave in flight or with an unknown result, and `wrote`, the fields this very
+ * request filled (cardExcerpt). Such a field goes into the draft while the draft is untouched
+ * there; if the student typed in it meanwhile, the typing stays and is not a conflict.
+ * `open`: conflicts still waiting for the student; one the merged draft now matches is settled.
+ * Returns null when the snapshot carries no newer card.
+ */
+export function mergeSnapshot(keys: readonly string[], current: CardSnapshot, incoming: CardSnapshot, local: Record<string, string>, own: { sent?: Record<string, string> | null; wrote?: readonly string[] }, open: Record<string, FieldConflict> = {}) {
+  if (incoming.version <= current.version) return null;
+  const remote = incoming.texts, wrote = own.wrote ?? [];
+  const merged = mergeCard(keys, current.texts, local, remote, own.sent);
+  for (const key of wrote) delete merged.conflicts[key];
+  const conflicts = { ...open, ...merged.conflicts };
+  for (const key of Object.keys(conflicts)) if (sameText(merged.draft[key] ?? "", remote[key] ?? "")) delete conflicts[key];
+  const changed = keys.some(k => (merged.draft[k] ?? "") !== (local[k] ?? ""));
+  return { draft: merged.draft, conflicts, changed, fresh: Object.keys(merged.conflicts).length > 0 };
 }

@@ -10,8 +10,8 @@ import type { QuestionRequirements } from "@/lib/question-bank/types";
 import { cardSlots } from "@/lib/quick/layouts";
 import {
   acceptQuickSnapshot, createIntentLatch, unchangedDraft, persistedIntentKey, stableRequestId,
-  QUICK_STARTERS, ASK_LIMIT, ASK_COUNT_FROM, REQUEST_TIMEOUT_MS, TIMEOUT_MESSAGE, OFFLINE_MESSAGE,
-  placeable, validateAsk, echoText, planAsk, settleAsk, reconcileAsk, answerDelivered, coachBottom, mergeCard, sameText,
+  QUICK_STARTERS, ASK_LIMIT, REQUEST_TIMEOUT_MS, TIMEOUT_MESSAGE, OFFLINE_MESSAGE,
+  placeable, validateAsk, echoText, planAsk, settleAsk, reconcileAsk, answerDelivered, coachBottom, mergeSnapshot, unsentCoachText, sameText,
   type PendingAsk, type FieldConflict,
 } from "@/lib/quick/client-state";
 import { CoachEmpty, CoachMark } from "@/components/coach/coach-thread";
@@ -85,6 +85,8 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   const [flash, setFlash] = useState<string | null>(null);
   /** The ask request not yet confirmed by the server; replayed unchanged before any new one. */
   const [pendingAsk, setPendingAskState] = useState<PendingAsk | null>(null);
+  /** An ask that has left the box but is not a pending request yet (the card is saved first). */
+  const [preparingAsk, setPreparingAsk] = useState(false);
   /** Polite announcement of the coach's newest question. */
   const [announcement, setAnnouncement] = useState("");
   /** Moves focus to the answer box when the coach's question arrives after the student's send. */
@@ -122,17 +124,16 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   const slots = cardSlots(requirements);
   const keys = slots.map(s => s.key);
 
-  /** Everything a newer snapshot settles: other-tab card edits, lost responses, the coach's new question. */
-  const onSnapshot = useRef<(current: QuickData, incoming: QuickData, own: boolean) => void>(() => {});
+  /** Everything a newer snapshot settles: other-tab card edits, lost responses, the coach's new question.
+   * `wrote`: card fields the request that returned this snapshot filled itself (cardExcerpt). */
+  const onSnapshot = useRef<(current: QuickData, incoming: QuickData, wrote: readonly string[]) => void>(() => {});
   useEffect(() => {
-    onSnapshot.current = (current, incoming, own) => {
-      if (!own && incoming.card.contentVersion > current.card.contentVersion) {
-        const remote = texts(incoming), merged = mergeCard(keys, texts(current), draftRef.current, remote, sentRef.current);
-        const next = { ...conflictsRef.current, ...merged.conflicts };
-        for (const key of Object.keys(next)) if (sameText(merged.draft[key] ?? "", remote[key] ?? "")) delete next[key];
-        if (keys.some(k => (merged.draft[k] ?? "") !== (draftRef.current[k] ?? ""))) { editRevision.current++; setDraft(merged.draft); }
-        setConflicts(next);
-        if (Object.keys(merged.conflicts).length) setError("这张卡在另一处也改过，有冲突的栏请选择保留哪一版。");
+    onSnapshot.current = (current, incoming, wrote) => {
+      const merged = mergeSnapshot(keys, { version: current.card.contentVersion, texts: texts(current) }, { version: incoming.card.contentVersion, texts: texts(incoming) }, draftRef.current, { sent: sentRef.current, wrote }, conflictsRef.current);
+      if (merged) {
+        if (merged.changed) { editRevision.current++; setDraft(merged.draft); }
+        setConflicts(merged.conflicts);
+        if (merged.fresh) setError("这张卡在另一处也改过，有冲突的栏请选择保留哪一版。");
       }
       const messages = quickOf(incoming);
       const settled = reconcileAsk(pendingAskRef.current, "", messages);
@@ -152,11 +153,11 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
       }
     };
   });
-  const accept = useCallback((incoming: QuickData, ticket: { epoch: number; sequence: number }, own = false) => {
+  const accept = useCallback((incoming: QuickData, ticket: { epoch: number; sequence: number }, wrote: readonly string[] = []) => {
     const current = dataRef.current;
     if (!acceptQuickSnapshot(current, incoming, ticket, { epoch: epoch.current, sequence: appliedSequence.current })) return false;
     dataRef.current = incoming; appliedSequence.current = ticket.sequence; setData(incoming);
-    onSnapshot.current(current, incoming, own);
+    onSnapshot.current(current, incoming, wrote);
     return true;
   }, []);
   const savedText = (from: QuickData, key: string) => from.card.content.parts.find(p => p.key === key)?.text ?? "";
@@ -185,7 +186,9 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   }, [endpoint, router.bfcacheId, accept]);
   const followup = lastQuestion(data);
   const pendingAnswer = !!followup && !data.session.messages.some(m => m.replyToMessageId === followup.id);
-  const unsent = answer.trim() || askDraft.trim();
+  /** Until the server confirms it, an ask cannot be abandoned, like an answer in flight. */
+  const askInFlight = preparingAsk || pendingAsk?.status === "sending";
+  const unsent = unsentCoachText({ answer, askDraft, preparingAsk, pendingAsk });
   useEffect(() => {
     if (!dirty && !unsent) return;
     const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); };
@@ -204,17 +207,18 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     return () => { stopped = true; clearInterval(timer); };
   }, [running, endpoint, accept]);
   const report = (where: Where, message: string) => where === "coach" ? setCoachError(message) : setError(message);
-  /** One POST. Its response is our own write, so a newer card version in it is never merged as another tab's. */
-  async function post(body: Record<string, unknown>, requestId: string = crypto.randomUUID()): Promise<Reply<QuickData>> {
+  /** One POST. Its response may carry another tab's card edit, so it is merged like any snapshot;
+   * only the save in flight (`sentRef`) and the fields this request fills (`wrote`) count as ours. */
+  async function post(body: Record<string, unknown>, requestId: string = crypto.randomUUID(), wrote: readonly string[] = []): Promise<Reply<QuickData>> {
     epoch.current++;
     const reply = await fetchJson<QuickData>(`${endpoint}/actions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, requestId }) });
-    if (reply.ok) { epoch.current++; accept(reply.value, { epoch: epoch.current, sequence: ++sequence.current }, true); }
+    if (reply.ok) { epoch.current++; accept(reply.value, { epoch: epoch.current, sequence: ++sequence.current }, wrote); }
     else if (reply.code === "default_child_gone") setChildGone(true);
     return reply;
   }
-  async function request(body: Record<string, unknown>, requestId?: string, where: Where = "main"): Promise<QuickData | null> {
+  async function request(body: Record<string, unknown>, requestId?: string, where: Where = "main", wrote: readonly string[] = []): Promise<QuickData | null> {
     report(where, "");
-    const reply = await post(body, requestId);
+    const reply = await post(body, requestId, wrote);
     if (reply.ok) return reply.value;
     report(where, reply.message);
     // The coach thread moved on elsewhere, or the result is unknown: show the real state.
@@ -289,13 +293,13 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     if (!valid.ok) { if (valid.error) setCoachError(valid.error); if (typed) keepAsk.current = true; return; }
     if (running || intentLatch.current.busy || !modelLatch.current.enter()) { if (typed) keepAsk.current = true; return; }
     const sent = { text: valid.text, typed };
-    setCalling("followup"); setCoachError("");
+    setCalling("followup"); setCoachError(""); setPreparingAsk(true);
     try {
       const saved = await save("coach");
       if (!saved) { if (typed) restoreAsk(sent.text); return; }
       let { request: attempt } = planAsk(pendingAskRef.current, sent.text, saved.card.contentVersion, quickOf(saved).length, () => crypto.randomUUID());
       for (let round = 0; round < 2; round++) {
-        setPendingAsk(attempt); awaitingCoach.current = true; nearBottom.current = true;
+        setPendingAsk(attempt); setPreparingAsk(false); awaitingCoach.current = true; nearBottom.current = true;
         const reply = await post({ action: "quickFollowup", cardVersion: attempt.cardVersion, text: attempt.text }, attempt.requestId);
         const outcome = settleAsk(attempt, reply, sent, quickOf(dataRef.current));
         if (outcome.newIntent && round === 0) {
@@ -314,7 +318,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
         if (outcome.refresh) void refresh(true);
         break;
       }
-    } finally { modelLatch.current.leave(); setCalling(null); }
+    } finally { modelLatch.current.leave(); setCalling(null); setPreparingAsk(false); }
   }
   /** Leaving saves the card first; only unsent coach text (or a failed save) needs a decision. */
   function allowNavigation(e: { preventDefault(): void }, href: string) {
@@ -329,7 +333,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     finally { intentLatch.current.leave(); setTransitioning(false); }
   }
   function confirmLeave() {
-    if (!leaveIntent || intentLatch.current.busy || mutation.current || answerLatch.current.busy) return;
+    if (!leaveIntent || intentLatch.current.busy || mutation.current || answerLatch.current.busy || askInFlight) return;
     const intent = leaveIntent; setLeaveIntent(null);
     if (intent.kind === "link") router.push(intent.href);
     else void continueDeep(intent.explicitNew, true);
@@ -367,7 +371,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
       const reply = await fetchJson<{ session: SessionState }>(`${endpoint}/lifecycle`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
       if (!reply.ok) { setError(reply.message); return; }
       epoch.current++;
-      accept({ ...dataRef.current, session: reply.value.session }, { epoch: epoch.current, sequence: ++sequence.current }, true);
+      accept({ ...dataRef.current, session: reply.value.session }, { epoch: epoch.current, sequence: ++sequence.current });
     } finally { intentLatch.current.leave(); setTransitioning(false); }
   }
   async function excerpt(range: { messageId: string; start: number; end: number }, key: string) {
@@ -376,11 +380,10 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     const revision = editRevision.current;
     try {
       const saved = await save("coach"); if (!saved || !unchangedDraft(editRevision.current, revision)) return;
-      const value = await request({ action: "cardExcerpt", cardVersion: saved.card.contentVersion, key, ...range }, undefined, "coach");
-      if (value && unchangedDraft(editRevision.current, revision) && value.card.contentVersion === dataRef.current.card.contentVersion) {
-        const text = value.card.content.parts.find(p => p.key === key)?.text ?? "";
-        editRevision.current++;
-        setDraft({ ...draftRef.current, [key]: text }); setSelection(null); reveal(key);
+      const value = await request({ action: "cardExcerpt", cardVersion: saved.card.contentVersion, key, ...range }, undefined, "coach", [key]);
+      // The response merge already put the excerpt into the draft (unless the field was typed in meanwhile).
+      if (value && sameText(draftRef.current[key] ?? "", value.card.content.parts.find(p => p.key === key)?.text ?? "")) {
+        setSelection(null); reveal(key);
         setNotice(`已放入「${slots.find(s => s.key === key)?.label ?? "卡片"}」`);
       }
     } finally { intentLatch.current.leave(); setTransitioning(false); }
@@ -498,7 +501,6 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   const changeAnswer = (text: string) => { if (keepAnswer.current && text === "") { keepAnswer.current = false; return; } setAnswer(text); };
   /** The ask box empties on send (the bubble shows the text); a refused send keeps it. */
   const changeAsk = (text: string) => { if (keepAsk.current && text === "") { keepAsk.current = false; return; } setAskDraft(text); };
-  const askLength = askDraft.trim().length;
   const coachAlert = (coachError || failedAsk) && (
     <div role="alert" className="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg bg-destructive/10 px-3 py-2 text-sm">
       <span className="min-w-0 flex-1">{coachError || "上一句还没有发出。"}</span>
@@ -580,7 +582,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
               onDraftChange={changeAsk}
               placeholder="问教练，或者先说说你的想法"
               disabled={transitioning || !active || running}
-              toolbar={askLength >= ASK_COUNT_FROM ? <span className={cn("px-1 text-sm tabular-nums", askLength > ASK_LIMIT ? "font-medium text-destructive" : "text-muted-foreground")}>{askLength} / {ASK_LIMIT}</span> : undefined}
+              maxLength={ASK_LIMIT}
               onSend={text => void ask(text, true)}
             />
             {followupsLeft === 1 && <p className="text-sm text-muted-foreground">还可以追问 1 次</p>}
@@ -624,7 +626,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     <div className={cn("flex min-h-0 flex-1", wide && "gap-3 p-3")}>
       <main id="main-content" className="min-w-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-[800px] flex-col gap-3 px-3 py-4 sm:px-6 sm:py-8">
-          {leaveIntent && <LeaveConfirmation answerOnly={leaveIntent.kind === "deep"} disabled={transitioning || saving || answering} onCancel={() => setLeaveIntent(null)} onLeave={confirmLeave} />}
+          {leaveIntent && <LeaveConfirmation answerOnly={leaveIntent.kind === "deep"} disabled={transitioning || saving || answering || askInFlight} onCancel={() => setLeaveIntent(null)} onLeave={confirmLeave} />}
           {(error || saveFailed) && <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg bg-destructive/10 px-4 py-3 text-sm">
             <span className="min-w-0 flex-1">{error || "还有修改没有保存。"}</span>
             {saveFailed && <Button size="xs" disabled={saving || transitioning || conflicted} onClick={() => void save()}>重试保存</Button>}

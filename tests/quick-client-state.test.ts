@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { acceptQuickSnapshot, createIntentLatch, unchangedDraft, persistedIntentKey, QUICK_STARTERS, ASK_LIMIT, placeable, validateAsk, askDelivered, echoText, planAsk, settleAsk, reconcileAsk, answerDelivered, stableRequestId, coachBottom, mergeCard, type PendingAsk, type Outcome } from '../lib/quick/client-state';
+import { acceptQuickSnapshot, createIntentLatch, unchangedDraft, persistedIntentKey, QUICK_STARTERS, ASK_LIMIT, placeable, validateAsk, askDelivered, echoText, planAsk, settleAsk, reconcileAsk, answerDelivered, stableRequestId, coachBottom, mergeCard, mergeSnapshot, unsentCoachText, type PendingAsk, type Outcome } from '../lib/quick/client-state';
 const snapshot = (version: number, contentVersion = version) => ({ session: { version }, card: { contentVersion } });
 test('Delayed GET before save cannot roll back saved card; same-version operation results invalidate pending reads', () => {
  assert.equal(acceptQuickSnapshot(snapshot(3), snapshot(2), {epoch:1,sequence:5}, {epoch:2,sequence:4}), false);
@@ -137,4 +137,61 @@ test('three-way card merge: remote where untouched, local where the server is un
  assert.deepEqual(mergeCard(['b'], { b: '旧' }, { b: '我改的，还在写' }, { b: '我改的' }, { b: '我改的' }).conflicts, {});
  // A field cleared elsewhere counts as a change.
  assert.deepEqual(mergeCard(['a'], { a: '旧' }, { a: '旧' }, {}).draft, { a: '' });
+});
+
+/* Astra r2 #1: every snapshot, POST responses included, goes through the three-way merge. */
+const card = (version: number, texts: Record<string, string>) => ({ version, texts });
+const fields = ['cause', 'effect'];
+test('an answer response carrying another tab\'s card edit merges it in, so the next autosave cannot write the stale draft back', () => {
+ // This page: card empty and untouched. Another tab saved; the quickAnswer response carries version 2.
+ const remote = card(2, { cause: '他写的原因' });
+ const merged = mergeSnapshot(fields, card(1, {}), remote, {}, { sent: null });
+ assert.ok(merged); assert.equal(merged.changed, true); assert.equal(merged.fresh, false);
+ assert.deepEqual(merged.draft, { cause: '他写的原因' }); assert.deepEqual(merged.conflicts, {});
+ // The draft now equals the saved card: nothing left for autosave to send.
+ assert.ok(fields.every(k => (merged.draft[k] ?? '') === (remote.texts[k as 'cause'] ?? '')));
+ // Same version (an answer that touched no card): nothing to merge.
+ assert.equal(mergeSnapshot(fields, card(2, { cause: 'x' }), card(2, { cause: 'x' }), { cause: 'y' }, {}), null);
+});
+test('a followup response with another tab\'s edit keeps local typing elsewhere and reports a real conflict', () => {
+ const base = card(3, { cause: '旧原因', effect: '旧影响' });
+ const local = { cause: '我在改原因', effect: '旧影响' };
+ const quiet = mergeSnapshot(fields, base, card(4, { cause: '旧原因', effect: '他改的影响' }), local, { sent: null });
+ assert.deepEqual(quiet?.draft, { cause: '我在改原因', effect: '他改的影响' }); assert.deepEqual(quiet?.conflicts, {});
+ const clash = mergeSnapshot(fields, base, card(4, { cause: '他改的原因', effect: '旧影响' }), local, { sent: null });
+ assert.deepEqual(clash?.draft, local); assert.equal(clash?.fresh, true);
+ assert.deepEqual(clash?.conflicts, { cause: { mine: '我在改原因', theirs: '他改的原因' } });
+ // A conflict the new snapshot settles (the draft now matches it) is dropped.
+ assert.deepEqual(mergeSnapshot(fields, base, card(5, { cause: '我在改原因', effect: '旧影响' }), local, {}, { cause: { mine: '我在改原因', theirs: '旧的他' } })?.conflicts, {});
+});
+test('our own cardSave response is not another tab\'s edit: typing since the send stays, no conflict', () => {
+ const base = card(1, { cause: '旧', effect: '旧影响' });
+ const merged = mergeSnapshot(fields, base, card(2, { cause: '我改的', effect: '旧影响' }), { cause: '我改的，还在写', effect: '旧影响' }, { sent: { cause: '我改的', effect: '旧影响' } });
+ assert.deepEqual([merged?.changed, merged?.fresh, merged?.conflicts], [false, false, {}]);
+ assert.deepEqual(merged?.draft, { cause: '我改的，还在写', effect: '旧影响' });
+ // A receipt replay of that save answering with a later card: the other tab's field is merged in.
+ const replay = mergeSnapshot(fields, base, card(3, { cause: '我改的', effect: '他改的影响' }), { cause: '我改的', effect: '旧影响' }, { sent: { cause: '我改的', effect: '旧影响' } });
+ assert.deepEqual([replay?.draft, replay?.conflicts], [{ cause: '我改的', effect: '他改的影响' }, {}]);
+});
+test('an excerpt fills its field from its own response; typing in that field meanwhile wins without a conflict', () => {
+ const base = card(1, { cause: '', effect: '旧影响' });
+ assert.deepEqual(mergeSnapshot(fields, base, card(2, { cause: '我表哥', effect: '旧影响' }), { cause: '', effect: '旧影响' }, { wrote: ['cause'] })?.draft, { cause: '我表哥', effect: '旧影响' });
+ const typedMeanwhile = mergeSnapshot(fields, base, card(2, { cause: '我表哥', effect: '旧影响' }), { cause: '刚打的', effect: '旧影响' }, { wrote: ['cause'] });
+ assert.deepEqual([typedMeanwhile?.draft.cause, typedMeanwhile?.conflicts], ['刚打的', {}]);
+});
+
+/* Astra r2 #2: an ask that left the box is protected until the server confirms it. */
+test('leaving needs a decision for unsent answers, ask text, and an ask still saving or in flight; not after it is confirmed', () => {
+ const none = { answer: '', askDraft: '', preparingAsk: false, pendingAsk: null };
+ assert.equal(unsentCoachText(none), false);
+ assert.equal(unsentCoachText({ ...none, answer: '我表哥' }), true);
+ assert.equal(unsentCoachText({ ...none, askDraft: '我想从独立说起' }), true);
+ assert.equal(unsentCoachText({ ...none, askDraft: ' \n ' }), false);
+ // The box cleared on send; the card is being saved before the ask goes out.
+ assert.equal(unsentCoachText({ ...none, preparingAsk: true }), true);
+ // The ask request is in flight.
+ assert.equal(unsentCoachText({ ...none, pendingAsk: { status: 'sending' } }), true);
+ // Failed: a typed ask is back in the box, which protects it; the failed request alone does not.
+ assert.equal(unsentCoachText({ ...none, pendingAsk: { status: 'failed' }, askDraft: '我想从独立说起' }), true);
+ assert.equal(unsentCoachText({ ...none, pendingAsk: { status: 'failed' } }), false);
 });
