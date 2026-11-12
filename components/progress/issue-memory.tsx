@@ -54,7 +54,7 @@ export function IssueMemory({ initial, excludedMemoryIds }: { initial: MemoryIte
                     <p className="font-medium">{item.summary}</p>
                     {item.evidence && <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{item.evidence.sentence}</p>}
                   </TableCell>
-                  <TableCell className="text-right text-[13px] tabular-nums">{item.seen}<span className="text-muted-foreground"> / {item.checked}</span></TableCell>
+                  <TableCell className="text-right text-[14px] tabular-nums">{item.seen}<span className="text-muted-foreground"> / {item.checked}</span></TableCell>
                   <TableCell className="meta hidden text-right sm:table-cell">{item.evidence?.date}</TableCell>
                   <TableCell className="pr-0 text-right">
                     <Tooltip>
@@ -78,7 +78,7 @@ export function IssueMemory({ initial, excludedMemoryIds }: { initial: MemoryIte
       </div>
       <aside>
         <h3 className="text-xs text-muted-foreground">偏好与难点</h3>
-        {notes.length ? <ul className="mt-2.5 flex flex-col gap-2 text-[13px]">{notes.map((item) => <li key={item.id}>{item.summary}</li>)}</ul> : <p className="mt-2.5 text-[13px] text-muted-foreground">未填写</p>}
+        {notes.length ? <ul className="mt-2.5 flex flex-col gap-2 text-[14px]">{notes.map((item) => <li key={item.id}>{item.summary}</li>)}</ul> : <p className="mt-2.5 text-[14px] text-muted-foreground">未填写</p>}
         <Link href="/onboarding" className="mt-3 inline-block text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">修改</Link>
       </aside>
     </div>

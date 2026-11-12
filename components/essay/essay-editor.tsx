@@ -4,7 +4,22 @@ import { MessageCircleQuestion, ScanSearch, Sparkles, Wand2 } from "lucide-react
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { countWords } from "@/lib/rules";
 import { cn } from "@/lib/utils";
+import type { DraftMark } from "@/lib/learning/revision-marks";
 import { caretCoordinates } from "./caret";
+import { ISSUE_TONES } from "./essay-reader";
+
+function markSegments(text: string, marks: DraftMark[]) {
+  const out: { text: string; rank: number | null }[] = [];
+  let cursor = 0;
+  for (const mark of marks) {
+    if (mark.start > cursor) out.push({ text: text.slice(cursor, mark.start), rank: null });
+    out.push({ text: text.slice(mark.start, mark.end), rank: mark.rank });
+    cursor = mark.end;
+  }
+  // 结尾补一个换行，镜像层和输入框的高度才一致
+  out.push({ text: `${text.slice(cursor)}\n`, rank: null });
+  return out;
+}
 
 export type SelectionAction = "clarify" | "polish" | "check" | "ask";
 export type EditorSelection = { text: string; start: number; end: number };
@@ -29,6 +44,9 @@ export function EssayEditor({
   readOnly = false,
   placeholder,
   editorRef,
+  marks,
+  activeRank,
+  onCaret,
 }: {
   value: string;
   onChange: (text: string) => void;
@@ -38,6 +56,10 @@ export function EssayEditor({
   readOnly?: boolean;
   placeholder?: string;
   editorRef?: React.RefObject<HTMLTextAreaElement | null>;
+  /** 改写时：原稿里被指出、现在还没动过的句子，在文字下方标出 */
+  marks?: DraftMark[];
+  activeRank?: number | null;
+  onCaret?: (position: number) => void;
 }) {
   const innerRef = useRef<HTMLTextAreaElement>(null);
   const ref = editorRef ?? innerRef;
@@ -90,6 +112,13 @@ export function EssayEditor({
 
   return (
     <div className="relative">
+      {marks && marks.length > 0 && (
+        <div aria-hidden className="prose-essay pointer-events-none absolute inset-0 overflow-hidden break-words whitespace-pre-wrap text-transparent select-none">
+          {markSegments(value, marks).map((segment, i) => segment.rank == null ? <span key={i}>{segment.text}</span> : (
+            <span key={i} className="rounded-[3px] transition-[background-size] duration-(--dur-layout) ease-(--ease-soft)" style={{ backgroundImage: `linear-gradient(${ISSUE_TONES[(segment.rank - 1) % 3]}, ${ISSUE_TONES[(segment.rank - 1) % 3]})`, backgroundRepeat: "no-repeat", backgroundPosition: "0 100%", backgroundSize: activeRank === segment.rank ? "100% 100%" : "100% 42%", boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone" }}>{segment.text}</span>
+          ))}
+        </div>
+      )}
       <textarea
         ref={ref}
         aria-label="英文作文"
@@ -102,10 +131,10 @@ export function EssayEditor({
           setToolbar(null);
           schedulePause(e.target.value, e.target.selectionStart);
         }}
-        onMouseUp={readSelection}
-        onKeyUp={(e) => e.shiftKey && readSelection()}
+        onMouseUp={(e) => { readSelection(); onCaret?.(e.currentTarget.selectionStart); }}
+        onKeyUp={(e) => { if (e.shiftKey) readSelection(); onCaret?.(e.currentTarget.selectionStart); }}
         onBlur={(e) => { if (toolbarRef.current?.contains(e.relatedTarget as Node)) return; setTimeout(() => setToolbar(null), 160); }}
-        className="prose-essay block w-full resize-none overflow-hidden bg-transparent text-foreground outline-none placeholder:text-muted-foreground/60"
+        className="prose-essay relative block w-full resize-none overflow-hidden bg-transparent text-foreground outline-none placeholder:text-muted-foreground/60"
       />
       {toolbar && onAction && (
         <div
@@ -130,7 +159,7 @@ export function EssayEditor({
                   setToolbar(null);
                 }}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] transition-colors hover:bg-background/15 focus-visible:bg-background/15 focus-visible:outline-none",
+                  "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[14px] transition-colors hover:bg-background/15 focus-visible:bg-background/15 focus-visible:outline-none",
                 )}
               >
                 <Icon className="size-3.5" />

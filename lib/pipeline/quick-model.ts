@@ -9,6 +9,7 @@ import { getSession } from "../db/queries/sessions";
 import { getRequestReceipt, writeRequestReceipt, ReceiptConflict } from "../db/request-receipts";
 import { quickModelActionSchema, type QuickModelAction } from "../quick/schemas";
 import { quickRequirements, validQuickNote, validQuickQuestion } from "../rules/quick";
+import { cardSlots } from "../quick/layouts";
 import { occupiedBudget, type CallAccounting } from "../rules/llm-budget";
 import { quickBudget, callConfigVersion } from "../llm/budget";
 import { reserveCall, type Reservation } from "../llm/calls";
@@ -18,6 +19,8 @@ import { prompt } from "../llm/prompts";
 import { assertQuickSession } from "./http";
 import { SessionError } from "./engine";
 import type { SessionState } from "./types";
+/** Deterministic note for a requirement with blank fields: name the fields, cost no model call. */
+function emptyNote(labels: string[]) { return labels.length ? `还没填：${labels.join("、")}。` : "请补充本项回答和理由。"; }
 const followSchema = z.object({ question: z.string().min(1).max(80), targetKey: z.string().nullable() }).strict();
 const checkSchema = z.object({ results: z.array(z.object({ id: z.string(), status: z.enum(["met", "gap"]), note: z.string().max(60).nullable() }).strict()) }).strict();
 type Result = z.infer<typeof checkSchema>["results"][number];
@@ -108,7 +111,7 @@ export async function runQuickModel(userId: string, id: string, raw: QuickModelA
         if (checked) { receipt(checked.checkId); return null; }
       }
       const reqs = quickRequirements(cardRequirements(card), card.content);
-      frozen = { kind, configVersion: callConfigVersion, context: { task: session.prompt.text, requirements: kind === "followup" ? reqs : reqs.filter(r => !r.empty), parts: card.content.parts.map(({ key, text }) => ({ key, text })), ...(kind === "followup" ? { coachingFocus: card.content.parts.some(p => p.key.endsWith(".answer") && !card.content.parts.some(other => other.key === p.key.replace(/\.answer$/, ".why"))) ? "explain_reason" as const : "develop" as const, messages: session.messages.filter(m => m.stage === "quick").map(m => ({ role: m.role, content: m.content })) } : {}) }, empty: reqs.filter(r => r.empty).map(r => ({ id: r.id, status: "gap", note: "请补充本项回答和理由。" })) };
+      frozen = { kind, configVersion: callConfigVersion, context: { task: session.prompt.text, requirements: kind === "followup" ? reqs : reqs.filter(r => !r.empty), parts: card.content.parts.map(({ key, text }) => ({ key, text })), ...(kind === "followup" ? { coachingFocus: card.content.parts.some(p => p.key.endsWith(".answer") && !card.content.parts.some(other => other.key === p.key.replace(/\.answer$/, ".why"))) ? "explain_reason" as const : "develop" as const, messages: session.messages.filter(m => m.stage === "quick").map(m => ({ role: m.role, content: m.content })) } : {}) }, empty: reqs.filter(r => r.empty).map(r => ({ id: r.id, status: "gap", note: emptyNote(cardSlots(cardRequirements(card)).filter(s => s.requirementKey === r.id && !card.content.parts.some(p => p.key === s.key && p.text.trim())).map(s => s.label)) })) };
       if (kind === "check" && reqs.every(r => r.empty)) {
         const checkId = randomUUID(); db.insert(quickCheckResults).values({ checkId, userId, attemptId: id, cardVersion: card.contentVersion, outcome: "needs_development", resultsJson: JSON.stringify(frozen.empty), createdAt: now }).run();
         db.update(topicCards).set({ state: "needs_development", lastCheckId: checkId, lastCheckedVersion: card.contentVersion }).where(eq(topicCards.id, card.id)).run(); receipt(checkId); return null;
@@ -147,7 +150,7 @@ export async function runQuickModel(userId: string, id: string, raw: QuickModelA
       if (!current || current.status !== "running") return;
       if (!session || !card || session.lifecycle === "closed" || (op.kind === "check" && card.contentVersion !== op.cardVersion)) { db.update(quickOperations).set({ status: "stale", finishedAt: now }).where(eq(quickOperations.id, op.id)).run(); return; }
       if ("question" in result) {
-        session.messages.push({ id: randomUUID(), role: "coach", stage: "quick", action: "quickFollowup", content: result.question }); persist(userId, session, now);
+        session.messages.push({ id: randomUUID(), role: "coach", stage: "quick", action: "quickFollowup", content: result.question, ...(result.targetKey ? { targetKey: result.targetKey } : {}) }); persist(userId, session, now);
         db.update(quickOperations).set({ status: "ok", finishedAt: now }).where(eq(quickOperations.id, op.id)).run();
       } else {
         const results = [...frozen.empty, ...result.results], passed = results.every(r => r.status === "met"), state = passed ? "passed" : "needs_development";

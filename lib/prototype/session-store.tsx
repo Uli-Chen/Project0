@@ -140,6 +140,7 @@ function useSessionController(initialState: SessionState) {
     } catch (err) {
       const message = err instanceof Error ? err.message : "请求失败，请检查网络后重试。";
       setError(message);
+      update(s => s.messages.some(m => m.id.startsWith("pending-")) ? { ...s, messages: s.messages.filter(m => !m.id.startsWith("pending-")) } : s);
       if (ref.current.pendingAction?.retryable === false) {
         const recovered = recoverComposerDraft(composerDraftRef.current, input);
         if (recovered !== composerDraftRef.current) setComposerDraft(recovered);

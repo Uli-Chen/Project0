@@ -29,7 +29,7 @@ export function WeekPips({ week, perWeek, weekKey }: { week: number; perWeek: nu
         const done = i < week;
         const fresh = done && seen !== null && i >= seen;
         return (
-          <span key={i} className="relative h-1.5 w-6 overflow-hidden rounded-full bg-input">
+          <span key={i} className="relative h-1.5 w-7 overflow-hidden rounded-full bg-accent">
             {done && <span className={cn("absolute inset-0 rounded-full bg-primary", fresh && "motion-fill")} style={fresh ? { "--i": i - seen! } as React.CSSProperties : undefined} />}
           </span>
         );

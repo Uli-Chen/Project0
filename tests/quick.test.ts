@@ -279,7 +279,9 @@ test("Quick Sunday, continued Deep Monday：周日完成夹具与周一精练各
     globalThis.fetch = async () => { calls++; return Response.json({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify(evaluation) } }] }); };
     await action(child.id, { action: "evaluate", kind: "original", requestId: crypto.randomUUID() });
   } finally { globalThis.fetch = blockedFetch; process.env.LLM_API_KEY = key ?? ""; }
-  assert.equal(calls, 2); state = getSession("u", child.id)!; assert.equal(state.stage, "feedback");
+  // One failed and one successful evaluation, then the outline review that a card-seeded outline now triggers
+  // (the fixture reply is not a review, so the client retries it once). Feedback is already committed by then.
+  assert.equal(calls, 4); state = getSession("u", child.id)!; assert.equal(state.stage, "feedback");
   const events = table(db.$client, "completion_events").filter(e => e.attempt_id === child.id || e.attempt_id === id);
   assert.equal(events.length, 2);
   const deepEvent = events.find(e => e.attempt_id === child.id)!;

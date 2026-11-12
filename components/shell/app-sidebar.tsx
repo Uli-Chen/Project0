@@ -1,6 +1,6 @@
 "use client";
 
-import { ChartNoAxesColumn, ChevronsUpDown, Copy, FileText, LogOut, PenLine, Plus, Settings } from "lucide-react";
+import { ChartNoAxesColumn, ChevronsUpDown, FileText, Layers, LogOut, PenLine, Plus, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -19,30 +19,38 @@ export function Avatar({ name, size = 24 }: { name: string; size?: number }) {
   return <span aria-hidden="true" className="inline-flex shrink-0 items-center justify-center rounded-full bg-foreground font-medium text-background" style={{ width: size, height: size, fontSize: size * 0.46 }}>{Array.from(name)[0]}</span>;
 }
 
-export function AppSidebar({ user, focus, bankEnabled=false, quickEnabled=false }: { user: { name: string; email: string }; focus?: string; bankEnabled?: boolean; quickEnabled?: boolean }) {
+export function AppSidebar({ user, focus, bankEnabled=false, reviewDue=0 }: { user: { name: string; email: string }; focus?: string; bankEnabled?: boolean; reviewDue?: number }) {
   const pathname = usePathname();
+  // 题库开启后“练习”就是开始写的地方，不再另放一个去同一处的“新建作文”
+  const items = bankEnabled
+    ? [{ href: "/", label: "练习", icon: PenLine }, { href: "/essays", label: "作文", icon: FileText }, { href: "/cards", label: "复习", icon: Layers, count: reviewDue }, NAV[1]]
+    : NAV;
   return (
-    <Sidebar collapsible="icon" className="border-transparent">
-      <SidebarHeader className="h-14 flex-row items-center justify-between px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="h-16 flex-row items-center justify-between px-4 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
         <span className="group-data-[collapsible=icon]:hidden"><Wordmark /></span>
         <SidebarTrigger className="text-muted-foreground" />
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarMenu>
-            <SidebarMenuItem className="mb-2">
-              {bankEnabled ? <SidebarMenuButton tooltip="新建作文" className="h-9 justify-center border border-input bg-sheet font-medium shadow-none hover:border-faint hover:bg-sheet group-data-[collapsible=icon]:justify-start" render={<Link href="/#topics" />}><Plus />新建作文</SidebarMenuButton> : <NewEssayDialog focus={focus} trigger={
-                <SidebarMenuButton tooltip="新建作文" className="h-9 justify-center border border-input bg-sheet font-medium shadow-none hover:border-faint hover:bg-sheet group-data-[collapsible=icon]:justify-start">
-                  <Plus />新建作文
-                </SidebarMenuButton>
-              } />}
-            </SidebarMenuItem>
-            {(bankEnabled ? [{href:"/",label:"练习",icon:PenLine},{href:"/essays",label:"作文",icon:FileText},...(quickEnabled ? [{href:"/cards",label:"卡片",icon:Copy}] : []),NAV[1]] : NAV).map((item) => {
-              const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        <SidebarGroup className="px-3">
+          <SidebarMenu className="gap-1">
+            {!bankEnabled && (
+              <SidebarMenuItem className="mb-3">
+                <NewEssayDialog focus={focus} trigger={
+                  <SidebarMenuButton tooltip="新建作文" className="h-10 justify-center rounded-full bg-foreground font-medium text-background hover:bg-foreground/85 hover:text-background group-data-[collapsible=icon]:justify-start">
+                    <Plus />新建作文
+                  </SidebarMenuButton>
+                } />
+              </SidebarMenuItem>
+            )}
+            {items.map((item) => {
+              const active = item.href === "/" ? pathname === "/" || pathname.startsWith("/topics") : pathname.startsWith(item.href);
+              const count = "count" in item ? item.count ?? 0 : 0;
               return (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton isActive={active} tooltip={item.label} className="h-9 gap-2.5 px-2.5 text-[14px] text-muted-foreground data-active:bg-sheet data-active:text-foreground data-active:shadow-[var(--shadow-panel),0_0_0_1px_var(--border)] [&_svg]:size-[17px]" render={<Link href={item.href} />}>
+                  <SidebarMenuButton isActive={active} tooltip={item.label} className="h-10 gap-3 rounded-lg px-3 text-[15px] text-muted-foreground data-active:bg-sidebar-accent data-active:font-medium data-active:text-foreground [&_svg]:size-[18px]" render={<Link href={item.href} />}>
                     <item.icon />{item.label}
+                    {count > 0 && <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground tabular-nums group-data-[collapsible=icon]:hidden" aria-label={`${count} 条待复习`}>{count}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );
@@ -50,7 +58,7 @@ export function AppSidebar({ user, focus, bankEnabled=false, quickEnabled=false 
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="px-3 pb-3">
         <AccountMenu user={user} />
       </SidebarFooter>
       <SidebarRail />

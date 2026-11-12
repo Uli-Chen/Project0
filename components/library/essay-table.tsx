@@ -55,7 +55,7 @@ export function EssayTable({ rows }: { rows: EssayRow[] }) {
               <TableHead className="w-auto pl-5">题目</TableHead>
               <TableHead className="hidden w-20 sm:table-cell">类型</TableHead>
               <TableHead className="w-28 sm:w-36">状态</TableHead>
-              <TableHead className="w-24 text-right">分数<span className="block text-[11px] font-normal text-faint">AI 实验性预估</span></TableHead>
+              <TableHead className="w-24 text-right">分数<span className="block text-xs font-normal text-faint">AI 实验性预估</span></TableHead>
               <TableHead className="hidden w-20 text-right md:table-cell">更新</TableHead>
               <TableHead className="w-10 pr-5" aria-hidden />
             </TableRow>
@@ -66,7 +66,7 @@ export function EssayTable({ rows }: { rows: EssayRow[] }) {
                 <TableCell className="pl-5">
                   <Link href={`/essays/${row.id}`} onClick={(event) => event.stopPropagation()} className="block truncate font-serif text-[16px] text-foreground outline-none focus-visible:underline">{row.prompt}</Link>
                 </TableCell>
-                <TableCell className="hidden text-muted-foreground sm:table-cell">{row.kind}{row.kind === "练习" && <span className="block text-[11px] text-faint">有辅导</span>}</TableCell>
+                <TableCell className="hidden text-muted-foreground sm:table-cell">{row.kind}{row.kind === "练习" && <span className="block text-xs text-faint">有辅导</span>}</TableCell>
                 <TableCell><span className="inline-flex items-center gap-2"><span className={cn("size-1.5 rounded-full", DOT[row.status])} aria-hidden />{row.statusLabel}</span></TableCell>
                 <TableCell className="text-right text-sm font-medium tabular-nums">
                   {row.original === null ? <span className="text-muted-foreground">—</span> : row.revision === null ? row.original.toFixed(1) : <><span className="text-muted-foreground">{row.original.toFixed(1)} → </span>{row.revision.toFixed(1)}</>}

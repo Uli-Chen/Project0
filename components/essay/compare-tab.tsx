@@ -40,13 +40,13 @@ export function CompareTab() {
       {state.finish && <div className="mb-8"><FinishSummary /></div>}
 
       <section>
-        <p className="text-[13px] text-muted-foreground">原稿到改写稿</p>
+        <p className="text-[14px] text-muted-foreground">原稿到改写稿</p>
         <p className="mt-1.5 flex items-center gap-2.5 font-serif text-[48px] leading-none font-medium tracking-tight tabular-nums">
           <span className="text-muted-foreground">{before.overall.toFixed(1)}</span>
           <ArrowRight className="size-5 text-muted-foreground/60" />
           {after.overall.toFixed(1)}
         </p>
-        <dl className="mt-5 flex flex-col divide-y border-y text-[13px]">
+        <dl className="mt-5 flex flex-col divide-y border-y text-[14px]">
           {DIMS.map((d) => (
             <div key={d} className="flex items-center justify-between py-2 tabular-nums">
               <dt className="text-muted-foreground">{DIM_LABEL[d]}</dt>
@@ -82,7 +82,7 @@ export function CompareTab() {
                       <span className="text-sm font-medium">{issue?.title}</span>
                       <span className={cn("shrink-0 text-xs font-medium", STATUS[result.status].className)}>{STATUS[result.status].label}</span>
                     </span>
-                    <span className="mt-1 block text-[13px] leading-relaxed text-muted-foreground">{result.reason}</span>
+                    <span className="mt-1 block text-[14px] leading-relaxed text-muted-foreground">{result.reason}</span>
                   </span>
                 </button>
               </li>
@@ -93,18 +93,18 @@ export function CompareTab() {
 
       <section className="mt-8">
         <h2 className="text-xs text-muted-foreground">观点</h2>
-        <p className="mt-2.5 flex items-center gap-2 text-[13px]"><Check className={cn("size-4", comparison.idea.stanceKept ? "text-good" : "text-warn")} />{comparison.idea.stanceKept ? "立场没有变" : "立场有变化"}</p>
-        {comparison.idea.keptPoints.length > 0 && <ul className="mt-2 flex flex-col gap-1 text-[13px] text-foreground/80">{comparison.idea.keptPoints.map((p) => <li key={p} className="flex gap-2"><span className="mt-2 size-1 shrink-0 rounded-full bg-foreground/40" />{p}</li>)}</ul>}
+        <p className="mt-2.5 flex items-center gap-2 text-[14px]"><Check className={cn("size-4", comparison.idea.stanceKept ? "text-good" : "text-warn")} />{comparison.idea.stanceKept ? "立场没有变" : "立场有变化"}</p>
+        {comparison.idea.keptPoints.length > 0 && <ul className="mt-2 flex flex-col gap-1 text-[14px] text-foreground/80">{comparison.idea.keptPoints.map((p) => <li key={p} className="flex gap-2"><span className="mt-2 size-1 shrink-0 rounded-full bg-foreground/40" />{p}</li>)}</ul>}
         {comparison.idea.deepened.map((d) => (
           <div key={d.what} className="mt-4">
-            <p className="text-[13px]">{d.what}</p>
+            <p className="text-[14px]">{d.what}</p>
             <p className="mt-1.5 border-l-2 pl-3 font-serif text-sm italic leading-relaxed text-muted-foreground">{d.originalIds.map((id) => origSentences.find((s) => s.id === id)?.text).join(" ")}</p>
             <p className="mt-1 border-l-2 border-foreground/60 pl-3 font-serif text-sm leading-relaxed">{d.revisionIds.map((id) => revSentences.find((s) => s.id === id)?.text).join(" ")}</p>
           </div>
         ))}
-        {comparison.idea.changed.length > 0 && <ul className="mt-4 text-[13px] text-muted-foreground">{comparison.idea.changed.map((c) => <li key={c}>{c}</li>)}</ul>}
-        <div className="mt-4 flex items-baseline justify-between gap-3 text-[13px]"><span className="text-xs text-muted-foreground">站内已采用建议文本占比</span><span className="font-medium tabular-nums">{Math.round(comparison.aiRatio * 100)}%</span></div>
-        <p className="mt-1 text-xs text-muted-foreground">按已采用且仍完整保留的站内建议文本词数估算；不检测 AI 生成，也不识别外部来源。</p>
+        {comparison.idea.changed.length > 0 && <ul className="mt-4 text-[14px] text-muted-foreground">{comparison.idea.changed.map((c) => <li key={c}>{c}</li>)}</ul>}
+        <div className="mt-4 flex items-baseline justify-between gap-3 text-[14px]"><span className="text-xs text-muted-foreground">采纳的教练建议占全文</span><span className="font-medium tabular-nums">{Math.round(comparison.aiRatio * 100)}%</span></div>
+        <p className="mt-1 text-xs text-muted-foreground">按你采纳后仍留在文中的建议词数估算。</p>
       </section>
 
       <Rating />
@@ -121,19 +121,19 @@ function Rating() {
   return (
     <section className="mt-8 flex flex-col gap-3 rounded-xl bg-sunk p-4 shadow-[inset_0_0_0_1px_var(--border)]">
       <h2 className="text-[15px] font-semibold">评价这次练习</h2>
-      <div className="flex items-center justify-between gap-3 text-[13px]">
+      <div className="flex items-center justify-between gap-3 text-[14px]">
         <span>有用吗</span>
         <ToggleGroup disabled={state.lifecycle !== "open" || lifecycleBusy} size="sm" spacing={0} variant="outline" value={useful ? [useful] : []} onValueChange={(value) => setUseful(value[0] ?? null)} aria-label="有用程度">
           {["1", "2", "3", "4", "5"].map((v) => <ToggleGroupItem key={v} value={v} className="h-7 w-8 px-0 text-xs tabular-nums">{v}</ToggleGroupItem>)}
         </ToggleGroup>
       </div>
-      <div className="flex items-center justify-between gap-3 text-[13px]">
+      <div className="flex items-center justify-between gap-3 text-[14px]">
         <span>还是你的观点吗</span>
         <ToggleGroup disabled={state.lifecycle !== "open" || lifecycleBusy} size="sm" spacing={0} variant="outline" value={mine ? [mine] : []} onValueChange={(value) => setMine((value[0] as typeof mine) ?? null)} aria-label="观点归属">
           {([["yes", "是"], ["partly", "部分"], ["no", "不是"]] as const).map(([v, label]) => <ToggleGroupItem key={v} value={v} className="h-6 px-2 text-xs">{label}</ToggleGroupItem>)}
         </ToggleGroup>
       </div>
-      <Textarea disabled={state.lifecycle !== "open" || lifecycleBusy} value={comment} onChange={(e) => setComment(e.target.value)} rows={2} placeholder="其他想说的（可选）" className="min-h-0 resize-none text-[13px]" />
+      <Textarea disabled={state.lifecycle !== "open" || lifecycleBusy} value={comment} onChange={(e) => setComment(e.target.value)} rows={2} placeholder="其他想说的（可选）" className="min-h-0 resize-none text-[14px]" />
       <Button size="sm" variant="outline" className="self-end" disabled={coachBusy || lifecycleBusy || state.lifecycle !== "open" || (!useful && !mine)} onClick={() => void actions.rate(useful ? Number(useful) : null, mine, comment)}>提交</Button>
     </section>
   );

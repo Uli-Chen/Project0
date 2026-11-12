@@ -27,10 +27,14 @@ export function FeedbackTab() {
   const folded = tutorV2Enabled && primary ? [primary] : issues;
   const others = tutorV2Enabled && primary ? issues.filter((i) => i !== primary) : [];
   const listProps = {
-    activeRank: ui.hoverRank ?? (ui.version === "original" ? state.activeIssue : null),
-    onSelect: (rank: number) => { actions.setActiveIssue(rank); ui.setVersion("original"); },
+    activeRank: ui.hoverRank ?? (ui.version === "original" || state.stage === "revising" ? state.activeIssue : null),
+    onSelect: (rank: number) => { actions.setActiveIssue(rank); if (state.stage !== "revising") ui.setVersion("original"); },
     onHover: ui.setHoverRank,
-    onJump: (id: number) => { ui.setVersion("original"); ui.jumpToSentence(id); },
+    onJump: (id: number) => {
+      // 改写时先在改写稿里找这一句；已经改过就回到原稿看它原来的样子
+      if (state.stage === "revising" && ui.version === "revision" && ui.locateInDraft(id)) return;
+      ui.setVersion("original"); ui.jumpToSentence(id);
+    },
     onDiscuss: can.issue && state.lifecycle === "open" ? (tutorV2Enabled ? (rank: number) => void discuss(rank) : ui.discussIssue) : undefined,
   };
   async function discuss(rank: number) {
@@ -70,7 +74,7 @@ export function FeedbackTab() {
             <p>提纲回顾失败，评分与问题反馈已保存。</p>
             <Button variant="outline" size="sm" disabled={coachBusy || lifecycleBusy || state.lifecycle !== "open"} onClick={() => void actions.retryReview()}>重试</Button>
           </div>}
-          <dl className="mt-3 flex flex-col gap-4 text-[13px] leading-relaxed">
+          <dl className="mt-3 flex flex-col gap-4 text-[14px] leading-relaxed">
             {state.focus && review.focusResult && (
               <div>
                 <dt className="text-xs text-muted-foreground">{state.focus.name}</dt>
@@ -78,7 +82,7 @@ export function FeedbackTab() {
               </div>
             )}
             {review.breakthrough && <div><dt className="text-xs text-muted-foreground">突破</dt><dd className="mt-1">{review.breakthrough}</dd></div>}
-            {state.mode === "practice" && <div><div className="flex items-baseline justify-between gap-3"><dt className="text-xs text-muted-foreground">站内已采用建议文本占比</dt><dd className="font-medium tabular-nums">{Math.round(review.aiRatio * 100)}%</dd></div><dd className="mt-1 text-xs text-muted-foreground">按已采用且仍完整保留的站内建议文本词数估算；不检测 AI 生成，也不识别外部来源。</dd></div>}
+            {state.mode === "practice" && <div><div className="flex items-baseline justify-between gap-3"><dt className="text-xs text-muted-foreground">采纳的教练建议占全文</dt><dd className="font-medium tabular-nums">{Math.round(review.aiRatio * 100)}%</dd></div><dd className="mt-1 text-xs text-muted-foreground">按你采纳后仍留在文中的建议词数估算。</dd></div>}
           </dl>
 
       </section>

@@ -37,10 +37,12 @@ function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements 
   const [notices, setNotices] = useState<Record<string, string>>({});
   const { stage } = state;
   const practice = state.mode === "practice";
-  useTimerAndAutosave();
+  useTimerAndAutosave(ui.mockStarted);
 
   // 提纲：练习才有；评估后若从未填写（跳过写前）就不占位置
-  const hasLeft = practice && (["prewriting", "writing"].includes(stage) || outlineProgress(state.outline).filled > 0);
+  // 写前：提纲是主角，放在中间的纸上；开始写作后退到左栏当参考
+  const centerOutline = practice && stage === "prewriting";
+  const hasLeft = practice && !centerOutline && (stage === "writing" || outlineProgress(state.outline).filled > 0);
   const hasRight = ui.panels.length > 0 && ui.panel !== null;
 
   const submit = () => {
@@ -80,28 +82,49 @@ function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements 
     actions.decideSuggestion(s.id, "dismissed");
   };
 
+  const progress = outlineProgress(state.outline);
+  const outlineCount = !state.evaluation ? <span className="meta tabular-nums">想好了 {progress.filled} / {progress.total}</span>
+    : state.evaluation.review.outlineCoverage?.length ? <span className="meta tabular-nums">写进文章 {state.evaluation.review.outlineCoverage.filter((c) => c.status === "written").length} / {state.evaluation.review.outlineCoverage.length}</span> : null;
+  const outlineBody = (
+    <>
+      <OutlineBoard
+        questionType={state.prompt.questionType}
+        outline={state.outline}
+        density={centerOutline ? "comfortable" : "compact"}
+        layout={centerOutline ? "grid" : "stack"}
+        onEdit={state.lifecycle === "open" && !lifecycleBusy && ["prewriting", "writing", "revising"].includes(stage) ? actions.editOutline : undefined}
+        coverage={state.evaluation?.review.outlineCoverage}
+      />
+      {state.cardSnapshot && ["prewriting", "writing"].includes(stage) && (
+        <details className="mt-8 border-t pt-4">
+          <summary className="w-fit cursor-pointer text-[15px] text-muted-foreground hover:text-foreground">查看原来的速刷卡片</summary>
+          <div className="mt-3"><CardSnapshotView snapshot={state.cardSnapshot} requirements={cardRequirements} /></div>
+        </details>
+      )}
+    </>
+  );
   const outline = (
     <div className="flex h-full flex-col">
       <div className="flex h-12 shrink-0 items-center justify-between border-b px-4">
-        <h2 className="text-sm font-semibold">提纲</h2>
-        {!state.evaluation ? <span className="meta tabular-nums">想好了 {outlineProgress(state.outline).filled} / {outlineProgress(state.outline).total}</span>
-          : state.evaluation.review.outlineCoverage?.length ? <span className="meta tabular-nums">写进文章 {state.evaluation.review.outlineCoverage.filter((c) => c.status === "written").length} / {state.evaluation.review.outlineCoverage.length}</span> : null}
+        <h2 className="text-[15px] font-semibold">提纲</h2>
+        {outlineCount}
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-1 pb-8">
-        {state.cardSnapshot && ["prewriting", "writing"].includes(stage) && <CardSnapshotView snapshot={state.cardSnapshot} requirements={cardRequirements} />}
-        <OutlineBoard
-          questionType={state.prompt.questionType}
-          outline={state.outline}
-          density={stage === "prewriting" ? "comfortable" : "compact"}
-          onEdit={state.lifecycle === "open" && !lifecycleBusy && ["prewriting", "writing", "revising"].includes(stage) ? actions.editOutline : undefined}
-          coverage={state.evaluation?.review.outlineCoverage}
-        />
-      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-1 pb-8">{outlineBody}</div>
     </div>
   );
+  const centerOutlinePanel = centerOutline ? (
+    <section aria-label="提纲" className="mt-9 border-t pt-7">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="text-[19px] font-semibold tracking-tight">提纲</h2>
+        {outlineCount}
+      </div>
+      <p className="mt-1.5 mb-6 text-[15px] text-muted-foreground">和教练聊，你说到的想法会自动记到这里；也可以点任意一格自己写。</p>
+      {outlineBody}
+    </section>
+  ) : null;
 
   const errorNotice = error && !state.evalError && (
-    <div role="alert" className="flex shrink-0 flex-wrap items-center gap-3 border-b border-destructive/20 bg-destructive/5 px-4 py-2 text-[13px]">
+    <div role="alert" className="flex shrink-0 flex-wrap items-center gap-3 border-b border-destructive/20 bg-destructive/5 px-4 py-2 text-[14px]">
       <div className="min-w-0 flex-1"><p>{error}</p>{failedInput && <p className="mt-0.5 truncate text-xs text-muted-foreground">未完成的消息：{failedInput}</p>}</div>
       <Button size="xs" variant="outline" onClick={actions.downloadDraft}>下载草稿</Button>
       <Button size="xs" variant="outline" disabled={coachBusy} onClick={() => void actions.retry()}>{state.pendingAction?.retryable === false ? "重新发送" : "重试"}</Button>
@@ -126,17 +149,17 @@ function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements 
   );
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-background">
+    <div className="desk flex h-dvh flex-col overflow-hidden">
       <EssayTopbar onSubmit={submit} hasLeft={hasLeft} />
       <DeepLeaveGuard />
       <DeepLifecycleBar lifecycle={state.lifecycle} checkpoint={Boolean(state.checkpointId)} busy={coachBusy || lifecycleBusy} onResume={() => void actions.changeLifecycle("resume")} />
       {(ui.wide || ui.sheet !== "right") && errorNotice}
       <div className={cn("flex min-h-0 flex-1", ui.wide && "gap-3 p-3")}>
-        {ui.wide && hasLeft && ui.leftOpen && <aside aria-label="提纲" className="surface w-[260px] shrink-0 overflow-hidden">{outline}</aside>}
+        {ui.wide && hasLeft && ui.leftOpen && <aside aria-label="提纲" className="surface w-[280px] shrink-0 overflow-hidden">{outline}</aside>}
         <main ref={centerRef} id="main-content" className="min-w-0 flex-1 overflow-y-auto">
-          <EssayBody />
+          <EssayBody prewrite={centerOutlinePanel} />
         </main>
-        {ui.wide && hasRight && ui.rightOpen && <aside aria-label="检查面板" className="surface w-[384px] shrink-0 overflow-hidden">{inspector}</aside>}
+        {ui.wide && hasRight && ui.rightOpen && <aside aria-label="检查面板" className="surface w-[400px] shrink-0 overflow-hidden">{inspector}</aside>}
       </div>
 
       {!ui.wide && (
@@ -160,9 +183,9 @@ function Screen({ cardRequirements }: { cardRequirements?: QuestionRequirements 
   );
 }
 
-function useTimerAndAutosave() {
+function useTimerAndAutosave(started: boolean) {
   const { state, actions, essayKind } = useSession();
-  const editing = state.lifecycle === "open" && (state.stage === "writing" || state.stage === "revising");
+  const editing = started && state.lifecycle === "open" && (state.stage === "writing" || state.stage === "revising");
   const { tick, markSaved } = actions;
   useEffect(() => {
     if (!editing) return;

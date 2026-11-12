@@ -29,7 +29,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-CN" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable} ${newsreader.variable}`}>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('p0:theme');document.documentElement.classList.toggle('dark',t==='dark'||((t!=='light'&&t!=='dark')&&window.matchMedia('(prefers-color-scheme: dark)').matches))}catch(e){document.documentElement.classList.toggle('dark',window.matchMedia('(prefers-color-scheme: dark)').matches)}})()` }} />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var d=document.documentElement,m=window.matchMedia('(prefers-color-scheme: dark)').matches;try{var t=localStorage.getItem('p0:theme');d.classList.toggle('dark',t==='dark'||(t==='system'&&m))}catch(e){d.classList.remove('dark')}})()` }} />
       </head>
       <body><TooltipProvider delay={300}>{children}</TooltipProvider><Toaster position="bottom-right" /></body>
     </html>

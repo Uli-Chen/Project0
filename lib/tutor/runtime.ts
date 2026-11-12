@@ -8,6 +8,7 @@ import { coachSchema, type AgentAction } from "../pipeline/schemas";
 import type { SessionState } from "../pipeline/types";
 import type { UserProfile } from "../auth/types";
 import { setSlot } from "../pipeline/outline";
+import { outlineGuide } from "../learning/prewrite-guidance";
 import { countWords } from "../rules";
 import { SessionError } from "../pipeline/engine";
 import { readTutorState, tutorOutputSchema } from "./schemas";
@@ -79,7 +80,7 @@ export async function runTutorAction(state: SessionState, input: AgentAction, pr
       return { move: out.move, allowedHelp: thread.allowedHelp, providedHelp: out.help.level, warnings: { ...tutorWarnings(out.reply, entry, studentTexts), ...outlineWarnings } };
     };
     const result = await generateJson(prompt(isPrewrite ? "coach-v2/prewrite" : "coach-v2/issue"), {
-      task: state.prompt.text, intent: input.intent ?? "answer", learner, outline: state.outline, ...(issue ? { issue, original: state.submitted.original, draft: state.drafts[writing] } : {}),
+      task: state.prompt.text, intent: input.intent ?? "answer", learner, outline: state.outline, ...(isPrewrite ? { outlineGuide: outlineGuide(state.prompt.questionType) } : {}), ...(issue ? { issue, original: state.submitted.original, draft: state.drafts[writing] } : {}),
       conversation: modelMessages(history), student: refs.cur ? student : undefined, newThread: !existing,
       thread: { ...threadView(thread), track: !isPrewrite && !existing ? undefined : thread.track }, refs,
     }, schema, callOptions);

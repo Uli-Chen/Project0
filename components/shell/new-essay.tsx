@@ -46,7 +46,7 @@ export function StartEssayButton({ kind, mode, children, variant = "default" }: 
 /** Bank entry always goes to the actual catalog; pasted tasks stay explicit. */
 export function NewEssayButton({ bankEnabled, focus, variant = "default" }: { bankEnabled: boolean; focus?: string; variant?: "default" | "outline" }) {
   return bankEnabled
-    ? <Button variant={variant} render={<Link href="/#topics" />}><Plus />新建作文</Button>
+    ? <Button variant={variant} nativeButton={false} render={<Link href="/#topics" />}><Plus />新建作文</Button>
     : <NewEssayDialog focus={focus} trigger={<Button variant={variant}><Plus />新建作文</Button>} />;
 }
 
@@ -100,7 +100,7 @@ export function NewEssayDialog({ trigger, focus, pasteOnly = false }: { trigger:
                   <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", topic === index ? "bg-primary" : "bg-border")} aria-hidden />
                   <span className="min-w-0">
                     <span className="block text-xs font-medium">{item.name}</span>
-                    <span className="mt-0.5 line-clamp-2 block font-serif text-[13px] leading-snug text-muted-foreground">{item.text}</span>
+                    <span className="mt-0.5 line-clamp-2 block font-serif text-[14px] leading-snug text-muted-foreground">{item.text}</span>
                   </span>
                 </button>
               ))}

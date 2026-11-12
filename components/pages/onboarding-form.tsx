@@ -111,7 +111,7 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
                     aria-pressed={on}
                     onClick={() => setDifficulties((list) => (on ? list.filter((x) => x !== d) : [...list, d]))}
                     className={cn(
-                      "h-8 rounded-full border px-3.5 text-[13px] transition-colors",
+                      "h-8 rounded-full border px-3.5 text-[14px] transition-colors",
                       on ? "border-primary bg-primary text-primary-foreground" : "bg-sheet text-foreground/80 hover:border-faint",
                     )}
                   >
@@ -160,7 +160,7 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
   );
 }
 
-const inputClass = "h-8 rounded-lg border border-input bg-sheet px-3 text-[13px] tabular-nums outline-none focus:border-primary/60";
+const inputClass = "h-8 rounded-lg border border-input bg-sheet px-3 text-[14px] tabular-nums outline-none focus:border-primary/60";
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (

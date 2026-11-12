@@ -5,6 +5,8 @@ import { useIsWide } from "@/hooks/use-wide";
 import { availablePanels, defaultPanel, defaultVersion, type Panel } from "@/lib/learning/essay-view";
 import { useSession } from "@/lib/prototype/session-store";
 import type { EssayKind } from "@/lib/prototype/types";
+import { splitSentences } from "@/lib/rules";
+import { caretCoordinates } from "./caret";
 
 export type Intent = "ask" | "attempt" | "express";
 
@@ -12,7 +14,7 @@ export type Intent = "ask" | "attempt" | "express";
  * 作文页的界面状态（不保存到服务器）：右侧面板、正在看的版本、教练输入的上下文、两侧栏开合。
  * 阶段变化时重置为该阶段的默认值。
  */
-function useEssayUiState({ centerRef }: { centerRef: RefObject<HTMLDivElement | null> }) {
+function useEssayUiState({ centerRef, editorRef }: { centerRef: RefObject<HTMLDivElement | null>; editorRef: RefObject<HTMLTextAreaElement | null> }) {
   const { state } = useSession();
   const wide = useIsWide();
   const [panel, setPanelState] = useState<Panel | null>(() => defaultPanel(state));
@@ -25,6 +27,8 @@ function useEssayUiState({ centerRef }: { centerRef: RefObject<HTMLDivElement | 
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
   const [sheet, setSheet] = useState<"left" | "right" | null>(null);
+  // 模考先看到说明，点“开始计时”后才出现编辑器并走表；已经写过的直接继续
+  const [mockStarted, setMockStarted] = useState(() => !(state.mode === "mock" && state.stage === "writing" && !state.checkpointId && state.elapsed.original === 0 && !state.drafts.original));
   const focusTick = useRef(0);
   const [focusKey, setFocusKey] = useState(0);
 
@@ -83,10 +87,37 @@ function useEssayUiState({ centerRef }: { centerRef: RefObject<HTMLDivElement | 
     }, wide ? 0 : 320);
   }, [wide, centerRef]);
 
+  /** 改写时在编辑器里选中一段文字并滚动到它 */
+  const selectInDraft = useCallback((start: number, end: number) => {
+    const el = editorRef.current;
+    if (!el) return false;
+    if (!wide) setSheet(null);
+    setTimeout(() => {
+      el.focus({ preventScroll: true });
+      el.setSelectionRange(start, end);
+      const box = centerRef.current;
+      if (!box) return;
+      const top = el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop + caretCoordinates(el, start).top;
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      box.scrollTo({ top: Math.max(0, top - box.clientHeight / 3), behavior: reduced ? "auto" : "smooth" });
+    }, wide ? 0 : 320);
+    return true;
+  }, [wide, centerRef, editorRef]);
+
+  /** 原稿第 n 句如果还原样留在改写稿里，就定位到它 */
+  const originalText = state.submitted.original ?? "";
+  const locateInDraft = useCallback((sentenceId: number) => {
+    const el = editorRef.current;
+    const text = splitSentences(originalText).find((s) => s.id === sentenceId)?.text;
+    const at = el && text ? el.value.indexOf(text) : -1;
+    return at >= 0 && text ? selectInDraft(at, at + text.length) : false;
+  }, [editorRef, originalText, selectInDraft]);
+
   return {
+    selectInDraft, locateInDraft,
     wide, panel, panels: availablePanels(state), setPanel, version, setVersion, quote, setQuote, issueContext, setIssueContext,
     intent, setIntent, hoverRank, setHoverRank, compareMode, setCompareMode,
-    leftOpen, setLeftOpen, rightOpen, setRightOpen, sheet, setSheet, focusKey,
+    leftOpen, setLeftOpen, rightOpen, setRightOpen, sheet, setSheet, focusKey, mockStarted, setMockStarted,
     askAbout, discussIssue, jumpToSentence,
   };
 }
@@ -100,7 +131,7 @@ export function EssayUiProvider({ children }: { children: ReactNode }) {
   const centerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const [refs] = useState<EssayRefs>(() => ({ centerRef, editorRef }));
-  const value = useEssayUiState({ centerRef });
+  const value = useEssayUiState({ centerRef, editorRef });
   return <EssayRefsContext.Provider value={refs}><EssayUiContext.Provider value={value}>{children}</EssayUiContext.Provider></EssayRefsContext.Provider>;
 }
 

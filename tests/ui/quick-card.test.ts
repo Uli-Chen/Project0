@@ -19,11 +19,11 @@ const router = { back: unexpected, forward: unexpected, refresh: unexpected, pus
 function render(session: ReturnType<typeof createSession>) {
   return renderToStaticMarkup(jsx(AppRouterContext.Provider, { value: router, children: jsx(TooltipProvider, { children: jsx(SessionView, { session }) }) }));
 }
-for (const stage of ["prewriting", "writing"] as const) test(`精练 ${stage} 左栏只读显示冻结卡片；无快照时原界面不变`, () => {
+for (const stage of ["prewriting", "writing"] as const) test(`精练 ${stage} 提纲区只读显示冻结卡片；无快照时原界面不变`, () => {
   const session = createSession({ kind: "free", mode: "practice" }); session.stage = stage;
   const old = render(session); assert.ok(!old.includes("主题卡片快照"));
   session.cardSnapshot = structuredClone(snapshot);
-  const html = render(session), aside = html.match(/<aside aria-label="提纲"[\s\S]*?<\/aside>/)?.[0];
+  const html = render(session), at = html.search(/<(aside|section) aria-label="提纲"/), aside = at < 0 ? undefined : html.slice(at, stage === "writing" ? html.indexOf("</aside>", at) : html.indexOf("</article>", at));
   assert.ok(aside); assert.ok(aside.includes("主题卡片快照")); assert.ok(aside.includes("冻结的学生想法")); assert.ok(aside.includes("选中的用户原话"));
   const card = aside.match(/<section aria-label="主题卡片快照"[\s\S]*?<\/section>/)![0];
   assert.ok(!/<button|<textarea|<input|contenteditable|<script/.test(card));

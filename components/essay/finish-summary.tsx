@@ -26,13 +26,13 @@ export function FinishSummary({ animate = false }: { animate?: boolean } = {}) {
       <h2 className="flex items-center gap-1.5 text-[15px] font-semibold">{animate && <DrawnCheck className="text-good" />}本篇小结</h2>
       <ul className="mt-2.5 flex flex-col gap-2">
         {state.finish.memoryChanges.map((change, i) => (
-          <li key={change.text} className={cn("flex items-baseline gap-2.5 text-[13px] leading-relaxed", animate && "motion-reveal")} style={animate ? { "--i": i + 1 } as React.CSSProperties : undefined}>
+          <li key={change.text} className={cn("flex items-baseline gap-2.5 text-[14px] leading-relaxed", animate && "motion-reveal")} style={animate ? { "--i": i + 1 } as React.CSSProperties : undefined}>
             <span className={cn("size-1.5 shrink-0 translate-y-[-2px] rounded-full", TONE[change.kind])} aria-hidden />
             {change.text}
           </li>
         ))}
       </ul>
-      <p className="mt-3 border-t pt-3 text-[13px] leading-relaxed"><Link href={questionBankEnabled && state.question ? `/topics/${state.question.primaryTopic}` : "/"}>下一步 · {questionBankEnabled && state.question ? "回到本题主题" : "回到首页"}</Link></p>
+      <p className="mt-3 border-t pt-3 text-[14px] leading-relaxed"><Link href={questionBankEnabled && state.question ? `/topics/${state.question.primaryTopic}` : "/"}>下一步 · {questionBankEnabled && state.question ? "回到本题主题" : "回到首页"}</Link></p>
     </section>
   );
 }

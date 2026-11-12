@@ -41,7 +41,8 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   const [childGone, setChildGone] = useState(false);
   const [leaveIntent, setLeaveIntent] = useState<{ kind: "link"; href: string } | { kind: "deep"; explicitNew: boolean } | null>(null);
   const [selection, setSelection] = useState<{ messageId: string; start: number; end: number } | null>(null);
-  const [target, setTarget] = useState(cardSlots(requirements)[0]?.key ?? "");
+  const target = cardSlots(requirements)[0]?.key ?? "";
+  const [placeTargets, setPlaceTargets] = useState<Record<string, string>>({});
   const mutation = useRef(false);
   const edited = useRef(false);
   const editRevision = useRef(0);
@@ -177,17 +178,18 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     } catch (e) { setError(e instanceof Error ? e.message : "操作未完成"); }
     finally { intentLatch.current.leave(); setTransitioning(false); }
   }
-  async function excerpt() {
-    if (!selection || mutation.current || !intentLatch.current.enter()) return;
+  async function excerpt(range: { messageId: string; start: number; end: number }, key: string) {
+    if (mutation.current || !intentLatch.current.enter()) return;
     setTransitioning(true);
     const revision = editRevision.current;
     try {
       const saved = await save(); if (!saved || !unchangedDraft(editRevision.current, revision)) return;
-      const value = await request({ action: "cardExcerpt", cardVersion: saved.card.contentVersion, key: target, ...selection });
+      const value = await request({ action: "cardExcerpt", cardVersion: saved.card.contentVersion, key, ...range });
       if (value && unchangedDraft(editRevision.current, revision) && value.card.contentVersion === dataRef.current.card.contentVersion) {
-        const text = value.card.content.parts.find(p => p.key === target)?.text ?? "";
+        const text = value.card.content.parts.find(p => p.key === key)?.text ?? "";
         edited.current = true; editRevision.current++;
-        setDraft(d => ({ ...d, [target]: text })); setSelection(null);
+        setDraft(d => ({ ...d, [key]: text })); setSelection(null);
+        setNotice(`已放入「${slots.find(s => s.key === key)?.label ?? "卡片"}」`);
       }
     } finally { intentLatch.current.leave(); setTransitioning(false); }
   }
@@ -202,32 +204,104 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     catch (e) { setError(e instanceof Error ? e.message : "读取失败"); }
   }
   const latest = data.checkResults?.filter(r => r.cardVersion === data.card.contentVersion).at(-1);
-  return <main className="min-h-screen bg-background">
-    <header className="flex min-h-14 flex-wrap items-center justify-between gap-3 border-b bg-sheet px-3 py-2">
+  const quickMessages = data.session.messages.filter(m => m.stage === "quick");
+  const gaps = latest?.results.filter(r => r.status !== "met").length ?? 0;
+  const checksLeft = data.budget?.remaining.checks ?? null;
+  const followupsLeft = data.budget?.remaining.followups ?? null;
+  const failedOps = data.operations.slice(-4).filter(o => !["ok", "needs_development", "running"].includes(o.status));
+  const passed = data.card.state === "passed";
+  const slotLabel = (key: string) => { const slot = slots.find(s => s.key === key); return slot ? (requirements.subquestions.length > 1 ? `${slot.zh.slice(0, 14)}${slot.zh.length > 14 ? "…" : ""} · ${slot.label}` : slot.label) : key; };
+  /** Put an answer (or the selected part of it) into a card field. An empty field keeps the
+   * excerpt provenance on the server; a filled one is appended locally as the student's edit. */
+  function place(message: { id: string; content: string }, key: string) {
+    const range = selection?.messageId === message.id ? selection : { messageId: message.id, start: 0, end: message.content.length };
+    const text = message.content.slice(range.start, range.end).trim();
+    if (!text) return;
+    const existing = (draft[key] ?? "").trim();
+    if (!existing) { void excerpt(range, key); return; }
+    const combined = `${existing}\n${text}`;
+    if ([...combined].length > 600) { setError("这一栏最多 600 字，放不下了。可以只选中回答里的一段再放入。"); return; }
+    edited.current = true; editRevision.current++;
+    setDraft(d => ({ ...d, [key]: combined })); setSelection(null); setError("");
+    setNotice(`已追加到「${slots.find(s => s.key === key)?.label ?? "卡片"}」，检查或保存时会一起保存。`);
+  }
+  return <main className="desk min-h-dvh">
+    <header className="sticky top-0 z-20 flex min-h-14 flex-wrap items-center justify-between gap-3 border-b bg-sheet/95 px-3 py-2 backdrop-blur">
       <div className="flex items-center gap-2"><Link href="/" onNavigate={e => allowNavigation(e, "/")} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"><ChevronLeft className="size-4" />练习</Link><span className="text-input" aria-hidden>/</span><h1 className="px-1 text-[15px] font-semibold">速刷主题卡片</h1><Badge variant="outline">{stateLabels[data.card.state]}</Badge></div>
-      <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={saving || !active || transitioning} onClick={() => void save()}>{dirty ? "保存卡片" : "已保存"}</Button><Button disabled={!active || transitioning || saving || (running && data.card.state !== "passed")} onClick={() => data.card.state === "passed" ? void continueDeep() : void model("quickCheck")}>{data.card.state === "passed" ? (data.defaultDeepId ? "打开作文" : "用这张卡写成作文") : running ? runningLabel : "检查"}</Button></div>
-    </header>
-    <div className="mx-auto max-w-[1600px] px-5 py-7">
-      <p className="mb-2 text-[13px] text-muted-foreground">练习题（非官方真题），不打分，只检查要求是否回答完整</p>
-      <p className="max-w-4xl font-serif text-[21px] leading-[1.5] text-pretty">{data.session.question?.text ?? data.session.prompt.text}</p>
-      {leaveIntent && <LeaveConfirmation answerOnly={leaveIntent.kind === "deep"} disabled={transitioning || saving || answering} onCancel={() => setLeaveIntent(null)} onLeave={confirmLeave} />}
-      {error && <p role="alert" className="mt-4 rounded-lg border border-destructive/40 bg-sheet p-3 text-sm">{error} <button className="underline" onClick={() => void refresh()}>刷新状态</button></p>}
-      <p aria-live="polite" className="my-3 text-xs text-muted-foreground">{dirty ? "有未保存的修改" : notice}</p>
-      {!active && <div className="my-4 flex items-center gap-3 text-sm">这份练习已{data.session.lifecycle === "closed" ? "关闭" : "搁置"}。<Button disabled={transitioning} onClick={() => void lifecycle("resume")}>恢复练习</Button></div>}
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(220px,1fr)_minmax(320px,1.6fr)_minmax(220px,1fr)]">
-        <section className="surface space-y-4 p-4"><h2 className="text-[15px] font-semibold">和教练聊聊</h2><p className="text-xs text-muted-foreground">教练只追问。材料由你自己写入卡片。</p>
-          {data.session.messages.filter(m => m.stage === "quick").map(m => <div key={m.id} className="space-y-2 border-t pt-3"><p className="text-xs text-muted-foreground">{m.role === "user" ? "你的回答" : "教练"}</p>{m.role === "user" ? <textarea aria-label="选择你的回答原文" readOnly className={fieldClass} value={m.content} onSelect={e => { const t = e.currentTarget; setSelection(t.selectionEnd > t.selectionStart ? { messageId: m.id, start: t.selectionStart, end: t.selectionEnd } : null); }} /> : <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.content}</p>}</div>)}
-          {selection && <div className="space-y-2"><label className="text-xs" htmlFor="excerpt-target">将选中的原话放入</label><select disabled={transitioning} id="excerpt-target" className={fieldClass} value={target} onChange={e => setTarget(e.target.value)}>{slots.map(s => <option key={s.key} value={s.key}>{s.zh} · {s.label}</option>)}</select><Button variant="outline" disabled={!active || transitioning || saving} onClick={() => void excerpt()}>摘取原话</Button></div>}
-          <Button variant="outline" disabled={!active || transitioning || running || !!pendingAnswer || data.budget?.remaining.followups === 0} onClick={() => void model("quickFollowup")}>{running && runningKind === "followup" ? "教练正在追问…" : "请教练看看"}{data.budget ? `（剩 ${data.budget.remaining.followups} 次）` : ""}</Button>
-          {pendingAnswer && <form onSubmit={e => { e.preventDefault(); void sendAnswer(); }} className="space-y-2"><label htmlFor="quick-answer" className="text-sm">你的回答</label><textarea id="quick-answer" disabled={answering || transitioning || !active} required className={fieldClass} value={answer} onChange={e => setAnswer(e.target.value)} /><Button type="submit" disabled={!active || !answer.trim() || answering || transitioning}>发送回答</Button></form>}
-        </section>
-        <section className="paper space-y-5 px-6 py-6"><h2 className="text-[17px] font-semibold">我的卡片</h2>{requirements.subquestions.map(q => <fieldset key={q.key} className="space-y-3"><legend className="mb-2 text-[15px] font-semibold">{q.zh}</legend><p className="text-xs text-muted-foreground">{q.en}</p>{slots.filter(s => s.requirementKey === q.key).map(s => <div key={s.key}><label htmlFor={s.key} className="mb-1.5 block text-[13px] font-medium text-muted-foreground">{s.label}</label><textarea id={s.key} disabled={!active || transitioning} className={fieldClass} rows={3} value={draft[s.key] ?? ""} onChange={e => { edited.current = true; editRevision.current++; setDraft(d => ({ ...d, [s.key]: e.target.value })); }} /><p className="mt-1 text-right text-xs text-faint tabular-nums">{[...(draft[s.key] ?? "")].length} / 600</p></div>)}</fieldset>)}</section>
-        <aside className="surface space-y-4 p-4"><h2 className="text-[15px] font-semibold">检查结果</h2><p className={cn("inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium", data.card.state === "passed" ? "bg-good-soft text-good" : "bg-sunk text-muted-foreground")}>{data.card.state === "passed" && <Check className="size-4" />}{stateLabels[data.card.state]}</p>{latest?.results.map(r => <div key={r.id} className="border-t pt-3 text-sm"><p className="flex items-start gap-1.5"><span className={cn("mt-0.5 shrink-0 text-xs font-semibold", r.status === "met" ? "text-good" : "text-warn")}>{r.status === "met" ? "已满足" : "还需展开"}</span><span>{requirements.subquestions.find(q => q.key === r.id)?.zh ?? r.id}</span></p>{r.note && <p className="mt-1 text-muted-foreground">{r.note}</p>}</div>)}
-          {data.operations.slice(-4).map(o => <div key={o.id} className="border-t pt-3 text-sm"><p>{o.kind === "check" ? "检查" : "追问"}：{operationLabels[o.status] ?? o.status}</p>{["invalid_output", "timeout", "indeterminate"].includes(o.status) && <Button className="mt-2" variant="outline" disabled={!active || transitioning || running || data.budget?.remaining.retries === 0} onClick={() => void model("quickRetry", { operationId: o.id })}>重试这次操作</Button>}</div>)}
-          {data.budget && <div className="space-y-2 border-t pt-3 text-xs text-muted-foreground"><p>剩余检查 {data.budget.remaining.checks} 次，技术重试 {data.budget.remaining.retries} 次</p>{data.budget.nextSupplementalAt && <p>补充检查最早可申请：{new Date(data.budget.nextSupplementalAt).toLocaleString("zh-CN", { timeZone: "Asia/Taipei" })}</p>}<p>额度用完仍可编辑、保存或写成作文。</p></div>}
-          <div className="flex flex-wrap gap-2 border-t pt-3"><Button size="sm" variant="outline" disabled={!active || transitioning || running || supplementalWaiting} onClick={() => void model("quickSupplemental")}>申请补充检查</Button><Button size="sm" variant="outline" disabled={!active || transitioning || saving} onClick={() => void continueDeep()}>{data.defaultDeepId ? "打开作文" : "用这张卡写成作文"}</Button>{childGone && <Button size="sm" variant="outline" disabled={transitioning} onClick={() => void continueDeep(true)}>明确另开一次练习</Button>}<Button size="sm" variant="ghost" disabled={!active || transitioning || saving} onClick={() => void lifecycle("setAside")}>搁置</Button><Button size="sm" variant="ghost" onClick={() => void refresh()}>刷新状态</Button><Link className="px-2 py-1.5 text-[13px] text-muted-foreground underline underline-offset-4 hover:text-foreground" href="/cards" onNavigate={e => allowNavigation(e, "/cards")}>复习卡片</Link></div>
-        </aside>
+      <div className="flex flex-wrap items-center gap-2">
+        <span aria-live="polite" className="mr-1 text-[14px] text-muted-foreground">{dirty ? "有未保存的修改" : notice}</span>
+        <Button variant="outline" disabled={saving || !active || transitioning} onClick={() => void save()}>{dirty ? "保存卡片" : "已保存"}</Button>
+        <Button disabled={!active || transitioning || saving || (running && !passed) || (!passed && checksLeft === 0)} onClick={() => passed ? void continueDeep() : void model("quickCheck")}>{passed ? (data.defaultDeepId ? "打开作文" : "用这张卡写成作文") : running ? runningLabel : checksLeft === 1 ? "检查（还可 1 次）" : "检查"}</Button>
       </div>
+    </header>
+    <div className="mx-auto grid max-w-[1180px] items-start gap-8 px-5 py-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="min-w-0">
+        <p className="max-w-3xl font-serif text-[23px] leading-[1.45] text-pretty">{data.session.question?.text ?? data.session.prompt.text}</p>
+        <p className="mt-3 text-sm text-muted-foreground">用自己的话把每一栏填上，中英文都可以。这里不打分，只看题目问的有没有答到。</p>
+        {leaveIntent && <LeaveConfirmation answerOnly={leaveIntent.kind === "deep"} disabled={transitioning || saving || answering} onCancel={() => setLeaveIntent(null)} onLeave={confirmLeave} />}
+        {error && <p role="alert" className="mt-4 rounded-lg border border-destructive/40 bg-sheet p-3 text-sm">{error} <button className="underline" onClick={() => void refresh()}>刷新状态</button></p>}
+        {!active && <div className="mt-4 flex items-center gap-3 text-sm">这份练习已{data.session.lifecycle === "closed" ? "关闭" : "暂放"}。<Button disabled={transitioning} onClick={() => void lifecycle("resume")}>恢复练习</Button></div>}
+        {passed ? <div role="status" className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-good-soft px-5 py-4">
+          <div><p className="flex items-center gap-1.5 font-semibold text-good"><Check className="size-4" />题目问的都答到了</p><p className="mt-1 text-sm">下一步把这张卡写成完整作文，卡片内容会自动带进提纲。</p></div>
+          <Button disabled={!active || transitioning || saving} onClick={() => void continueDeep()}>{data.defaultDeepId ? "打开作文" : "用这张卡写成作文"}</Button>
+        </div> : latest && gaps > 0 ? <p role="status" className="mt-5 rounded-xl bg-warn-soft px-5 py-3.5 text-sm"><b className="font-semibold">还有 {gaps} 项没答完整</b>，已在下面标出。补上以后再检查一次。</p>
+          : data.card.state === "unchecked" ? <p role="status" className="mt-5 rounded-xl bg-sunk px-5 py-3.5 text-sm text-muted-foreground">卡片改过了，还没有重新检查。</p> : null}
+        <section aria-label="我的卡片" className="paper mt-5 space-y-8 px-6 py-7 sm:px-9">
+          {requirements.subquestions.map((q, index) => {
+            const result = latest?.results.find(r => r.id === q.key);
+            return <fieldset key={q.key} className="space-y-3.5">
+              <legend className="text-[16px] leading-relaxed font-semibold">{requirements.subquestions.length > 1 && <span className="mr-2 text-muted-foreground tabular-nums">{index + 1}</span>}{q.zh}</legend>
+              <p className="font-serif text-[15px] text-muted-foreground italic">{q.en}</p>
+              {result && <p className={cn("flex items-start gap-2 rounded-lg px-3 py-2 text-sm", result.status === "met" ? "bg-good-soft text-good" : "bg-warn-soft")}>
+                <span className="shrink-0 font-semibold">{result.status === "met" ? "已满足" : "还需展开"}</span>{result.note && <span>{result.note}</span>}
+              </p>}
+              {slots.filter(s => s.requirementKey === q.key).map(s => {
+                const empty = !(draft[s.key] ?? "").trim();
+                return <div key={s.key}>
+                  <div className="mb-1.5 flex items-baseline justify-between"><label htmlFor={s.key} className="text-sm font-medium">{s.label}</label><span aria-hidden className="text-xs text-faint tabular-nums">{[...(draft[s.key] ?? "")].length} / 600</span></div>
+                  <textarea id={s.key} disabled={!active || transitioning} className={cn(fieldClass, result && result.status !== "met" && empty && "border-warn")} rows={3} value={draft[s.key] ?? ""} onChange={e => { edited.current = true; editRevision.current++; setDraft(d => ({ ...d, [s.key]: e.target.value })); }} />
+                </div>;
+              })}
+            </fieldset>;
+          })}
+        </section>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {!passed && <Button size="sm" variant="outline" disabled={!active || transitioning || saving} onClick={() => void continueDeep()}>{data.defaultDeepId ? "打开作文" : "不检查，直接写成作文"}</Button>}
+          {childGone && <Button size="sm" variant="outline" disabled={transitioning} onClick={() => void continueDeep(true)}>明确另开一次练习</Button>}
+          <Button size="sm" variant="ghost" disabled={!active || transitioning || saving} onClick={() => void lifecycle("setAside")}>先放一放</Button>
+          <Link className="px-2 py-1.5 text-[14px] text-muted-foreground underline underline-offset-4 hover:text-foreground" href="/cards" onNavigate={e => allowNavigation(e, "/cards")}>全部卡片</Link>
+        </div>
+      </div>
+      <aside className="flex flex-col gap-4 lg:sticky lg:top-20">
+        <section className="surface space-y-4 p-5"><h2 className="text-[15px] font-semibold">卡住了？让教练问你一个问题</h2><p className="text-[14px] leading-relaxed text-muted-foreground">教练只提问，不替你写。回答之后，把有用的部分放进卡片。</p>
+          {quickMessages.map(m => {
+            if (m.role !== "user") return <div key={m.id} className="space-y-1.5 border-t pt-3.5"><p className="text-xs font-semibold text-coach">教练</p><p className="whitespace-pre-wrap text-sm leading-relaxed">{m.content}</p></div>;
+            const asked = quickMessages.find(q => q.id === m.replyToMessageId);
+            const suggested = asked?.targetKey && slots.some(s => s.key === asked.targetKey) ? asked.targetKey : target;
+            const chosen = placeTargets[m.id] ?? suggested;
+            return <div key={m.id} className="space-y-2 border-t pt-3.5"><p className="text-xs text-muted-foreground">你的回答</p>
+              <textarea aria-label="选择你的回答原文" readOnly rows={3} className={fieldClass} value={m.content} onSelect={e => { const t = e.currentTarget; setSelection(t.selectionEnd > t.selectionStart ? { messageId: m.id, start: t.selectionStart, end: t.selectionEnd } : null); }} />
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="text-[14px] text-muted-foreground" htmlFor={`place-${m.id}`}>{selection?.messageId === m.id ? "把选中的部分放进" : "放进卡片的"}</label>
+                <select id={`place-${m.id}`} disabled={transitioning} className="h-8 min-w-0 flex-1 rounded-md border border-input bg-sunk px-2 text-[14px]" value={chosen} onChange={e => setPlaceTargets(t => ({ ...t, [m.id]: e.target.value }))}>{slots.map(s => <option key={s.key} value={s.key}>{slotLabel(s.key)}</option>)}</select>
+                <Button size="sm" variant="outline" disabled={!active || transitioning || saving} onClick={() => place(m, chosen)}>放入</Button>
+              </div>
+              <p className="text-xs text-faint">想只放一部分，先在上面选中那段文字。</p>
+            </div>;
+          })}
+          {pendingAnswer && <form onSubmit={e => { e.preventDefault(); void sendAnswer(); }} className="space-y-2 border-t pt-3.5"><label htmlFor="quick-answer" className="text-sm font-medium">你的回答</label><textarea id="quick-answer" disabled={answering || transitioning || !active} required rows={3} placeholder="想到什么写什么，中英文都可以" className={fieldClass} value={answer} onChange={e => setAnswer(e.target.value)} /><Button type="submit" disabled={!active || !answer.trim() || answering || transitioning}>{answering ? "正在发送…" : "发送回答"}</Button></form>}
+          {!pendingAnswer && (followupsLeft === 0
+            ? <p className="border-t pt-3.5 text-[14px] text-muted-foreground">这张卡的追问已经用完，可以继续自己修改，或直接检查。</p>
+            : <Button variant="outline" disabled={!active || transitioning || running} onClick={() => void model("quickFollowup")}>{running && runningKind === "followup" ? "教练正在追问…" : quickMessages.length ? "再问我一个问题" : "请教练问我"}{followupsLeft === 1 ? "（还可 1 次）" : ""}</Button>)}
+        </section>
+        {failedOps.map(o => <section key={o.id} className="surface space-y-2 p-5 text-sm"><p>{o.kind === "check" ? "检查" : "追问"}：{operationLabels[o.status] ?? o.status}</p>{["invalid_output", "timeout", "indeterminate"].includes(o.status) && <><Button variant="outline" size="sm" disabled={!active || transitioning || running || data.budget?.remaining.retries === 0} onClick={() => void model("quickRetry", { operationId: o.id })}>重试这次操作</Button>{data.budget?.remaining.retries === 0 && <p className="text-[14px] text-muted-foreground">重试次数已用完，可以修改卡片后重新检查。</p>}</>}</section>)}
+        {data.budget && checksLeft === 0 && <section className="surface space-y-3 p-5 text-sm">
+          <p className="font-medium">这张卡的检查次数已用完</p>
+          <p className="text-[14px] text-muted-foreground">额度用完仍可编辑、保存或写成作文。</p>
+          {data.budget.nextSupplementalAt && <p className="text-[14px] text-muted-foreground">补充检查最早可申请：{new Date(data.budget.nextSupplementalAt).toLocaleString("zh-CN", { timeZone: "Asia/Taipei" })}</p>}
+          <Button size="sm" variant="outline" disabled={!active || transitioning || running || supplementalWaiting} onClick={() => void model("quickSupplemental")}>申请补充检查</Button>
+        </section>}
+      </aside>
     </div>
   </main>;
 }

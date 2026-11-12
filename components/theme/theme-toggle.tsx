@@ -11,12 +11,13 @@ export const THEME_ICON = { light: Sun, dark: Moon, system: Monitor };
 function stored(): Theme {
   try {
     const saved = localStorage.getItem("p0:theme");
-    if (saved === "light" || saved === "dark") return saved;
+    if (saved === "light" || saved === "dark" || saved === "system") return saved;
   } catch {
     const remembered = document.documentElement.dataset.theme;
-    if (remembered === "light" || remembered === "dark") return remembered;
+    if (remembered === "light" || remembered === "dark" || remembered === "system") return remembered;
   }
-  return "system";
+  // 没有选过外观时用浅色：这是产品本来的样子；想跟随系统可以在账户里选
+  return "light";
 }
 
 function apply(value: Theme) {
@@ -26,7 +27,7 @@ function apply(value: Theme) {
 
 /** 主题偏好存在 localStorage；多个控件之间用 p0:theme-change 事件同步 */
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>("system");
+  const [theme, setThemeState] = useState<Theme>("light");
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const sync = (value: Theme) => { setThemeState(value); apply(value); };

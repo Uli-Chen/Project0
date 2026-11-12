@@ -19,6 +19,9 @@ import type { EssayKind } from "@/lib/prototype/types";
 import { cn } from "@/lib/utils";
 import { useEssayUi } from "./essay-ui";
 
+/** IELTS Task 2 asks for at least this many words. */
+export const MIN_WORDS = 250;
+
 export function formatClock(sec: number) {
   return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 }
@@ -28,6 +31,7 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
   const ui = useEssayUi();
   const router = useRouter();
   const [leaving, setLeaving] = useState(false);
+  const [mockLeave, setMockLeave] = useState(false);
   const { stage } = state;
   const editing = stage === "writing" || stage === "revising";
   const [checkpointSeconds, setCheckpointSeconds] = useState(state.elapsed.original);
@@ -38,6 +42,10 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
   }, [state.checkpointId, state.createdAt, state.originalSubmittedAt]);
   const elapsed = state.checkpointId && essayKind === "original" && !state.originalSubmittedAt ? checkpointSeconds : state.elapsed[essayKind];
   const overtime = essayKind === "original" && elapsed > 2400;
+  // 模考按 40 分钟倒数；练习只显示已用时间
+  const countdown = state.mode === "mock" && essayKind === "original" && !state.checkpointId;
+  const words = countWords(state.drafts[essayKind]);
+  const short = words > 0 && words < MIN_WORDS;
   const assessment = state.kind === "assessment";
   const scores: Record<EssayKind, number | undefined> = { original: state.evaluation?.scores.overall, revision: state.revisionScores?.overall };
 
@@ -45,6 +53,10 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     if (leaving) return;
+    if (state.mode === "mock" && stage === "writing" && state.lifecycle === "open" && state.elapsed.original > 0 && !mockLeave) { setMockLeave(true); return; }
+    await saveAndLeave();
+  };
+  const saveAndLeave = async () => {
     if (!actions.hasUnsaved()) { router.push("/essays"); return; }
     setLeaving(true);
     if (await actions.save()) router.push("/essays"); else setLeaving(false);
@@ -86,8 +98,10 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
       <div className="flex flex-1 items-center justify-end gap-1.5">
         {editing && (
           <div className="meta mr-2 hidden items-center gap-3.5 sm:flex">
-            <span className={cn(overtime && "text-warn")} title={essayKind === "revision" ? "改写用时" : "考场建议 40 分钟"}>{overtime ? "超过 40 分钟，" : ""}{formatClock(elapsed)}</span>
-            <span>{countWords(state.drafts[essayKind])} 词</span>
+            {countdown
+              ? <span className={cn("tabular-nums", overtime ? "font-medium text-warn" : elapsed > 2100 && "text-warn")} title="模考限时 40 分钟">{overtime ? `已超时 ${formatClock(elapsed - 2400)}` : `剩余 ${formatClock(2400 - elapsed)}`}</span>
+              : <span className={cn("tabular-nums", overtime && "text-warn")} title={essayKind === "revision" ? "改写用时" : "考场建议 40 分钟"}>{overtime ? "超过 40 分钟，" : ""}{formatClock(elapsed)}</span>}
+            <span className={cn("tabular-nums", short && "text-warn")} title={`题目要求至少 ${MIN_WORDS} 词`}>{words}{short ? ` / ${MIN_WORDS}` : ""} 词</span>
             <span className={cn("inline-flex items-center gap-1", saveStatus === "error" ? "text-destructive" : saveStatus === "saved" && "text-good")}>{saveStatus === "saved" && <Check className="size-3.5" />}{saveStatus === "saving" ? "保存中" : saveStatus === "unsaved" ? "未保存" : saveStatus === "error" ? "保存失败" : "已保存"}</span>
           </div>
         )}
@@ -96,6 +110,12 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
         <MoreMenu assessment={assessment} />
         <PrimaryAction onSubmit={onSubmit} assessment={assessment} />
       </div>
+      <Dialog open={mockLeave} onOpenChange={setMockLeave}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>模考还没写完</DialogTitle><DialogDescription>{state.checkpointId ? "检查点的 40 分钟不会暂停，离开期间时间照常走。" : "离开后计时会暂停，回来可以接着写，但这样就不是一次连续 40 分钟的模考了。"}草稿会先保存。</DialogDescription></DialogHeader>
+          <DialogFooter><Button variant="outline" disabled={leaving} onClick={() => setMockLeave(false)}>继续写</Button><Button disabled={leaving} onClick={() => void saveAndLeave()}>{leaving ? "正在保存…" : "保存并离开"}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }
@@ -164,14 +184,16 @@ function PrimaryAction({ onSubmit, assessment }: { onSubmit: () => void; assessm
     case "writing":
     case "revising": {
       const revision = state.stage === "revising";
+      const words = countWords(state.drafts[revision ? "revision" : "original"]);
       return (
         <Popover open={confirming} onOpenChange={setConfirming}>
           <PopoverTrigger render={<Button size="sm" disabled={busy} />}>{revision ? "提交改写稿" : "提交评估"}</PopoverTrigger>
-          <PopoverContent align="end" className="w-64">
+          <PopoverContent align="end" className="w-72">
+            {words < MIN_WORDS && <p className="mb-2 rounded-md bg-warn-soft px-2.5 py-2 text-sm">现在 {words} 词，题目要求至少 {MIN_WORDS} 词。考试中字数不足会影响任务回应的得分。</p>}
             <p className="text-sm">提交后不能再修改{revision ? "改写稿" : "本稿"}。</p>
             <div className="mt-3 flex justify-end gap-1.5">
               <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>再看看</Button>
-              <Button size="sm" onClick={() => { setConfirming(false); onSubmit(); }}>提交</Button>
+              <Button size="sm" onClick={() => { setConfirming(false); onSubmit(); }}>{words < MIN_WORDS ? "仍然提交" : "提交"}</Button>
             </div>
           </PopoverContent>
         </Popover>

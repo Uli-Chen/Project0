@@ -10,6 +10,7 @@ import { checkInput, countWords, splitSentences } from "@/lib/rules";
 import type { CoachMessage, EssayKind } from "@/lib/prototype/types";
 import { coachSchema, comparisonSchema, evaluationSchema, finishSchema, prewriteSchema, type AgentAction } from "./schemas";
 import { setSlot } from "./outline";
+import { outlineGuide } from "../learning/prewrite-guidance";
 import type { SessionState } from "./types";
 import type { PracticeCheckpoint } from "@/lib/db/practice-facts";
 import type { UserProfile } from "@/lib/auth/types";
@@ -122,7 +123,7 @@ export async function runAction(current: SessionState, input: AgentAction, check
     if (state.prewriteTurns >= 40) throw new SessionError("本次写前讨论已足够充分，请编辑提纲后开始写作。");
     const result = await generateJson(
       prompt("coach/prewrite"),
-      coached({ task: state.prompt.text, outline: state.outline, conversation: modelMessages(state.messages.slice(-20)), student: input.text }), prewriteSchema, options("deep.prewrite"));
+      coached({ task: state.prompt.text, outline: state.outline, outlineGuide: outlineGuide(state.prompt.questionType), conversation: modelMessages(state.messages.slice(-20)), student: input.text }), prewriteSchema, options("deep.prewrite"));
     for (const update of result.updates) {
       if (input.text.includes(update.source) || state.messages.some(m => m.role === "user" && m.content.includes(update.source))) state.outline = setSlot(state.outline, update.path, update.text, update.source);
     }

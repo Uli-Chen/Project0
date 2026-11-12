@@ -58,6 +58,8 @@ export type CoachMessage = {
   userId?: string;
   afterFollowUp?: 0 | 1 | 2;
   replyToMessageId?: string;
+  /** Quick follow-up: the card field the coach's question is about, when the model named one. */
+  targetKey?: string;
   action?: "quickFollowup" | "quickAnswer" | "opening" | "clarify" | "polish" | "check" | "express" | "chat" | "hint" | "attempt" | "ask";
   content: string;
   quote?: string;

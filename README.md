@@ -4,7 +4,9 @@ Oadwook Lab 的语言学习项目。当前实现聚焦 IELTS Task 2 写作：设
 
 ## 当前实现
 
-0.4 已增加主题题库、确定性推荐、速刷主题卡片、原话来源、独立完成记录与 40 分钟检查点。新能力默认关闭；`QUESTION_BANK_ENABLED=true` 开启题库，`QUICK_ENABLED=true` 开启速刷，`CHECKPOINTS_ENABLED=true` 开启检查点，后两项同时依赖题库开关。`FOCUS_ENABLED` 保持关闭。`/essays` 是作文库，`/cards` 是卡片复习页。
+0.4 已增加主题题库、确定性推荐、速刷主题卡片、原话来源、独立完成记录与 40 分钟检查点。新能力默认关闭；`QUESTION_BANK_ENABLED=true` 开启题库，`QUICK_ENABLED=true` 开启速刷，`CHECKPOINTS_ENABLED=true` 开启检查点，后两项同时依赖题库开关。`FOCUS_ENABLED` 保持关闭。`/essays` 是作文库，`/cards` 是复习页（今日复习、表达库、错句本、观点卡片）。
+
+2026-11-10 起：速刷卡片写成作文时，卡片内容按题型带入精练提纲（`lib/quick/outline-seed.ts`）；改写时原稿里被指出、尚未改动的句子在编辑器中标出（`lib/learning/revision-marks.ts`）；复习内容全部由学生自己的练习推导（`lib/learning/review-items.ts`），自评排期保存在 `users.profile_json.review`，不需要迁移；首页按当天给出一项练习、到期复习和上次反馈的重点。未选择过外观时默认浅色。
 
 升级已有环境必须依次执行 `db:migrate`、`db:import-questions`、`db:migrate-0.4`，之后重启服务。先关闭新功能验证兼容读取，再逐项开放。上线流程与备份见 `deploy/README.md`。
 

@@ -5,5 +5,5 @@ import { TopicHome } from "@/components/topics/home";
 export default async function Home() {
   const user = await requireUser();
   const features = readFeatures();
-  return features.QUESTION_BANK_ENABLED ? <TopicHome userId={user.id} onboardingCompleted={user.profile.onboardingCompleted} quickEnabled={features.QUICK_ENABLED} perWeek={Number(user.profile.perWeek) || 0} target={user.profile.target} /> : <LibraryPage />;
+  return features.QUESTION_BANK_ENABLED ? <TopicHome user={user} quickEnabled={features.QUICK_ENABLED} /> : <LibraryPage />;
 }

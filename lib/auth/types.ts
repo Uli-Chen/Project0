@@ -12,6 +12,8 @@ export type UserProfile = {
   nudgesDefault?: boolean | null;
   onboardingCompleted: boolean;
   excludedMemoryIds: string[];
+  /** Self-graded review schedule for the student's own expressions and flagged sentences. */
+  review?: Record<string, { box: number; due: string }>;
 };
 
 export type CurrentUser = {

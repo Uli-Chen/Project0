@@ -53,21 +53,21 @@ export default async function LibraryPage() {
       {user.profile.onboardingCompleted && (
         <aside className="surface flex h-fit flex-col divide-y self-start xl:mt-[60px]">
           <section className="px-5 py-4">
-            <div className="flex items-baseline justify-between"><h2 className="text-[13px] text-muted-foreground">本周已练</h2><span className="text-[15px] font-semibold tabular-nums">{summary.weekCompleted}<span className="font-normal text-muted-foreground"> / {perWeek} 次</span></span></div>
+            <div className="flex items-baseline justify-between"><h2 className="text-[14px] text-muted-foreground">本周已练</h2><span className="text-[15px] font-semibold tabular-nums">{summary.weekCompleted}<span className="font-normal text-muted-foreground"> / {perWeek} 次</span></span></div>
             <Progress value={perWeek ? Math.min(100, (summary.weekCompleted / perWeek) * 100) : 0} className="mt-2.5" aria-label="本周完成进度" />
           </section>
           <section className="px-5 py-4">
-            <h2 className="text-[13px] text-muted-foreground">目标分数</h2>
+            <h2 className="text-[14px] text-muted-foreground">目标分数</h2>
             <p className="mt-1 font-serif text-[40px] leading-none font-medium tracking-tight tabular-nums">{summary.target?.toFixed(1) ?? "—"}</p>
             <p className="meta mt-1">{summary.examPassed ? <Link href="/onboarding" className="text-warn underline underline-offset-4">考试日期已过</Link> : `还有 ${summary.weeks} 周，每周 ${perWeek} 次`}</p>
           </section>
           {issues.length > 0 && (
             <section className="px-5 py-4">
-              <h2 className="text-[13px] text-muted-foreground">常见问题</h2>
+              <h2 className="text-[14px] text-muted-foreground">常见问题</h2>
               <ul className="mt-2.5 flex flex-col gap-2">
-                {issues.map((issue) => <li key={issue.id} className="flex items-baseline justify-between gap-3 text-[13px]"><span className="min-w-0 truncate">{issue.summary}</span><span className="meta shrink-0">{issue.seen} 次</span></li>)}
+                {issues.map((issue) => <li key={issue.id} className="flex items-baseline justify-between gap-3 text-[14px]"><span className="min-w-0 truncate">{issue.summary}</span><span className="meta shrink-0">{issue.seen} 次</span></li>)}
               </ul>
-              <Link href="/progress" className="mt-3 inline-flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground">查看进展<ArrowUpRight className="size-3" /></Link>
+              <Link href="/progress" className="mt-3 inline-flex items-center gap-1 text-[14px] text-muted-foreground hover:text-foreground">查看进展<ArrowUpRight className="size-3" /></Link>
             </section>
           )}
         </aside>

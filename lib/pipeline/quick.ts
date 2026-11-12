@@ -9,6 +9,8 @@ import { cardRequirements, getCard, type TopicCard } from "../db/queries/cards";
 import { saveNewPractice } from "../db/create-practice";
 import { getRequestReceipt, ReceiptConflict, writeRequestReceipt } from "../db/request-receipts";
 import { cardSlots } from "../quick/layouts";
+import { outlineFromCard, outlineHasContent } from "../quick/outline-seed";
+import { cardPrewriteOpening } from "../learning/prewrite-guidance";
 import { partTextSchema, quickActionSchema, type Part, type QuickAction } from "../quick/schemas";
 import { assertQuickSession } from "./http";
 import { createSession } from "./initial";
@@ -117,6 +119,13 @@ export function commitQuickMutation(userId: string, id: string, action: QuickAct
         deepSession.continuedFromQuickId = id;
         deepSession.cardSnapshot = { cardId: card.id, contentVersion: card.contentVersion, content: structuredClone(card.content),
           state: card.state, lastCheckedVersion: card.lastCheckedVersion, snapshotAt: now };
+        // The card is the student's own prewriting: start the outline from it instead of asking again.
+        const seeded = outlineFromCard(cardRequirements(card), card.content);
+        if (outlineHasContent(seeded)) {
+          deepSession.outline = seeded;
+          const opening = deepSession.messages.find(m => m.role === "coach" && m.action === "opening");
+          if (opening) opening.content = cardPrewriteOpening;
+        }
         deepSession.createdAt = deepSession.updatedAt = deepSession.savedAt = deepSession.lastStudentActionAt = now;
         saveNewPractice(userId, deepSession);
         if (!input.explicitNew) db.insert(defaultContinuations).values({ userId, quickAttemptId: id, deepAttemptId: deepSession.id, createdAt: now }).run();

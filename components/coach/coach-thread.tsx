@@ -47,7 +47,7 @@ export function CoachThread({
       {messages.map((m, i) => {
         const group = STAGE_GROUP[m.stage];
         const divider = showStages && i > 0 && STAGE_GROUP[messages[i - 1].stage] !== group
-          ? <div key={`divider-${m.id}`} className="flex items-center gap-3 text-[11px] text-muted-foreground"><span className="h-px flex-1 bg-border" />{group}<span className="h-px flex-1 bg-border" /></div>
+          ? <div key={`divider-${m.id}`} className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />{group}<span className="h-px flex-1 bg-border" /></div>
           : null;
         const startsRun = m.role === "coach" && (messages[i - 1]?.role !== "coach" || Boolean(divider));
         if (m.role === "user") {

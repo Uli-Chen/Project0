@@ -1,12 +1,59 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "web", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--", "--port", "3123"], "port": 3123 },
+    {
+      "name": "web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3123"
+      ],
+      "port": 3123
+    },
     {
       "name": "web-review",
       "runtimeExecutable": "env",
-      "runtimeArgs": ["DATABASE_PATH=./data/review.sqlite", "TUTOR_V2_ENABLED=true","npm", "run", "dev", "--", "--port", "3124"],
+      "runtimeArgs": [
+        "DATABASE_PATH=./data/review.sqlite",
+        "TUTOR_V2_ENABLED=true",
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3124"
+      ],
       "port": 3124
+    },
+    {
+      "name": "night",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd /Users/chen/Desktop/opc-night && exec npm run dev -- --port 3200"
+      ],
+      "port": 3200
+    },
+    {
+      "name": "web-full",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DATABASE_PATH=./data/dev-full.sqlite",
+        "QUESTION_BANK_ENABLED=true",
+        "QUICK_ENABLED=true",
+        "CHECKPOINTS_ENABLED=true",
+        "REGISTRATION_ENABLED=true",
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3125"
+      ],
+      "port": 3125
     }
   ]
 }

@@ -15,6 +15,8 @@ const schemas:Record<CallSite,z.ZodType>={
   'quick.followup':z.object({question:z.string().min(1).max(80),targetKey:z.string().nullable()}).strict(),
   'quick.check':z.object({results:z.array(z.object({id:z.string(),status:z.enum(['met','gap']),note:z.string().max(60).nullable()}).strict())}).strict(),
 };
+// 2026-11-10: deep.prewrite and deep.finish were re-captured on purpose (outline slot guide, card carry-over,
+// second-person summary; promptConfigVersion v11). Every other site is still the 90f5655 capture.
 test('B0: 14 logical call schemas and actual fetch bytes match immutable 90f5655 capture',async t=>{
   assert.equal(fixtures.commit,'90f5655');assert.equal(fixtures.fixtures.length,14);
   const env={key:process.env.LLM_API_KEY,model:process.env.LLM_MODEL,url:process.env.LLM_BASE_URL};

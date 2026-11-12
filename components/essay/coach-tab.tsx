@@ -50,7 +50,7 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
     : can.issue && !can.chat ? "从反馈里选一个问题讨论" : "问教练";
 
   const tag = (m: CoachMessage) => m.stage === "issue" && m.issueRank ? (
-    <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+    <span className="flex items-center gap-1 text-xs text-muted-foreground">
       <IssueBadge rank={m.issueRank} className="size-4 text-[10px]" />
       {m.role === "coach" && m.level ? `提示 ${m.level}/3` : null}
     </span>
@@ -82,12 +82,12 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
         )}
         {nudge && (
           <div className="mb-5 flex items-start gap-3 rounded-lg bg-coach-soft px-3.5 py-3 animate-in fade-in-0 slide-in-from-top-1">
-            <p className="flex-1 text-[13.5px] leading-relaxed text-foreground">{nudge.message}</p>
+            <p className="flex-1 text-[14.5px] leading-relaxed text-foreground">{nudge.message}</p>
             <button type="button" aria-label="关闭提醒" disabled={unavailable} onClick={() => { setNudgeOpen(false); void actions.dismissNudge(); }} className="text-coach/70 hover:text-coach"><X className="size-3.5" /></button>
           </div>
         )}
         {state.messages.length === 0 && !coachBusy ? (
-          <p className="text-[13px] text-muted-foreground">{stage === "writing" ? "选中正文，可以让教练理清、润色或检查。" : stage === "feedback" ? "在反馈里点“讨论”，就某个问题和教练聊。" : stage === "prewriting" ? prewriteOpening(state.prompt.questionType) : ""}</p>
+          <p className="text-[14px] text-muted-foreground">{stage === "writing" ? "选中正文，可以让教练理清、润色或检查。" : stage === "feedback" ? "在反馈里点“讨论”，就某个问题和教练聊。" : stage === "prewriting" ? prewriteOpening(state.prompt.questionType) : ""}</p>
         ) : (
           <CoachThread
             messages={state.messages.map(message => openingForDisplay(message, state.prompt.questionType))}
