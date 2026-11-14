@@ -121,7 +121,7 @@ test("预留写库失败抛错且 fake fetch 从未调用；外层 IMMEDIATE 回
   assert.equal(rows().length, 0); await assert.rejects(generateJson("instruction", {}, schema, options(r!)), /Reservation/); assert.equal(calls, 0);
 });
 test("输入超长不建行不调模型；预留后的完整消息若超估算也拒绝", async () => {
-  assert.deepEqual(reserveCall({ ...input, perCall: { ...input.perCall, inputTokens: 4001 } }), { ok: false, reason: "input_too_long", retryAt: null });
+  assert.deepEqual(reserveCall({ ...input, perCall: { ...input.perCall, inputTokens: 16001 } }), { ok: false, reason: "input_too_long", retryAt: null });
   assert.equal(rows().length, 0);
   await assert.rejects(generateJson("instruction", { huge: "独特正文".repeat(1000) }, schema, options(reserve())), /input_too_long/);
   await assert.rejects(generateJson("instruction", {}, schema, { purpose: "scoring", userId: "u", maxInputTokens: 1 }), /input_too_long/);

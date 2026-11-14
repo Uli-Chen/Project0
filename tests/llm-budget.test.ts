@@ -8,9 +8,9 @@ const perCall = { inputTokens: 100, maxOutputTokens: 768 };
 const large = { calls: 100, inputTokens: 100000, outputTokens: 100000, waitMs: 1000000 };
 
 test("预算常量完整对应 RFC §8 初始包、补充包、单次和用户四项上限", () => {
-  assert.deepEqual(quickBudget.initial, { followups: 2, checks: 2, retries: 1, limits: { calls: 5, inputTokens: 20000, outputTokens: 3328, waitMs: 100000 } });
-  assert.deepEqual(quickBudget.supplemental, { followups: 0, checks: 1, retries: 1, cooldownMs: 86400000, limits: { calls: 2, inputTokens: 8000, outputTokens: 1536, waitMs: 50000 } });
-  assert.deepEqual(quickBudget.perCall, { inputTokens: 4000, followupOutputTokens: 512, checkOutputTokens: 768, timeoutMs: 25000 });
+  assert.deepEqual(quickBudget.initial, { followups: 2, checks: 2, retries: 1, limits: { calls: 5, inputTokens: 40000, outputTokens: 3328, waitMs: 100000 } });
+  assert.deepEqual(quickBudget.supplemental, { followups: 0, checks: 1, retries: 1, cooldownMs: 86400000, limits: { calls: 2, inputTokens: 20000, outputTokens: 1536, waitMs: 50000 } });
+  assert.deepEqual(quickBudget.perCall, { inputTokens: 16000, followupOutputTokens: 512, checkOutputTokens: 768, timeoutMs: 25000 });
   assert.deepEqual(quickBudget.user, { windowMs: 86400000, limits: { calls: 15, inputTokens: 60000, outputTokens: 12000, waitMs: 300000 } });
 });
 test("核销按实际；单项未知按预留；reserved 和 indeterminate 三项均保留预留", () => {
@@ -46,6 +46,6 @@ test("等待时间取单次/包/用户剩余最小值；输入超长拒绝而不
   assert.deepEqual(decideReservation([], "p", large, perCall, now), { ok: true, reservedMs: 25000 });
   assert.deepEqual(decideReservation([], "p", { ...large, waitMs: 1234 }, perCall, now), { ok: true, reservedMs: 1234 });
   assert.deepEqual(decideReservation([{ ...row, package_id: "old", latency_ms: 299999 }], "p", large, perCall, now), { ok: true, reservedMs: 1 });
-  assert.deepEqual(decideReservation([], "p", large, { ...perCall, inputTokens: 4001 }, now), { ok: false, reason: "input_too_long", retryAt: null });
-  assert.equal(decideReservation([], "p", large, { ...perCall, inputTokens: 4000 }, now).ok, true);
+  assert.deepEqual(decideReservation([], "p", large, { ...perCall, inputTokens: 16001 }, now), { ok: false, reason: "input_too_long", retryAt: null });
+  assert.equal(decideReservation([], "p", large, { ...perCall, inputTokens: 16000 }, now).ok, true);
 });

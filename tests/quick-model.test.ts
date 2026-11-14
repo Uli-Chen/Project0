@@ -101,8 +101,11 @@ test("startup recovers operations without calls; manual retry uses frozen input 
 });
 test("input ceiling refuses dispatch with no reservation; deletion in flight cannot resurrect body or completion", async () => {
   let id = await create(); const before = calls; fake();
+  // A fully written card fits the ceiling (that was the point of raising it) ...
   await action(id, { action: "cardSave", cardVersion: 1, parts: cardSlots(cardRequirements(getCard("u", id)!)).map(s => ({ key: s.key, text: "长".repeat(600) })) });
-  await action(id, { action: "quickCheck", cardVersion: 2 }, 422); assert.equal(calls, before);
+  f.followup(id); await action(id, { action: "quickAnswer", text: "长".repeat(6000) });
+  // ... but a very long answer in the conversation still exceeds it: refused before any reservation.
+  await action(id, { action: "quickFollowup", cardVersion: 2 }, 422); assert.equal(calls, before);
   assert.equal(db.prepare("SELECT * FROM quick_operations WHERE attempt_id=?").get(id), undefined);
   id = await create(); let entered!: () => void, release!: () => void;
   const barrier = new Promise<void>(r => { entered = r; }), wait = new Promise<void>(r => { release = r; });
