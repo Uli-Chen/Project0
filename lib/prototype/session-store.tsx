@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { coachDraftKey, essayUnsavedKey, readLocalDraft, writeLocalDraft } from "../drafts/local-draft";
+import { addOrphan, coachDraftKey, essayLeftoverKey, joinDraft, readLocalDraft, takeOrphan, writeLocalDraft } from "../drafts/local-draft";
 import type { EssayKind } from "./types";
 import type { SessionState } from "@/lib/pipeline/types";
 import type { AgentAction } from "@/lib/pipeline/schemas";
@@ -85,7 +85,12 @@ function useSessionController(initialState: SessionState) {
   const [composerDraft, setComposerDraftState] = useState(initialPending?.retryable === false && "text" in initialPending.input ? initialPending.input.text ?? "" : "");
   const composerDraftRef = useRef(composerDraft);
   const draftKey = coachDraftKey(initialState.id);
-  const setComposerDraft = useCallback((text: string) => { composerDraftRef.current = text; setComposerDraftState(text); writeLocalDraft(draftKey, text); }, [draftKey]);
+  // After the page is gone, a late request may only add its text to the orphan slot: a newer page owns the box key.
+  const mounted = useRef(true);
+  const setComposerDraft = useCallback((text: string) => {
+    if (!mounted.current) { if (text.trim() && text !== composerDraftRef.current) addOrphan(draftKey, text); composerDraftRef.current = text; return; }
+    composerDraftRef.current = text; setComposerDraftState(text); writeLocalDraft(draftKey, text);
+  }, [draftKey]);
   // A sent coach message the server has not confirmed yet. The composer is already empty, so this is
   // the only copy: it counts as unsent text for leave protection and the backup until the server has it.
   const unconfirmed = useRef<{ requestId: string; text: string } | null>(null);
@@ -95,6 +100,8 @@ function useSessionController(initialState: SessionState) {
     if (unconfirmed.current && serverHasRequest(session, unconfirmed.current.requestId)) setUnconfirmed(null);
   }, [setUnconfirmed]);
   const [lifecycleBusy, setLifecycleBusy] = useState(false);
+  /** Essay text that could not be saved after an earlier visit was left (JSON of drafts and outline). */
+  const [leftover, setLeftover] = useState<string | null>(null);
   const lifecycleChanging = useRef(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const ref = useRef(initialState);
@@ -259,20 +266,6 @@ function useSessionController(initialState: SessionState) {
     } finally { lifecycleChanging.current = false; setLifecycleBusy(false); }
   }, [enqueue, merge, saveNow]);
 
-  /** Edits that could not be saved on the way out (for example while a coach request was still
-   * running) were kept in this tab; put back whatever the server does not have yet, then save. */
-  const reapplyUnsaved = useCallback(() => {
-    const key = essayUnsavedKey(ref.current.id), raw = readLocalDraft(key);
-    writeLocalDraft(key, "");
-    if (!raw) return;
-    let kept: { drafts?: Partial<SessionState["drafts"]>; outline?: SessionState["outline"] };
-    try { kept = JSON.parse(raw); } catch { return; }
-    for (const kind of ["original", "revision"] as const) {
-      const text = kept.drafts?.[kind];
-      if (typeof text === "string" && text !== ref.current.drafts[kind]) edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: text } }));
-    }
-    if (kept.outline && JSON.stringify(kept.outline) !== JSON.stringify(ref.current.outline)) { const outline = kept.outline; edit("outline", s => ({ ...s, outline })); }
-  }, [edit]);
   // Back/forward can show this page from the router cache with the state it had before it was left,
   // older than what was saved on the way out. Read the server copy once on arrival; fields edited
   // since the read started stay local.
@@ -281,27 +274,41 @@ function useSessionController(initialState: SessionState) {
     const generation = edits.current;
     void requestJson(`/api/sessions/${ref.current.id}`, { cache: "no-store" })
       .then(data => { if (alive && data.session && data.session.version > ref.current.version) merge(data.session, generation); })
-      .catch(() => { /* the page keeps working on what it has; the next save reports a real conflict */ })
-      .finally(() => { if (alive) reapplyUnsaved(); });
+      .catch(() => { /* the page keeps working on what it has; the next save reports a real conflict */ });
     return () => { alive = false; };
-  }, [merge, reapplyUnsaved]);
+  }, [merge]);
   // Unsent coach text left behind by the back button (or any exit) comes back when the page does.
   // The box is emptied when its text is sent and refilled only if the send failed, so what is stored is unsent.
   useEffect(() => {
-    const stored = readLocalDraft(draftKey);
-    if (stored.trim() && !composerDraftRef.current) setComposerDraft(stored);
+    mounted.current = true;
+    const stored = joinDraft(readLocalDraft(draftKey), takeOrphan(draftKey));
+    if (stored.trim() && stored !== composerDraftRef.current) setComposerDraft(joinDraft(composerDraftRef.current, stored));
+    const left = readLocalDraft(essayLeftoverKey(ref.current.id));
+    if (left) setLeftover(left);
+    return () => { mounted.current = false; };
   }, [draftKey, setComposerDraft]);
   // Leaving by the back button skips the page's leave checks: send any pending edit right away
   // instead of dropping it with the debounce timer.
-  // If the save cannot run now (a coach request is still running) or fails, the edits stay in this tab
-  // and are put back the next time the page opens.
+  // If a server-side coach request is still running, wait for it in the background and save after it.
+  // If the save still fails (a conflict, the network), the text is kept as a leftover that the next
+  // visit offers back; it is never applied by itself, so it cannot overwrite newer work.
   useEffect(() => () => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     if (edits.current === savedEdits.current && !pendingWrite.current) return;
-    const key = essayUnsavedKey(ref.current.id), s = ref.current;
-    writeLocalDraft(key, JSON.stringify({ drafts: s.drafts, outline: s.outline }));
-    void save().then(ok => { if (ok && edits.current === savedEdits.current) writeLocalDraft(key, ""); });
-  }, [save]);
+    void (async () => {
+      for (let round = 0; round < 40 && busy.current && !actionController.current; round++) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+          const data = await requestJson(`/api/sessions/${ref.current.id}`, { cache: "no-store" }, 10000);
+          if (data.session) merge(data.session, savedEdits.current);
+          if (!data.busy) busy.current = false;
+        } catch { /* try again */ }
+      }
+      if (await save()) return;
+      const s = ref.current;
+      writeLocalDraft(essayLeftoverKey(s.id), JSON.stringify({ drafts: s.drafts, outline: s.outline }));
+    })();
+  }, [save, merge]);
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => { if (edits.current !== savedEdits.current || composerDraftRef.current.trim() || unconfirmed.current) { event.preventDefault(); event.returnValue = ""; } };
     window.addEventListener("beforeunload", warn);
@@ -352,7 +359,7 @@ function useSessionController(initialState: SessionState) {
   const setDraft = useCallback((kind: EssayKind, text: string) => edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: text } })), [edit]);
   const tick = useCallback((kind: EssayKind) => update(s => ({ ...s, elapsed: { ...s.elapsed, [kind]: s.elapsed[kind] + 1 } })), [update]);
   const failedText = () => unconfirmed.current?.text || (lastAction.current ? recoverComposerDraft("", lastAction.current) : "");
-  return { state, coachBusy, lifecycleBusy, composerDraft, unconfirmedInput, pendingActionName, essayKind, error, saveStatus, failedInput,
+  return { state, coachBusy, lifecycleBusy, leftover, composerDraft, unconfirmedInput, pendingActionName, essayKind, error, saveStatus, failedInput,
     actions: {
       changeLifecycle, setComposerDraft,
       hasUnsentComposer: () => Boolean(composerDraftRef.current.trim() || unconfirmed.current),
@@ -383,6 +390,20 @@ function useSessionController(initialState: SessionState) {
         if (conflict.current) setError("已下载备份。刷新页面即可载入其他页面的最新内容。");
       },
       hasUnsaved: () => edits.current !== savedEdits.current,
+      /** Replace the current fields with the leftover from the last visit (the student chose to). */
+      restoreLeftover: () => {
+        if (!leftover) return;
+        try {
+          const kept = JSON.parse(leftover) as { drafts?: Partial<SessionState["drafts"]>; outline?: SessionState["outline"] };
+          for (const kind of ["original", "revision"] as const) {
+            const text = kept.drafts?.[kind];
+            if (typeof text === "string" && text !== ref.current.drafts[kind]) edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: text } }));
+          }
+          if (kept.outline && JSON.stringify(kept.outline) !== JSON.stringify(ref.current.outline)) { const outline = kept.outline; edit("outline", s => ({ ...s, outline })); }
+        } catch { /* unreadable: nothing to restore */ }
+        writeLocalDraft(essayLeftoverKey(ref.current.id), ""); setLeftover(null);
+      },
+      discardLeftover: () => { writeLocalDraft(essayLeftoverKey(ref.current.id), ""); setLeftover(null); },
       clearError: () => setError(null),
     },
   };

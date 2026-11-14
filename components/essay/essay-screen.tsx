@@ -31,7 +31,7 @@ export function EssayScreen({ cardRequirements, banner }: { cardRequirements?: Q
 }
 
 function Screen({ cardRequirements, banner }: { cardRequirements?: QuestionRequirements; banner?: ReactNode }) {
-  const { state, actions, essayKind, error, coachBusy, lifecycleBusy, failedInput } = useSession();
+  const { state, actions, essayKind, error, coachBusy, lifecycleBusy, failedInput, leftover } = useSession();
   const ui = useEssayUi();
   const { centerRef, editorRef } = useEssayRefs();
   const [notices, setNotices] = useState<Record<string, string>>({});
@@ -131,6 +131,15 @@ function Screen({ cardRequirements, banner }: { cardRequirements?: QuestionRequi
     </div>
   );
 
+  // Text from the last visit that could not be saved after leaving. Offered, never applied by itself.
+  const leftoverNotice = leftover && state.lifecycle === "open" && (
+    <div role="status" className="flex shrink-0 flex-wrap items-center gap-3 border-b bg-warn-soft px-4 py-2.5 text-[14px]">
+      <p className="min-w-0 flex-1">上次离开时，有一部分作文或提纲没能保存上。</p>
+      <Button size="xs" variant="outline" disabled={lifecycleBusy} onClick={actions.restoreLeftover}>恢复离开前的内容</Button>
+      <Button size="xs" variant="ghost" onClick={actions.discardLeftover}>丢弃</Button>
+    </div>
+  );
+
   const inspector = ui.panel && (
     <Tabs value={ui.panel} onValueChange={(value) => ui.setPanel(value as Panel)} className="flex h-full min-h-0 flex-col gap-0">
       <div className="flex h-12 shrink-0 items-center border-b px-4">
@@ -155,6 +164,7 @@ function Screen({ cardRequirements, banner }: { cardRequirements?: QuestionRequi
       {banner}
       <DeepLeaveGuard />
       <DeepLifecycleBar lifecycle={state.lifecycle} checkpoint={Boolean(state.checkpointId)} busy={coachBusy || lifecycleBusy} onResume={() => void actions.changeLifecycle("resume")} />
+      {leftoverNotice}
       {(ui.wide || ui.sheet !== "right") && errorNotice}
       <div className={cn("flex min-h-0 flex-1", ui.wide && "gap-3 p-3")}>
         {ui.wide && hasLeft && ui.leftOpen && <aside aria-label="提纲" className="surface w-[280px] shrink-0 overflow-hidden">{outline}</aside>}

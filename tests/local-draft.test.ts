@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { answerToRestore, coachDraftKey, decodeAnswer, encodeAnswer, essayUnsavedKey, quickDraftKey } from "../lib/drafts/local-draft";
+import { answerToRestore, coachDraftKey, decodeAnswer, encodeAnswer, essayLeftoverKey, joinDraft, quickDraftKey } from "../lib/drafts/local-draft";
 
 test("a stored answer is dropped only when the server has that reply to that question", () => {
   const stored = decodeAnswer(encodeAnswer("要坐很久的车", "q1"));
@@ -18,5 +18,12 @@ test("a stored answer is dropped only when the server has that reply to that que
 test("keys are per practice and per box", () => {
   assert.notEqual(coachDraftKey("a"), coachDraftKey("b"));
   assert.notEqual(quickDraftKey("a", "answer"), quickDraftKey("a", "ask"));
-  assert.notEqual(essayUnsavedKey("a"), coachDraftKey("a"));
+  assert.notEqual(essayLeftoverKey("a"), coachDraftKey("a"));
+});
+
+test("returned text goes in front of the box without duplicating", () => {
+  assert.equal(joinDraft("", "A"), "A");
+  assert.equal(joinDraft("B", "A"), "A\nB");
+  assert.equal(joinDraft("A\nB", "A"), "A\nB");
+  assert.equal(joinDraft("B", ""), "B");
 });

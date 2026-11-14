@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsWide } from "@/hooks/use-wide";
-import { answerToRestore, decodeAnswer, encodeAnswer, quickDraftKey, readLocalDraft, writeLocalDraft } from "@/lib/drafts/local-draft";
+import { addOrphan, answerToRestore, decodeAnswer, encodeAnswer, joinDraft, quickDraftKey, readLocalDraft, takeOrphan, writeLocalDraft } from "@/lib/drafts/local-draft";
 import { cn } from "@/lib/utils";
 import { LeaveConfirmation } from "./leave-confirmation";
 
@@ -74,27 +74,43 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   // Both boxes write through to this tab's storage on every change, including changes made by
   // requests that finish after the page was left (a failed send puts its text back).
   const sessionId = initial.session.id;
-  const answerRef = useRef(""), askRef = useRef(""), questionRef = useRef<string | null>(null);
-  const setAnswer = useCallback((next: string | ((current: string) => string)) => {
+  const answerRef = useRef(""), askRef = useRef(""), questionRef = useRef<string | null>(null), answerQuestion = useRef<string | null>(null);
+  // Once this page is gone a newer one may own the box keys: a late request may then only add the
+  // text it puts back to the orphan slot, never overwrite or clear a box.
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const setAnswer = useCallback((next: string | ((current: string) => string), questionId?: string | null) => {
     const value = typeof next === "function" ? next(answerRef.current) : next;
+    const key = quickDraftKey(sessionId, "answer");
+    if (!mounted.current) { if (value.trim() && value !== answerRef.current) addOrphan(key, value); answerRef.current = value; return; }
+    // The answer is tied to the question it was written for; a restored one keeps its own.
+    if (questionId !== undefined) answerQuestion.current = questionId;
+    else if (!answerRef.current.trim()) answerQuestion.current = questionRef.current;
     answerRef.current = value; setAnswerState(value);
-    writeLocalDraft(quickDraftKey(sessionId, "answer"), encodeAnswer(value, questionRef.current));
+    writeLocalDraft(key, encodeAnswer(value, answerQuestion.current));
   }, [sessionId]);
   const setAskDraft = useCallback((next: string | ((current: string) => string)) => {
     const value = typeof next === "function" ? next(askRef.current) : next;
+    const key = quickDraftKey(sessionId, "ask");
+    if (!mounted.current) { if (value.trim() && value !== askRef.current) addOrphan(key, value); askRef.current = value; return; }
     askRef.current = value; setAskDraftState(value);
-    writeLocalDraft(quickDraftKey(sessionId, "ask"), value);
+    writeLocalDraft(key, value);
   }, [sessionId]);
   const restoredLocal = useRef(false);
   /** Unsent text from an earlier visit in this tab, checked against the freshest server copy. */
   const restoreLocal = useCallback((snapshot: QuickData) => {
     if (restoredLocal.current) return;
     restoredLocal.current = true;
-    const ask = readLocalDraft(quickDraftKey(sessionId, "ask"));
-    if (ask.trim()) setAskDraft(current => restoreInto(current, ask));
-    const answerBack = answerToRestore(decodeAnswer(readLocalDraft(quickDraftKey(sessionId, "answer"))), snapshot.session.messages);
-    if (answerBack) setAnswer(current => current || answerBack);
-    else writeLocalDraft(quickDraftKey(sessionId, "answer"), encodeAnswer(answerRef.current, questionRef.current));
+    const askKey = quickDraftKey(sessionId, "ask"), answerKey = quickDraftKey(sessionId, "answer");
+    const ask = joinDraft(readLocalDraft(askKey), takeOrphan(askKey));
+    if (ask.trim()) setAskDraft(current => joinDraft(current, ask));
+    const stored = decodeAnswer(readLocalDraft(answerKey));
+    const answerBack = answerToRestore(stored, snapshot.session.messages);
+    // Text a late request put back after an earlier visit is the student's own and is always offered.
+    const orphan = takeOrphan(answerKey);
+    const back = joinDraft(answerBack, orphan);
+    if (back.trim()) setAnswer(current => joinDraft(current, back), stored?.questionId ?? null);
+    else writeLocalDraft(answerKey, encodeAnswer(answerRef.current, answerQuestion.current));
   }, [sessionId, setAnswer, setAskDraft]);
   /** "放弃并离开" means it: nothing is saved or kept on the way out. */
   const discarding = useRef(false);
