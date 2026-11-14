@@ -9,9 +9,9 @@ export type PhraseItem = { id: string; kind: "phrase"; prompt: string; answer: s
 export type FixItem = { id: string; kind: "fix"; prompt: string; answer: string | null; revised: boolean; issueTitle: string; hint: string; sessionId: string; rank: number; date: string };
 export type ReviewItem = PhraseItem | FixItem;
 type Grade = "good" | "again";
-/** `graded` remembers the presentations of a card graded in the last `GRADED_KEEP_DAYS` days (key,
- * grade and when, oldest first; at most `GRADED_KEYS` as a size guard), so a retried grade is applied once even when another tab graded the
- * same card in between. `key`/`result` are the single-key form written before; they are still read. */
+/** One card's schedule. Which presentations were already graded is kept in the request_receipts table
+ * (see app/api/review/route.ts), not here. `graded`/`key`/`result` are what earlier builds stored in
+ * the profile; they are only read, so a retry of a grade made before the switch is still recognised. */
 export type ReviewEntry = { box: number; due: string; graded?: [string, Grade, string?][]; key?: string; result?: Grade };
 export type ReviewState = Record<string, ReviewEntry>;
 
@@ -86,35 +86,19 @@ export function dueItems(items: ReviewItem[], state: ReviewState, now = new Date
   return items.filter(item => { const entry = state[item.id]; return !entry || Date.parse(entry.due) <= now.getTime(); });
 }
 
-/** Retries arrive within minutes; keep a month of receipts so interleaved tabs can never regrade. */
-export const GRADED_KEEP_DAYS = 30;
-/** A grade request older than this is refused outright. It is shorter than the keep window, so every
- * request that can still be accepted also still has its receipt: a stale replay can never regrade. */
-export const GRADE_REQUEST_DAYS = GRADED_KEEP_DAYS - 1;
-/** One key per time a card is shown: when it was shown, then a random part. */
-export function presentationKey(now = Date.now(), random = crypto.randomUUID()) { return `${now.toString(36)}.${random}`; }
-/** Keys from before timestamps were added carry no time; they are judged by their receipt alone. */
-export function gradeRequestExpired(key: string | undefined, now = new Date()) {
-  const stamp = key?.includes(".") ? parseInt(key.slice(0, key.indexOf(".")), 36) : NaN;
-  return Number.isFinite(stamp) && stamp < now.getTime() - GRADE_REQUEST_DAYS * DAY;
-}
-/** Size guard only: far above what one card collects in a month of real use. */
-export const GRADED_KEYS = 500;
+/** One key per time a card is shown; a retry of the same grade reuses it. */
+export function presentationKey() { return crypto.randomUUID(); }
 
-/** Apply one self-grade. A grade carrying the key of a presentation that was already applied is a
- * retry after a lost response: the stored entry comes back unchanged instead of advancing again, and
- * `result` is the grade recorded for that presentation the first time. */
-export function gradeReview(entry: ReviewEntry | undefined, result: Grade, key: string | undefined, now = new Date()): { entry: ReviewEntry; applied: boolean; result: Grade } {
-  const graded: [string, Grade, string?][] = entry?.graded ?? (entry?.key && entry.result ? [[entry.key, entry.result]] : []);
-  const earlier = key ? graded.find(([seen]) => seen === key) : undefined;
-  if (entry && earlier) return { entry, applied: false, result: earlier[1] };
-  const next: ReviewEntry = nextReview(entry, result, now);
-  // Drop receipts older than the keep window (entries without a time are kept until the size guard).
-  const since = now.getTime() - GRADED_KEEP_DAYS * DAY;
-  const recent = graded.filter(([, , at]) => !at || Date.parse(at) >= since);
-  const kept = key ? [...recent, [key, result, now.toISOString()] as [string, Grade, string]].slice(-GRADED_KEYS) : recent;
-  if (kept.length) next.graded = kept;
-  return { entry: next, applied: true, result };
+/** The grade an earlier build recorded in the profile for this presentation, if any. */
+export function legacyGrade(entry: ReviewEntry | undefined, key: string | undefined): Grade | null {
+  if (!entry || !key) return null;
+  const graded: [string, Grade, string?][] = entry.graded ?? (entry.key && entry.result ? [[entry.key, entry.result]] : []);
+  return graded.find(([seen]) => seen === key)?.[1] ?? null;
+}
+
+/** Apply one self-grade: the next schedule, without any of the legacy receipt fields. */
+export function gradeReview(entry: ReviewEntry | undefined, result: Grade, now = new Date()): ReviewEntry {
+  return nextReview(entry, result, now);
 }
 
 export function nextReview(entry: { box: number } | undefined, result: Grade, now = new Date()): ReviewEntry {

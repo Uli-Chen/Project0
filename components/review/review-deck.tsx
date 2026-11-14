@@ -33,10 +33,7 @@ export function ReviewDeck({ items }: { items: ReviewItem[] }) {
     try {
       const response = await fetch("/api/review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: item.id, result: choice, key: presentation }) });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        if (data.code === "review_expired") { setPresentation(presentationKey()); router.refresh(); }
-        throw new Error(typeof data.error === "string" ? data.error : "没有保存成功，请重试。");
-      }
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "没有保存成功，请重试。");
       // A replayed request reports the grade that was recorded the first time.
       const result: "good" | "again" = data.result === "good" || data.result === "again" ? data.result : choice;
       // 没记住的排到这一轮最后再来一次

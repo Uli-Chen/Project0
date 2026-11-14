@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createSession } from "../lib/pipeline/initial";
-import { dueItems, gradeRequestExpired, GRADE_REQUEST_DAYS, gradeReview, GRADED_KEEP_DAYS, presentationKey, GRADED_KEYS, matchRevision, nextReview, reviewItems } from "../lib/learning/review-items";
+import { dueItems, gradeReview, legacyGrade, matchRevision, nextReview, reviewItems } from "../lib/learning/review-items";
 import { draftMarks, remainingByIssue } from "../lib/learning/revision-marks";
 
 function practised() {
@@ -50,49 +50,6 @@ test("提交改写稿后，没改的错句仍留在复习里：同一个 id，an
   assert.deepEqual(reviewItems([session]).filter(item => item.kind === "fix").map(item => [item.id, item.answer]), before.map(item => [item.id, null]));
 });
 
-test("评分重试：同一次呈现的评分只推进一次；下一次呈现照常推进", () => {
-  const now = new Date("2026-11-10T00:00:00Z");
-  const first = gradeReview(undefined, "good", "shown-1", now);
-  assert.equal(first.applied, true);
-  assert.deepEqual({ box: first.entry.box, due: first.entry.due }, { box: 1, due: "2026-11-11T00:00:00.000Z" });
-  const retry = gradeReview(first.entry, "good", "shown-1", now);
-  assert.equal(retry.applied, false);
-  assert.deepEqual(retry.entry, first.entry, "a retried grade must not move 1 day to 3 days");
-  // Even if the retry carries a different button, the grade recorded first stands.
-  assert.equal(gradeReview(first.entry, "again", "shown-1", now).result, "good");
-  const next = gradeReview(first.entry, "good", "shown-2", now);
-  assert.equal(next.applied, true); assert.equal(next.entry.box, 2);
-  // Requests without a key (pages loaded before keys existed) still grade.
-  assert.equal(gradeReview(next.entry, "again", undefined, now).entry.box, 0);
-});
-
-test("评分重试：两个标签页交错（A、B、再重放 A），旧呈现键也只算一次", () => {
-  const now = new Date("2026-11-10T00:00:00Z");
-  const a = gradeReview(undefined, "again", "A", now);
-  const b = gradeReview(a.entry, "good", "B", now);
-  assert.equal(b.entry.box, 1);
-  const replayA = gradeReview(b.entry, "good", "A", now);
-  assert.equal(replayA.applied, false);
-  assert.equal(replayA.result, "again", "the grade recorded for A the first time");
-  assert.deepEqual(replayA.entry, b.entry);
-  // Entries written with the single-key form still recognise their key.
-  assert.equal(gradeReview({ box: 2, due: now.toISOString(), key: "old", result: "good" }, "good", "old", now).applied, false);
-  // The remembered keys are bounded: only the most recent ones are kept.
-  let entry = b.entry;
-  for (let i = 0; i < GRADED_KEYS + 5; i++) entry = gradeReview(entry, "good", `k${i}`, now).entry;
-  assert.equal(entry.graded?.length, GRADED_KEYS);
-  assert.equal(entry.graded?.at(-1)?.[0], `k${GRADED_KEYS + 4}`);
-  assert.equal(gradeReview(entry, "good", `k${GRADED_KEYS + 4}`, now).applied, false);
-  // Interleaved tabs: A, then twenty other presentations, then A again is still a replay.
-  let mixed = gradeReview(undefined, "good", "A", now).entry;
-  for (let i = 0; i < 20; i++) mixed = gradeReview(mixed, "again", `other-${i}`, now).entry;
-  assert.equal(gradeReview(mixed, "good", "A", now).applied, false);
-  // Receipts expire after the keep window, so the list cannot grow without bound.
-  const later = new Date(now.getTime() + (GRADED_KEEP_DAYS + 1) * 86_400_000);
-  const aged = gradeReview(mixed, "good", "fresh", later).entry;
-  assert.deepEqual(aged.graded?.map(([k]) => k), ["fresh"]);
-});
-
 test("没改动的句子、完全无关的句子都不算“改法”", () => {
   assert.equal(matchRevision("The rent is expensive.", ["The rent is expensive.", "Other text here."]), null);
   assert.equal(matchRevision("He go to school.", ["Technology changes quickly these days."]), null);
@@ -121,12 +78,15 @@ test("改写稿里的标记：只标还原样留着的问题句，改过的不�
   assert.deepEqual(remainingByIssue(marks, issues), [{ rank: 1, total: 2, remaining: 1 }, { rank: 2, total: 2, remaining: 2 }]);
 });
 
-test("评分请求的有效期比回执保留期短：能被接受的请求一定还有回执", () => {
-  const now = new Date("2026-11-14T00:00:00.000Z");
-  assert.ok(GRADE_REQUEST_DAYS < GRADED_KEEP_DAYS);
-  assert.equal(gradeRequestExpired(presentationKey(now.getTime() - GRADE_REQUEST_DAYS * 86_400_000 + 1000), now), false);
-  assert.equal(gradeRequestExpired(presentationKey(now.getTime() - (GRADE_REQUEST_DAYS + 1) * 86_400_000), now), true);
-  // Old keys without a time, and no key at all, are judged by their receipt as before.
-  assert.equal(gradeRequestExpired("shown-1", now), false);
-  assert.equal(gradeRequestExpired(undefined, now), false);
+test("评分只决定下一次排期；之前版本记在资料里的回执仍能认出", () => {
+  const now = new Date("2026-11-10T00:00:00Z");
+  const first = gradeReview(undefined, "good", now);
+  assert.equal(first.box, 1);
+  assert.equal(gradeReview(first, "good", now).box, 2);
+  assert.equal(gradeReview(first, "again", now).box, 0);
+  assert.equal("graded" in first, false, "receipts no longer live in the profile");
+  assert.equal(legacyGrade({ box: 2, due: now.toISOString(), key: "old", result: "good" }, "old"), "good");
+  assert.equal(legacyGrade({ box: 2, due: now.toISOString(), graded: [["a", "again"], ["b", "good"]] }, "a"), "again");
+  assert.equal(legacyGrade({ box: 2, due: now.toISOString() }, "a"), null);
+  assert.equal(legacyGrade(undefined, "a"), null);
 });

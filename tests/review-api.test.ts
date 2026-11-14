@@ -1,6 +1,5 @@
 import { inRequest } from "./helpers/request-context";
 import assert from "node:assert/strict";
-import { GRADE_REQUEST_DAYS, presentationKey } from "../lib/learning/review-items";
 import { after, test } from "node:test";
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -71,12 +70,15 @@ test("没有呈现键的请求照常评分；未知条目 404", async () => {
   assert.equal((await grade({ id: "fix:missing:1", result: "good", key: "k" })).status, 404);
 });
 
-test("评分请求超过有效期直接拒绝，不改进度；新呈现键照常评分", async () => {
-  const before = stored();
-  const stale = presentationKey(Date.now() - (GRADE_REQUEST_DAYS + 1) * 86_400_000);
-  const refused = await grade({ id, result: "good", key: stale });
-  assert.equal(refused.status, 409); assert.equal(refused.body.code, "review_expired");
-  assert.deepEqual(stored(), before);
-  const fresh = await grade({ id, result: "good", key: presentationKey() });
-  assert.equal(fresh.status, 200); assert.equal(fresh.body.replayed, false);
+test("回执存在请求回执表里，不随时间失效，也不写进资料", async () => {
+  const first = await grade({ id, result: "good", key: "kept-forever" });
+  assert.equal(first.body.replayed, false);
+  // Even after the receipt is old, the same request is still a replay.
+  db.$client.prepare("UPDATE request_receipts SET created_at='2020-01-01T00:00:00.000Z' WHERE request_key='review:kept-forever'").run();
+  const box = stored().box;
+  const replay = await grade({ id, result: "again", key: "kept-forever" });
+  assert.equal(replay.body.replayed, true); assert.equal(replay.body.result, "good"); assert.equal(stored().box, box);
+  assert.equal("graded" in stored(), false);
+  const row = db.$client.prepare("SELECT action, params_hash FROM request_receipts WHERE request_key='review:kept-forever'").get() as { action: string; params_hash: string };
+  assert.deepEqual(row, { action: "review", params_hash: id });
 });
