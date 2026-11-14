@@ -23,23 +23,48 @@ export const quickDraftKey = (sessionId: string, box: "answer" | "ask") => `p0:q
 export const essayLeftoverKey = (sessionId: string) => `p0:essay-leftover:${sessionId}`;
 export const LEFTOVER_EVENT = "p0:essay-leftover";
 export type EssayLeftover = { owner: string; at: number; drafts: { original: string; revision: string }; outline: unknown };
+const isRecord = (r: unknown): r is EssayLeftover => {
+  const v = r as EssayLeftover | null;
+  return !!v && typeof v.owner === "string" && !!v.drafts && typeof v.drafts.original === "string" && typeof v.drafts.revision === "string";
+};
 export function readLeftovers(sessionId: string): EssayLeftover[] {
   try {
-    const list = JSON.parse(readLocalDraft(essayLeftoverKey(sessionId)) || "[]");
-    return Array.isArray(list) ? list.filter((r): r is EssayLeftover => r && typeof r.owner === "string" && r.drafts && typeof r.drafts.original === "string" && typeof r.drafts.revision === "string") : [];
+    const parsed: unknown = JSON.parse(readLocalDraft(essayLeftoverKey(sessionId)) || "[]");
+    if (Array.isArray(parsed)) return parsed.filter(isRecord);
+    // An earlier build stored one bare { drafts, outline } object: keep it as a record.
+    const legacy = parsed as { drafts?: { original?: unknown; revision?: unknown }; outline?: unknown };
+    if (legacy && typeof legacy.drafts?.original === "string") return [{ owner: "legacy", at: 0, drafts: { original: legacy.drafts.original, revision: typeof legacy.drafts.revision === "string" ? legacy.drafts.revision : "" }, outline: legacy.outline }];
+    return [];
   } catch { return []; }
 }
 function writeLeftovers(sessionId: string, list: EssayLeftover[]) {
   writeLocalDraft(essayLeftoverKey(sessionId), list.length ? JSON.stringify(list) : "");
-  try { window.dispatchEvent(new Event(LEFTOVER_EVENT)); } catch { /* no window */ }
+  try { window.dispatchEvent(new CustomEvent(LEFTOVER_EVENT, { detail: sessionId })); } catch { /* no window */ }
 }
 export function putLeftover(sessionId: string, record: EssayLeftover) { writeLeftovers(sessionId, [...readLeftovers(sessionId).filter(r => r.owner !== record.owner), record]); }
-/** Remove one instance's record, or every record when no owner is given. */
-export function dropLeftover(sessionId: string, owner?: string) { writeLeftovers(sessionId, owner ? readLeftovers(sessionId).filter(r => r.owner !== owner) : []); }
+/** Remove the records with these owners (one page instance each). */
+export function dropLeftover(sessionId: string, ...owners: string[]) { writeLeftovers(sessionId, readLeftovers(sessionId).filter(r => !owners.includes(r.owner))); }
 /** Records whose content the server already holds need no offer. */
-export function leftoversToOffer(list: readonly EssayLeftover[], server: { drafts: { original: string; revision: string }; outline: unknown }) {
-  return list.filter(r => r.drafts.original !== server.drafts.original || r.drafts.revision !== server.drafts.revision || JSON.stringify(r.outline) !== JSON.stringify(server.outline));
+export type EssaySnapshot = { stage: string; drafts: { original: string; revision: string }; outline: unknown };
+export function leftoversToOffer(list: readonly EssayLeftover[], server: EssaySnapshot) {
+  return list.filter(r => differingFields(r, server).length > 0);
 }
+type Field = "original" | "revision" | "outline";
+export function differingFields(record: EssayLeftover, server: EssaySnapshot): Field[] {
+  const fields: Field[] = [];
+  if (record.drafts.original !== server.drafts.original) fields.push("original");
+  if (record.drafts.revision !== server.drafts.revision) fields.push("revision");
+  if (record.outline !== undefined && JSON.stringify(record.outline) !== JSON.stringify(server.outline)) fields.push("outline");
+  return fields;
+}
+/** What the server saves in each stage (see PATCH /api/sessions/[id]). */
+export function editableFields(stage: string): Field[] {
+  if (stage === "prewriting" || stage === "writing") return ["original", "outline"];
+  if (stage === "revising") return ["revision", "outline"];
+  return [];
+}
+/** Quick: a "放弃并离开" in this tab marks the time; text a late request from an older page puts back is then ignored. */
+export const quickDiscardKey = (sessionId: string) => `p0:quick-discarded:${sessionId}`;
 /** Text that a request finishing after its page was left puts back. It never overwrites a box key
  * (a newer page may own it by then); it is collected here and merged into the box on the next visit. */
 export const orphanKey = (boxKey: string) => `${boxKey}:orphan`;

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { addOrphan, coachDraftKey, dropLeftover, joinDraft, LEFTOVER_EVENT, leftoversToOffer, putLeftover, readLeftovers, readLocalDraft, takeOrphan, writeLocalDraft, type EssayLeftover } from "../drafts/local-draft";
+import { addOrphan, coachDraftKey, differingFields, dropLeftover, editableFields, joinDraft, LEFTOVER_EVENT, putLeftover, readLeftovers, readLocalDraft, takeOrphan, writeLocalDraft, type EssayLeftover, type EssaySnapshot } from "../drafts/local-draft";
 import type { EssayKind } from "./types";
 import type { SessionState } from "@/lib/pipeline/types";
 import type { AgentAction } from "@/lib/pipeline/schemas";
@@ -101,7 +101,10 @@ function useSessionController(initialState: SessionState) {
   }, [setUnconfirmed]);
   const [lifecycleBusy, setLifecycleBusy] = useState(false);
   /** Essay text that could not be saved after an earlier visit was left (JSON of drafts and outline). */
-  const [leftover, setLeftover] = useState<EssayLeftover | null>(null);
+  /** The newest leftover the server does not hold; `restorable` when the current stage can still save some of it. */
+  const [leftover, setLeftover] = useState<{ record: EssayLeftover; restorable: boolean } | null>(null);
+  /** The last state the server confirmed (arrival read, save responses). Leftovers are only matched against this. */
+  const confirmed = useRef<EssaySnapshot | null>(null);
   const [owner] = useState(() => crypto.randomUUID());
   const lifecycleChanging = useRef(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
@@ -149,7 +152,7 @@ function useSessionController(initialState: SessionState) {
           throw failure;
         }
         if (!data.session) throw new RequestError("保存响应不完整，请重试。");
-        merge(data.session, write.generation); savedEdits.current = write.generation; pendingWrite.current = null;
+        merge(data.session, write.generation); savedEdits.current = write.generation; pendingWrite.current = null; confirmed.current = data.session;
         if (edits.current === savedEdits.current) break;
       }
       setSaveStatus(edits.current === savedEdits.current ? "saved" : "unsaved");
@@ -269,12 +272,18 @@ function useSessionController(initialState: SessionState) {
 
   /** Same lock as edit(): open practice, and not while an evaluation is running. */
   const canEdit = useCallback(() => ref.current.lifecycle === "open" && !lifecycleChanging.current && !(busy.current && lastAction.current?.action === "evaluate"), []);
-  /** Show the newest leftover the server does not already hold; drop the ones it does. */
+  /** Show the newest leftover the server does not already hold, and drop each one it does. Until the
+   * server has confirmed a state nothing is dropped. */
   const offerLeftover = useCallback(() => {
-    const id = ref.current.id, all = readLeftovers(id), open = leftoversToOffer(all, ref.current);
-    if (open.length !== all.length && open.length === 0) dropLeftover(id);
-    setLeftover(open.length ? open.reduce((a, b) => (b.at > a.at ? b : a)) : null);
+    const id = ref.current.id, all = readLeftovers(id), server = confirmed.current;
+    const open = server ? all.filter(r => differingFields(r, server).length > 0) : all;
+    if (server && open.length < all.length) { dropLeftover(id, ...all.filter(r => !open.includes(r)).map(r => r.owner)); return; }
+    if (!open.length) { setLeftover(null); return; }
+    const record = open.reduce((a, b) => (b.at > a.at ? b : a));
+    const stage = server?.stage ?? ref.current.stage, editable = editableFields(stage);
+    setLeftover({ record, restorable: (server ? differingFields(record, server) : (["original", "revision", "outline"] as const)).some(f => editable.includes(f)) });
   }, []);
+  const onLeftoverEvent = useCallback((event: Event) => { if ((event as CustomEvent<string>).detail === ref.current.id) offerLeftover(); }, [offerLeftover]);
   // Back/forward can show this page from the router cache with the state it had before it was left,
   // older than what was saved on the way out. Read the server copy once on arrival; fields edited
   // since the read started stay local.
@@ -282,13 +291,20 @@ function useSessionController(initialState: SessionState) {
     let alive = true;
     const generation = edits.current;
     void requestJson(`/api/sessions/${ref.current.id}`, { cache: "no-store" })
-      .then(data => { if (alive && data.session && data.session.version > ref.current.version) merge(data.session, generation); })
+      .then(data => {
+        if (!alive || !data.session) return;
+        confirmed.current = data.session;
+        if (data.session.version > ref.current.version) merge(data.session, generation);
+      })
       .catch(() => { /* the page keeps working on what it has; the next save reports a real conflict */ })
-      .finally(() => { if (alive) offerLeftover(); });
-    // Another page instance in this tab may record (or clear) a leftover while this one is open.
-    window.addEventListener(LEFTOVER_EVENT, offerLeftover);
-    return () => { alive = false; window.removeEventListener(LEFTOVER_EVENT, offerLeftover); };
-  }, [merge, offerLeftover]);
+      .finally(() => {
+        if (!alive) return;
+        offerLeftover();
+        // Another page instance in this tab may record (or clear) a leftover while this one is open.
+        window.addEventListener(LEFTOVER_EVENT, onLeftoverEvent);
+      });
+    return () => { alive = false; window.removeEventListener(LEFTOVER_EVENT, onLeftoverEvent); };
+  }, [merge, offerLeftover, onLeftoverEvent]);
   // Unsent coach text left behind by the back button (or any exit) comes back when the page does.
   // The box is emptied when its text is sent and refilled only if the send failed, so what is stored is unsent.
   useEffect(() => {
@@ -396,16 +412,26 @@ function useSessionController(initialState: SessionState) {
        * The record is used up only once the page has actually taken it (editing can be locked). */
       canRestoreLeftover: () => canEdit(),
       restoreLeftover: () => {
-        if (!leftover || !canEdit()) return;
-        const before = edits.current, kept = leftover;
+        if (!leftover?.restorable || !canEdit()) return;
+        const kept = leftover.record, editable = editableFields(ref.current.stage);
+        const differing = differingFields(kept, ref.current), applied = differing.filter(f => editable.includes(f));
         for (const kind of ["original", "revision"] as const) {
-          if (kept.drafts[kind] !== ref.current.drafts[kind]) edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: kept.drafts[kind] } }));
+          if (applied.includes(kind)) edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: kept.drafts[kind] } }));
         }
-        if (kept.outline && JSON.stringify(kept.outline) !== JSON.stringify(ref.current.outline)) { const outline = kept.outline as SessionState["outline"]; edit("outline", s => ({ ...s, outline })); }
-        const taken = edits.current !== before || leftoversToOffer([kept], ref.current).length === 0;
-        if (taken) dropLeftover(ref.current.id);
+        if (applied.includes("outline")) { const outline = kept.outline as SessionState["outline"]; edit("outline", s => ({ ...s, outline })); }
+        // Used up only if every differing field could be put back; otherwise what this stage cannot
+        // save stays on offer for download.
+        if (applied.length === differing.length) dropLeftover(ref.current.id, kept.owner);
+        else offerLeftover();
       },
-      discardLeftover: () => dropLeftover(ref.current.id),
+      /** Save the leftover as a text file (for what the current stage can no longer take). */
+      downloadLeftover: () => {
+        if (!leftover) return;
+        const s = { ...ref.current, drafts: { ...ref.current.drafts, ...leftover.record.drafts }, outline: (leftover.record.outline ?? ref.current.outline) as SessionState["outline"] };
+        const blob = new Blob([draftBackupText(s, { composer: "", failed: "" })], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `writemind-${s.id}-before-leaving.txt`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      },
+      discardLeftover: () => { if (leftover) dropLeftover(ref.current.id, leftover.record.owner); },
       clearError: () => setError(null),
     },
   };

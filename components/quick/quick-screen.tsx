@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsWide } from "@/hooks/use-wide";
-import { addOrphan, answerToRestore, decodeAnswer, encodeAnswer, joinDraft, quickDraftKey, readLocalDraft, takeOrphan, writeLocalDraft } from "@/lib/drafts/local-draft";
+import { addOrphan, answerToRestore, decodeAnswer, encodeAnswer, joinDraft, quickDiscardKey, quickDraftKey, readLocalDraft, takeOrphan, writeLocalDraft } from "@/lib/drafts/local-draft";
 import { cn } from "@/lib/utils";
 import { LeaveConfirmation } from "./leave-confirmation";
 
@@ -78,24 +78,28 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   // Once this page is gone a newer one may own the box keys: a late request may then only add the
   // text it puts back to the orphan slot, never overwrite or clear a box.
   const mounted = useRef(true);
+  const [openedAt] = useState(() => Date.now());
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  // A later "放弃并离开" in this tab gave up everything typed before it, including what this page's
+  // late requests would put back.
+  const discardedSince = useCallback(() => Number(readLocalDraft(quickDiscardKey(sessionId)) || 0) > openedAt, [sessionId, openedAt]);
   const setAnswer = useCallback((next: string | ((current: string) => string), questionId?: string | null) => {
     const value = typeof next === "function" ? next(answerRef.current) : next;
     const key = quickDraftKey(sessionId, "answer");
-    if (!mounted.current) { if (value.trim() && value !== answerRef.current) addOrphan(key, value); answerRef.current = value; return; }
+    if (!mounted.current) { if (value.trim() && value !== answerRef.current && !discardedSince()) addOrphan(key, value); answerRef.current = value; return; }
     // The answer is tied to the question it was written for; a restored one keeps its own.
     if (questionId !== undefined) answerQuestion.current = questionId;
     else if (!answerRef.current.trim()) answerQuestion.current = questionRef.current;
     answerRef.current = value; setAnswerState(value);
     writeLocalDraft(key, encodeAnswer(value, answerQuestion.current));
-  }, [sessionId]);
+  }, [sessionId, discardedSince]);
   const setAskDraft = useCallback((next: string | ((current: string) => string)) => {
     const value = typeof next === "function" ? next(askRef.current) : next;
     const key = quickDraftKey(sessionId, "ask");
-    if (!mounted.current) { if (value.trim() && value !== askRef.current) addOrphan(key, value); askRef.current = value; return; }
+    if (!mounted.current) { if (value.trim() && value !== askRef.current && !discardedSince()) addOrphan(key, value); askRef.current = value; return; }
     askRef.current = value; setAskDraftState(value);
     writeLocalDraft(key, value);
-  }, [sessionId]);
+  }, [sessionId, discardedSince]);
   const restoredLocal = useRef(false);
   /** Unsent text from an earlier visit in this tab, checked against the freshest server copy. */
   const restoreLocal = useCallback((snapshot: QuickData) => {
@@ -396,6 +400,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     // text an earlier visit's late request had set aside.
     setAnswer(""); setAskDraft("");
     takeOrphan(quickDraftKey(sessionId, "answer")); takeOrphan(quickDraftKey(sessionId, "ask"));
+    writeLocalDraft(quickDiscardKey(sessionId), String(Date.now()));
     if (intent.kind === "link") { discarding.current = true; router.push(intent.href); }
     else void continueDeep(intent.explicitNew, true);
   }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { answerToRestore, coachDraftKey, decodeAnswer, encodeAnswer, essayLeftoverKey, joinDraft, leftoversToOffer, quickDraftKey } from "../lib/drafts/local-draft";
+import { answerToRestore, coachDraftKey, decodeAnswer, differingFields, editableFields, encodeAnswer, essayLeftoverKey, joinDraft, leftoversToOffer, quickDraftKey } from "../lib/drafts/local-draft";
 
 test("a stored answer is dropped only when the server has that reply to that question", () => {
   const stored = decodeAnswer(encodeAnswer("要坐很久的车", "q1"));
@@ -29,8 +29,17 @@ test("returned text goes in front of the box without duplicating", () => {
 });
 
 test("a leftover the server already holds is not offered", () => {
-  const server = { drafts: { original: "A", revision: "" }, outline: { stance: null } };
+  const server = { stage: "writing", drafts: { original: "A", revision: "" }, outline: { stance: null } };
   const same = { owner: "x", at: 1, drafts: { original: "A", revision: "" }, outline: { stance: null } };
   const differs = { ...same, owner: "y", drafts: { original: "A plus more", revision: "" } };
   assert.deepEqual(leftoversToOffer([same, differs], server).map(r => r.owner), ["y"]);
+});
+
+test("restore only covers what the current stage saves", () => {
+  const server = { stage: "feedback", drafts: { original: "A", revision: "" }, outline: {} };
+  const record = { owner: "x", at: 1, drafts: { original: "A more", revision: "" }, outline: {} };
+  assert.deepEqual(differingFields(record, server), ["original"]);
+  assert.deepEqual(editableFields("feedback"), []);
+  assert.deepEqual(editableFields("writing"), ["original", "outline"]);
+  assert.deepEqual(editableFields("revising"), ["revision", "outline"]);
 });
