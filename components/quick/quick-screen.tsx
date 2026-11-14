@@ -392,8 +392,10 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   function confirmLeave() {
     if (!leaveIntent || intentLatch.current.busy || mutation.current || answerLatch.current.busy || askInFlight) return;
     const intent = leaveIntent; setLeaveIntent(null);
-    // The button says the unsent text is given up: drop it here and in this tab's storage.
+    // The button says the unsent text is given up: drop it here, in this tab's storage, and any
+    // text an earlier visit's late request had set aside.
     setAnswer(""); setAskDraft("");
+    takeOrphan(quickDraftKey(sessionId, "answer")); takeOrphan(quickDraftKey(sessionId, "ask"));
     if (intent.kind === "link") { discarding.current = true; router.push(intent.href); }
     else void continueDeep(intent.explicitNew, true);
   }

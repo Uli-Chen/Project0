@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { addOrphan, coachDraftKey, essayLeftoverKey, joinDraft, readLocalDraft, takeOrphan, writeLocalDraft } from "../drafts/local-draft";
+import { addOrphan, coachDraftKey, dropLeftover, joinDraft, LEFTOVER_EVENT, leftoversToOffer, putLeftover, readLeftovers, readLocalDraft, takeOrphan, writeLocalDraft, type EssayLeftover } from "../drafts/local-draft";
 import type { EssayKind } from "./types";
 import type { SessionState } from "@/lib/pipeline/types";
 import type { AgentAction } from "@/lib/pipeline/schemas";
@@ -101,7 +101,8 @@ function useSessionController(initialState: SessionState) {
   }, [setUnconfirmed]);
   const [lifecycleBusy, setLifecycleBusy] = useState(false);
   /** Essay text that could not be saved after an earlier visit was left (JSON of drafts and outline). */
-  const [leftover, setLeftover] = useState<string | null>(null);
+  const [leftover, setLeftover] = useState<EssayLeftover | null>(null);
+  const [owner] = useState(() => crypto.randomUUID());
   const lifecycleChanging = useRef(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const ref = useRef(initialState);
@@ -266,6 +267,14 @@ function useSessionController(initialState: SessionState) {
     } finally { lifecycleChanging.current = false; setLifecycleBusy(false); }
   }, [enqueue, merge, saveNow]);
 
+  /** Same lock as edit(): open practice, and not while an evaluation is running. */
+  const canEdit = useCallback(() => ref.current.lifecycle === "open" && !lifecycleChanging.current && !(busy.current && lastAction.current?.action === "evaluate"), []);
+  /** Show the newest leftover the server does not already hold; drop the ones it does. */
+  const offerLeftover = useCallback(() => {
+    const id = ref.current.id, all = readLeftovers(id), open = leftoversToOffer(all, ref.current);
+    if (open.length !== all.length && open.length === 0) dropLeftover(id);
+    setLeftover(open.length ? open.reduce((a, b) => (b.at > a.at ? b : a)) : null);
+  }, []);
   // Back/forward can show this page from the router cache with the state it had before it was left,
   // older than what was saved on the way out. Read the server copy once on arrival; fields edited
   // since the read started stay local.
@@ -274,41 +283,34 @@ function useSessionController(initialState: SessionState) {
     const generation = edits.current;
     void requestJson(`/api/sessions/${ref.current.id}`, { cache: "no-store" })
       .then(data => { if (alive && data.session && data.session.version > ref.current.version) merge(data.session, generation); })
-      .catch(() => { /* the page keeps working on what it has; the next save reports a real conflict */ });
-    return () => { alive = false; };
-  }, [merge]);
+      .catch(() => { /* the page keeps working on what it has; the next save reports a real conflict */ })
+      .finally(() => { if (alive) offerLeftover(); });
+    // Another page instance in this tab may record (or clear) a leftover while this one is open.
+    window.addEventListener(LEFTOVER_EVENT, offerLeftover);
+    return () => { alive = false; window.removeEventListener(LEFTOVER_EVENT, offerLeftover); };
+  }, [merge, offerLeftover]);
   // Unsent coach text left behind by the back button (or any exit) comes back when the page does.
   // The box is emptied when its text is sent and refilled only if the send failed, so what is stored is unsent.
   useEffect(() => {
     mounted.current = true;
     const stored = joinDraft(readLocalDraft(draftKey), takeOrphan(draftKey));
     if (stored.trim() && stored !== composerDraftRef.current) setComposerDraft(joinDraft(composerDraftRef.current, stored));
-    const left = readLocalDraft(essayLeftoverKey(ref.current.id));
-    if (left) setLeftover(left);
     return () => { mounted.current = false; };
   }, [draftKey, setComposerDraft]);
-  // Leaving by the back button skips the page's leave checks: send any pending edit right away
-  // instead of dropping it with the debounce timer.
-  // If a server-side coach request is still running, wait for it in the background and save after it.
-  // If the save still fails (a conflict, the network), the text is kept as a leftover that the next
-  // visit offers back; it is never applied by itself, so it cannot overwrite newer work.
+  // Leaving by the back button skips the page's leave checks. Record this page's unsaved fields first
+  // (synchronously, so a reload of the next page cannot lose them), then try to save them with the
+  // version this page had: if anything newer was saved meanwhile the server refuses instead of being
+  // overwritten. Only this page's record is removed when its save succeeds; otherwise a later visit
+  // offers it back. If a server-side coach request is still running, saving now would conflict, so
+  // the record is simply kept.
   useEffect(() => () => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     if (edits.current === savedEdits.current && !pendingWrite.current) return;
-    void (async () => {
-      for (let round = 0; round < 40 && busy.current && !actionController.current; round++) {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        try {
-          const data = await requestJson(`/api/sessions/${ref.current.id}`, { cache: "no-store" }, 10000);
-          if (data.session) merge(data.session, savedEdits.current);
-          if (!data.busy) busy.current = false;
-        } catch { /* try again */ }
-      }
-      if (await save()) return;
-      const s = ref.current;
-      writeLocalDraft(essayLeftoverKey(s.id), JSON.stringify({ drafts: s.drafts, outline: s.outline }));
-    })();
-  }, [save, merge]);
+    const s = ref.current;
+    putLeftover(s.id, { owner, at: Date.now(), drafts: { original: s.drafts.original, revision: s.drafts.revision }, outline: s.outline });
+    if (busy.current && !actionController.current) return;
+    void save().then(ok => { if (ok) dropLeftover(s.id, owner); });
+  }, [save, owner]);
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => { if (edits.current !== savedEdits.current || composerDraftRef.current.trim() || unconfirmed.current) { event.preventDefault(); event.returnValue = ""; } };
     window.addEventListener("beforeunload", warn);
@@ -390,20 +392,20 @@ function useSessionController(initialState: SessionState) {
         if (conflict.current) setError("已下载备份。刷新页面即可载入其他页面的最新内容。");
       },
       hasUnsaved: () => edits.current !== savedEdits.current,
-      /** Replace the current fields with the leftover from the last visit (the student chose to). */
+      /** The student chose to put the leftover back: it replaces the current essay and outline.
+       * The record is used up only once the page has actually taken it (editing can be locked). */
+      canRestoreLeftover: () => canEdit(),
       restoreLeftover: () => {
-        if (!leftover) return;
-        try {
-          const kept = JSON.parse(leftover) as { drafts?: Partial<SessionState["drafts"]>; outline?: SessionState["outline"] };
-          for (const kind of ["original", "revision"] as const) {
-            const text = kept.drafts?.[kind];
-            if (typeof text === "string" && text !== ref.current.drafts[kind]) edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: text } }));
-          }
-          if (kept.outline && JSON.stringify(kept.outline) !== JSON.stringify(ref.current.outline)) { const outline = kept.outline; edit("outline", s => ({ ...s, outline })); }
-        } catch { /* unreadable: nothing to restore */ }
-        writeLocalDraft(essayLeftoverKey(ref.current.id), ""); setLeftover(null);
+        if (!leftover || !canEdit()) return;
+        const before = edits.current, kept = leftover;
+        for (const kind of ["original", "revision"] as const) {
+          if (kept.drafts[kind] !== ref.current.drafts[kind]) edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: kept.drafts[kind] } }));
+        }
+        if (kept.outline && JSON.stringify(kept.outline) !== JSON.stringify(ref.current.outline)) { const outline = kept.outline as SessionState["outline"]; edit("outline", s => ({ ...s, outline })); }
+        const taken = edits.current !== before || leftoversToOffer([kept], ref.current).length === 0;
+        if (taken) dropLeftover(ref.current.id);
       },
-      discardLeftover: () => { writeLocalDraft(essayLeftoverKey(ref.current.id), ""); setLeftover(null); },
+      discardLeftover: () => dropLeftover(ref.current.id),
       clearError: () => setError(null),
     },
   };

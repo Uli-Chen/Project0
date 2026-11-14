@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { answerToRestore, coachDraftKey, decodeAnswer, encodeAnswer, essayLeftoverKey, joinDraft, quickDraftKey } from "../lib/drafts/local-draft";
+import { answerToRestore, coachDraftKey, decodeAnswer, encodeAnswer, essayLeftoverKey, joinDraft, leftoversToOffer, quickDraftKey } from "../lib/drafts/local-draft";
 
 test("a stored answer is dropped only when the server has that reply to that question", () => {
   const stored = decodeAnswer(encodeAnswer("要坐很久的车", "q1"));
@@ -26,4 +26,11 @@ test("returned text goes in front of the box without duplicating", () => {
   assert.equal(joinDraft("B", "A"), "A\nB");
   assert.equal(joinDraft("A\nB", "A"), "A\nB");
   assert.equal(joinDraft("B", ""), "B");
+});
+
+test("a leftover the server already holds is not offered", () => {
+  const server = { drafts: { original: "A", revision: "" }, outline: { stance: null } };
+  const same = { owner: "x", at: 1, drafts: { original: "A", revision: "" }, outline: { stance: null } };
+  const differs = { ...same, owner: "y", drafts: { original: "A plus more", revision: "" } };
+  assert.deepEqual(leftoversToOffer([same, differs], server).map(r => r.owner), ["y"]);
 });
