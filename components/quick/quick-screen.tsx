@@ -78,11 +78,11 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   // Once this page is gone a newer one may own the box keys: a late request may then only add the
   // text it puts back to the orphan slot, never overwrite or clear a box.
   const mounted = useRef(true);
-  const [openedAt] = useState(() => Date.now());
+  /** When the send whose late result may put text back was started. */
+  const sendStarted = useRef(0);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  // A later "放弃并离开" in this tab gave up everything typed before it, including what this page's
-  // late requests would put back.
-  const discardedSince = useCallback(() => Number(readLocalDraft(quickDiscardKey(sessionId)) || 0) > openedAt, [sessionId, openedAt]);
+  // A "放弃并离开" in this tab after that send started gave the text up; one before it did not.
+  const discardedSince = useCallback(() => Number(readLocalDraft(quickDiscardKey(sessionId)) || 0) > sendStarted.current, [sessionId]);
   const setAnswer = useCallback((next: string | ((current: string) => string), questionId?: string | null) => {
     const value = typeof next === "function" ? next(answerRef.current) : next;
     const key = quickDraftKey(sessionId, "answer");
@@ -353,6 +353,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     if (!valid.ok) { if (valid.error) setCoachError(valid.error); if (typed) keepAsk.current = true; return; }
     if (running || intentLatch.current.busy || !modelLatch.current.enter()) { if (typed) keepAsk.current = true; return; }
     const sent = { text: valid.text, typed };
+    sendStarted.current = Date.now();
     setCalling("followup"); setCoachError(""); setPreparingAsk(true);
     try {
       const saved = await save("coach");
@@ -455,6 +456,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     } finally { intentLatch.current.leave(); setTransitioning(false); }
   }
   async function sendAnswer() {
+    sendStarted.current = Date.now();
     const sent = answer, question = followup;
     if (intentLatch.current.busy || !sent.trim() || !question || !answerLatch.current.enter()) return;
     // Same answer to the same question after a lost response: same requestId.

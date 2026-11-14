@@ -104,7 +104,10 @@ function useSessionController(initialState: SessionState) {
   /** The newest leftover the server does not hold; `restorable` when the current stage can still save some of it. */
   const [leftover, setLeftover] = useState<{ record: EssayLeftover; restorable: boolean } | null>(null);
   /** The last state the server confirmed (arrival read, save responses). Leftovers are only matched against this. */
-  const confirmed = useRef<EssaySnapshot | null>(null);
+  const confirmed = useRef<(EssaySnapshot & { version: number }) | null>(null);
+  /** Never let a late response move the confirmed state backwards. */
+  const confirm = (session: SessionState) => { if (!confirmed.current || session.version >= confirmed.current.version) confirmed.current = session; };
+  const offerRef = useRef<() => void>(() => {});
   const [owner] = useState(() => crypto.randomUUID());
   const lifecycleChanging = useRef(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
@@ -152,7 +155,7 @@ function useSessionController(initialState: SessionState) {
           throw failure;
         }
         if (!data.session) throw new RequestError("保存响应不完整，请重试。");
-        merge(data.session, write.generation); savedEdits.current = write.generation; pendingWrite.current = null; confirmed.current = data.session;
+        merge(data.session, write.generation); savedEdits.current = write.generation; pendingWrite.current = null; confirm(data.session); offerRef.current();
         if (edits.current === savedEdits.current) break;
       }
       setSaveStatus(edits.current === savedEdits.current ? "saved" : "unsaved");
@@ -277,12 +280,13 @@ function useSessionController(initialState: SessionState) {
   const offerLeftover = useCallback(() => {
     const id = ref.current.id, all = readLeftovers(id), server = confirmed.current;
     const open = server ? all.filter(r => differingFields(r, server).length > 0) : all;
-    if (server && open.length < all.length) { dropLeftover(id, ...all.filter(r => !open.includes(r)).map(r => r.owner)); return; }
+    if (server && open.length < all.length) dropLeftover(id, ...all.filter(r => !open.includes(r)).map(r => r.owner));
     if (!open.length) { setLeftover(null); return; }
     const record = open.reduce((a, b) => (b.at > a.at ? b : a));
     const stage = server?.stage ?? ref.current.stage, editable = editableFields(stage);
     setLeftover({ record, restorable: (server ? differingFields(record, server) : (["original", "revision", "outline"] as const)).some(f => editable.includes(f)) });
   }, []);
+  useEffect(() => { offerRef.current = offerLeftover; }, [offerLeftover]);
   const onLeftoverEvent = useCallback((event: Event) => { if ((event as CustomEvent<string>).detail === ref.current.id) offerLeftover(); }, [offerLeftover]);
   // Back/forward can show this page from the router cache with the state it had before it was left,
   // older than what was saved on the way out. Read the server copy once on arrival; fields edited
@@ -293,7 +297,7 @@ function useSessionController(initialState: SessionState) {
     void requestJson(`/api/sessions/${ref.current.id}`, { cache: "no-store" })
       .then(data => {
         if (!alive || !data.session) return;
-        confirmed.current = data.session;
+        confirm(data.session);
         if (data.session.version > ref.current.version) merge(data.session, generation);
       })
       .catch(() => { /* the page keeps working on what it has; the next save reports a real conflict */ })
