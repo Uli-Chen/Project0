@@ -33,7 +33,7 @@ export function DeepLeaveGuard() {
     inFlight.current = true; setSaving(true);
     try {
       if (current.current.hasUnsaved() && !await current.current.save()) return;
-      if (discardComposer) current.current.setComposerDraft("");
+      if (discardComposer) current.current.discardComposer();
       setDestination(null);
       const url = new URL(href, window.location.href);
       if (url.origin === window.location.origin) router.push(`${url.pathname}${url.search}${url.hash}`);

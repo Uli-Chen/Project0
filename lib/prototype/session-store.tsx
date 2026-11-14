@@ -87,10 +87,17 @@ function useSessionController(initialState: SessionState) {
   const draftKey = coachDraftKey(initialState.id);
   // After the page is gone, a late request may only add its text to the orphan slot: a newer page owns the box key.
   const mounted = useRef(true);
+  /** When the coach send whose late result may put text back was started; a later explicit discard covers it. */
+  const sendStarted = useRef(0);
+  const discardKey = `${draftKey}:discarded`;
   const setComposerDraft = useCallback((text: string) => {
-    if (!mounted.current) { if (text.trim() && text !== composerDraftRef.current) addOrphan(draftKey, text); composerDraftRef.current = text; return; }
+    if (!mounted.current) {
+      const discarded = Number(readLocalDraft(discardKey) || 0) > sendStarted.current;
+      if (text.trim() && text !== composerDraftRef.current && !discarded) addOrphan(draftKey, text);
+      composerDraftRef.current = text; return;
+    }
     composerDraftRef.current = text; setComposerDraftState(text); writeLocalDraft(draftKey, text);
-  }, [draftKey]);
+  }, [draftKey, discardKey]);
   // A sent coach message the server has not confirmed yet. The composer is already empty, so this is
   // the only copy: it counts as unsent text for leave protection and the backup until the server has it.
   const unconfirmed = useRef<{ requestId: string; text: string } | null>(null);
@@ -106,7 +113,6 @@ function useSessionController(initialState: SessionState) {
   /** The last state the server confirmed (arrival read, save responses). Leftovers are only matched against this. */
   const confirmed = useRef<(EssaySnapshot & { version: number }) | null>(null);
   /** Never let a late response move the confirmed state backwards. */
-  const confirm = (session: SessionState) => { if (!confirmed.current || session.version >= confirmed.current.version) confirmed.current = session; };
   const offerRef = useRef<() => void>(() => {});
   const [owner] = useState(() => crypto.randomUUID());
   const lifecycleChanging = useRef(false);
@@ -126,7 +132,13 @@ function useSessionController(initialState: SessionState) {
 
   const update = useCallback((fn: (s: SessionState) => SessionState) => { const next = fn(ref.current); ref.current = next; setState(next); }, []);
   const enqueue = useCallback(<T,>(work: () => Promise<T>): Promise<T> => { const result = queue.current.then(work); queue.current = result.catch(() => undefined); return result; }, []);
-  const merge = useCallback((incoming: SessionState, generation: number) => update(local => mergeSessionState(local, incoming, changed.current, generation)), [update]);
+  // Every merge brings a state the server sent: it advances the confirmed state (never backwards), and
+  // the open page re-checks its leftover offer against it. A page that is gone leaves offers alone.
+  const merge = useCallback((incoming: SessionState, generation: number) => {
+    update(local => mergeSessionState(local, incoming, changed.current, generation));
+    if (!confirmed.current || incoming.version >= confirmed.current.version) confirmed.current = incoming;
+    if (mounted.current) offerRef.current();
+  }, [update]);
 
   const saveNow = useCallback(async () => {
     if (conflict.current) throw new RequestError("练习已在其他页面更新。请先备份当前内容再刷新，避免覆盖其他页面的修改。");
@@ -155,7 +167,7 @@ function useSessionController(initialState: SessionState) {
           throw failure;
         }
         if (!data.session) throw new RequestError("保存响应不完整，请重试。");
-        merge(data.session, write.generation); savedEdits.current = write.generation; pendingWrite.current = null; confirm(data.session); offerRef.current();
+        savedEdits.current = write.generation; pendingWrite.current = null; merge(data.session, write.generation);
         if (edits.current === savedEdits.current) break;
       }
       setSaveStatus(edits.current === savedEdits.current ? "saved" : "unsaved");
@@ -180,6 +192,7 @@ function useSessionController(initialState: SessionState) {
     if (ref.current.lifecycle !== "open") { setError("请先恢复练习，再继续操作。"); return; }
     const recovering = lastRequestId.current === requestId;
     busy.current = true; setCoachBusy(true); setPendingActionName(input.action); setError(null);
+    sendStarted.current = Date.now();
     lastAction.current = input; lastRequestId.current = requestId; setFailedInput("text" in input ? input.text ?? null : null);
     if (saveTimer.current) clearTimeout(saveTimer.current);
     // The composer clears itself right after onSend; keep the typed text until the server has it.
@@ -297,8 +310,8 @@ function useSessionController(initialState: SessionState) {
     void requestJson(`/api/sessions/${ref.current.id}`, { cache: "no-store" })
       .then(data => {
         if (!alive || !data.session) return;
-        confirm(data.session);
         if (data.session.version > ref.current.version) merge(data.session, generation);
+        else if (!confirmed.current || data.session.version >= confirmed.current.version) confirmed.current = data.session;
       })
       .catch(() => { /* the page keeps working on what it has; the next save reports a real conflict */ })
       .finally(() => {
@@ -412,21 +425,22 @@ function useSessionController(initialState: SessionState) {
         if (conflict.current) setError("已下载备份。刷新页面即可载入其他页面的最新内容。");
       },
       hasUnsaved: () => edits.current !== savedEdits.current,
+      /** The student chose to give up the unsent coach text: also covers what a request still in flight would put back. */
+      discardComposer: () => { writeLocalDraft(discardKey, String(Date.now())); takeOrphan(draftKey); setComposerDraft(""); },
       /** The student chose to put the leftover back: it replaces the current essay and outline.
        * The record is used up only once the page has actually taken it (editing can be locked). */
       canRestoreLeftover: () => canEdit(),
       restoreLeftover: () => {
         if (!leftover?.restorable || !canEdit()) return;
-        const kept = leftover.record, editable = editableFields(ref.current.stage);
-        const differing = differingFields(kept, ref.current), applied = differing.filter(f => editable.includes(f));
+        // Compare with what the server confirmed; without that, put back every field the stage saves, so
+        // the save that follows decides. The record is not used up here: once the server confirms the
+        // restored content, the offer check drops it; what the stage cannot take stays as a download.
+        const kept = leftover.record, editable = editableFields(ref.current.stage), server = confirmed.current;
+        const fields = (server ? differingFields(kept, server) : (["original", "revision", "outline"] as const)).filter(f => editable.includes(f));
         for (const kind of ["original", "revision"] as const) {
-          if (applied.includes(kind)) edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: kept.drafts[kind] } }));
+          if (fields.includes(kind)) edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: kept.drafts[kind] } }));
         }
-        if (applied.includes("outline")) { const outline = kept.outline as SessionState["outline"]; edit("outline", s => ({ ...s, outline })); }
-        // Used up only if every differing field could be put back; otherwise what this stage cannot
-        // save stays on offer for download.
-        if (applied.length === differing.length) dropLeftover(ref.current.id, kept.owner);
-        else offerLeftover();
+        if (fields.includes("outline") && kept.outline !== undefined) { const outline = kept.outline as SessionState["outline"]; edit("outline", s => ({ ...s, outline })); }
       },
       /** Save the leftover as a text file (for what the current stage can no longer take). */
       downloadLeftover: () => {
