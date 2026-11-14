@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { coachDraftKey, readLocalDraft, restorableDraft, writeLocalDraft } from "../drafts/local-draft";
+import { coachDraftKey, essayUnsavedKey, readLocalDraft, writeLocalDraft } from "../drafts/local-draft";
 import type { EssayKind } from "./types";
 import type { SessionState } from "@/lib/pipeline/types";
 import type { AgentAction } from "@/lib/pipeline/schemas";
@@ -259,6 +259,20 @@ function useSessionController(initialState: SessionState) {
     } finally { lifecycleChanging.current = false; setLifecycleBusy(false); }
   }, [enqueue, merge, saveNow]);
 
+  /** Edits that could not be saved on the way out (for example while a coach request was still
+   * running) were kept in this tab; put back whatever the server does not have yet, then save. */
+  const reapplyUnsaved = useCallback(() => {
+    const key = essayUnsavedKey(ref.current.id), raw = readLocalDraft(key);
+    writeLocalDraft(key, "");
+    if (!raw) return;
+    let kept: { drafts?: Partial<SessionState["drafts"]>; outline?: SessionState["outline"] };
+    try { kept = JSON.parse(raw); } catch { return; }
+    for (const kind of ["original", "revision"] as const) {
+      const text = kept.drafts?.[kind];
+      if (typeof text === "string" && text !== ref.current.drafts[kind]) edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: text } }));
+    }
+    if (kept.outline && JSON.stringify(kept.outline) !== JSON.stringify(ref.current.outline)) { const outline = kept.outline; edit("outline", s => ({ ...s, outline })); }
+  }, [edit]);
   // Back/forward can show this page from the router cache with the state it had before it was left,
   // older than what was saved on the way out. Read the server copy once on arrival; fields edited
   // since the read started stay local.
@@ -267,20 +281,26 @@ function useSessionController(initialState: SessionState) {
     const generation = edits.current;
     void requestJson(`/api/sessions/${ref.current.id}`, { cache: "no-store" })
       .then(data => { if (alive && data.session && data.session.version > ref.current.version) merge(data.session, generation); })
-      .catch(() => { /* the page keeps working on what it has; the next save reports a real conflict */ });
+      .catch(() => { /* the page keeps working on what it has; the next save reports a real conflict */ })
+      .finally(() => { if (alive) reapplyUnsaved(); });
     return () => { alive = false; };
-  }, [merge]);
+  }, [merge, reapplyUnsaved]);
   // Unsent coach text left behind by the back button (or any exit) comes back when the page does.
+  // The box is emptied when its text is sent and refilled only if the send failed, so what is stored is unsent.
   useEffect(() => {
-    const stored = restorableDraft(readLocalDraft(draftKey), ref.current.messages.filter(m => m.role === "user").map(m => m.content));
-    if (stored && !composerDraftRef.current) setComposerDraft(stored);
-    else if (!stored) writeLocalDraft(draftKey, composerDraftRef.current);
+    const stored = readLocalDraft(draftKey);
+    if (stored.trim() && !composerDraftRef.current) setComposerDraft(stored);
   }, [draftKey, setComposerDraft]);
   // Leaving by the back button skips the page's leave checks: send any pending edit right away
   // instead of dropping it with the debounce timer.
+  // If the save cannot run now (a coach request is still running) or fails, the edits stay in this tab
+  // and are put back the next time the page opens.
   useEffect(() => () => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    if (edits.current !== savedEdits.current || pendingWrite.current) void save();
+    if (edits.current === savedEdits.current && !pendingWrite.current) return;
+    const key = essayUnsavedKey(ref.current.id), s = ref.current;
+    writeLocalDraft(key, JSON.stringify({ drafts: s.drafts, outline: s.outline }));
+    void save().then(ok => { if (ok && edits.current === savedEdits.current) writeLocalDraft(key, ""); });
   }, [save]);
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => { if (edits.current !== savedEdits.current || composerDraftRef.current.trim() || unconfirmed.current) { event.preventDefault(); event.returnValue = ""; } };

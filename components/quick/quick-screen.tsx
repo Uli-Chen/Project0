@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsWide } from "@/hooks/use-wide";
-import { quickDraftKey, readLocalDraft, restorableDraft, writeLocalDraft } from "@/lib/drafts/local-draft";
+import { answerToRestore, decodeAnswer, encodeAnswer, quickDraftKey, readLocalDraft, writeLocalDraft } from "@/lib/drafts/local-draft";
 import { cn } from "@/lib/utils";
 import { LeaveConfirmation } from "./leave-confirmation";
 
@@ -68,9 +68,36 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   const [data, setData] = useState(initial);
   const [draft, setDraftState] = useState<Record<string, string>>(() => texts(initial));
   /** Reply to the coach's pending question (quickAnswer). */
-  const [answer, setAnswer] = useState("");
+  const [answer, setAnswerState] = useState("");
   /** What the student types to the coach when no question is pending (quickFollowup with text). Never sent as an answer. */
-  const [askDraft, setAskDraft] = useState("");
+  const [askDraft, setAskDraftState] = useState("");
+  // Both boxes write through to this tab's storage on every change, including changes made by
+  // requests that finish after the page was left (a failed send puts its text back).
+  const sessionId = initial.session.id;
+  const answerRef = useRef(""), askRef = useRef(""), questionRef = useRef<string | null>(null);
+  const setAnswer = useCallback((next: string | ((current: string) => string)) => {
+    const value = typeof next === "function" ? next(answerRef.current) : next;
+    answerRef.current = value; setAnswerState(value);
+    writeLocalDraft(quickDraftKey(sessionId, "answer"), encodeAnswer(value, questionRef.current));
+  }, [sessionId]);
+  const setAskDraft = useCallback((next: string | ((current: string) => string)) => {
+    const value = typeof next === "function" ? next(askRef.current) : next;
+    askRef.current = value; setAskDraftState(value);
+    writeLocalDraft(quickDraftKey(sessionId, "ask"), value);
+  }, [sessionId]);
+  const restoredLocal = useRef(false);
+  /** Unsent text from an earlier visit in this tab, checked against the freshest server copy. */
+  const restoreLocal = useCallback((snapshot: QuickData) => {
+    if (restoredLocal.current) return;
+    restoredLocal.current = true;
+    const ask = readLocalDraft(quickDraftKey(sessionId, "ask"));
+    if (ask.trim()) setAskDraft(current => restoreInto(current, ask));
+    const answerBack = answerToRestore(decodeAnswer(readLocalDraft(quickDraftKey(sessionId, "answer"))), snapshot.session.messages);
+    if (answerBack) setAnswer(current => current || answerBack);
+    else writeLocalDraft(quickDraftKey(sessionId, "answer"), encodeAnswer(answerRef.current, questionRef.current));
+  }, [sessionId, setAnswer, setAskDraft]);
+  /** "放弃并离开" means it: nothing is saved or kept on the way out. */
+  const discarding = useRef(false);
   const [error, setError] = useState("");
   const [coachError, setCoachError] = useState("");
   const [notice, setNotice] = useState("");
@@ -183,11 +210,16 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   useEffect(() => {
     let cancelled = false;
     const ticket = { epoch: epoch.current, sequence: ++sequence.current };
-    void fetchJson<QuickData>(`${endpoint}/quick`).then(reply => { if (reply.ok && !cancelled) accept(reply.value, ticket); });
+    void fetchJson<QuickData>(`${endpoint}/quick`).then(reply => {
+      if (cancelled) return;
+      if (reply.ok) accept(reply.value, ticket);
+      restoreLocal(dataRef.current);
+    });
     return () => { cancelled = true; };
-  }, [endpoint, router.bfcacheId, accept]);
+  }, [endpoint, router.bfcacheId, accept, restoreLocal]);
   const followup = lastQuestion(data);
   const pendingAnswer = !!followup && !data.session.messages.some(m => m.replyToMessageId === followup.id);
+  useEffect(() => { questionRef.current = followup?.id ?? null; }, [followup?.id]);
   /** Until the server confirms it, an ask cannot be abandoned, like an answer in flight. */
   const askInFlight = preparingAsk || pendingAsk?.status === "sending";
   const unsent = unsentCoachText({ answer, askDraft, preparingAsk, pendingAsk });
@@ -270,18 +302,8 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   useEffect(() => { saveRef.current = save; });
   // Leaving by the back button skips the page's leave checks: save what is typed right away
   // instead of dropping it with the autosave timer. save() itself does nothing when all is saved.
-  useEffect(() => () => { void saveRef.current(); }, []);
-  // Unsent answers and asks survive any exit in this tab and come back with the page.
-  const sessionId = initial.session.id;
-  useEffect(() => {
-    const sent = (box: "answer" | "ask") => dataRef.current.session.messages.filter(m => m.role === "user" && m.stage === "quick" && (box === "answer" ? m.action === "quickAnswer" : m.action === "quickAsk")).map(m => m.content);
-    const storedAnswer = restorableDraft(readLocalDraft(quickDraftKey(sessionId, "answer")), sent("answer"));
-    const storedAsk = restorableDraft(readLocalDraft(quickDraftKey(sessionId, "ask")), sent("ask"));
-    if (storedAnswer) setAnswer(current => current || storedAnswer);
-    if (storedAsk) setAskDraft(current => current || storedAsk);
-  }, [sessionId]);
-  useEffect(() => { writeLocalDraft(quickDraftKey(sessionId, "answer"), answer); }, [sessionId, answer]);
-  useEffect(() => { writeLocalDraft(quickDraftKey(sessionId, "ask"), askDraft); }, [sessionId, askDraft]);
+  useEffect(() => () => { if (!discarding.current) void saveRef.current(); }, []);
+
   // 停笔一会儿就自动保存；检查进行中先不存，免得这次检查对不上卡片版本；有冲突时等学生选择
   useEffect(() => {
     if (!dirty || overLimit || conflicted || !active || transitioning || running) return;
@@ -354,7 +376,9 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   function confirmLeave() {
     if (!leaveIntent || intentLatch.current.busy || mutation.current || answerLatch.current.busy || askInFlight) return;
     const intent = leaveIntent; setLeaveIntent(null);
-    if (intent.kind === "link") router.push(intent.href);
+    // The button says the unsent text is given up: drop it here and in this tab's storage.
+    setAnswer(""); setAskDraft("");
+    if (intent.kind === "link") { discarding.current = true; router.push(intent.href); }
     else void continueDeep(intent.explicitNew, true);
   }
   async function continueDeep(explicitNew = false, discardAnswer = false) {
