@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { coachDraftKey, readLocalDraft, restorableDraft, writeLocalDraft } from "../drafts/local-draft";
 import type { EssayKind } from "./types";
 import type { SessionState } from "@/lib/pipeline/types";
 import type { AgentAction } from "@/lib/pipeline/schemas";
@@ -83,7 +84,8 @@ function useSessionController(initialState: SessionState) {
   const [failedInput, setFailedInput] = useState<string | null>(initialPending && "text" in initialPending.input ? initialPending.input.text ?? null : null);
   const [composerDraft, setComposerDraftState] = useState(initialPending?.retryable === false && "text" in initialPending.input ? initialPending.input.text ?? "" : "");
   const composerDraftRef = useRef(composerDraft);
-  const setComposerDraft = useCallback((text: string) => { composerDraftRef.current = text; setComposerDraftState(text); }, []);
+  const draftKey = coachDraftKey(initialState.id);
+  const setComposerDraft = useCallback((text: string) => { composerDraftRef.current = text; setComposerDraftState(text); writeLocalDraft(draftKey, text); }, [draftKey]);
   // A sent coach message the server has not confirmed yet. The composer is already empty, so this is
   // the only copy: it counts as unsent text for leave protection and the backup until the server has it.
   const unconfirmed = useRef<{ requestId: string; text: string } | null>(null);
@@ -257,6 +259,29 @@ function useSessionController(initialState: SessionState) {
     } finally { lifecycleChanging.current = false; setLifecycleBusy(false); }
   }, [enqueue, merge, saveNow]);
 
+  // Back/forward can show this page from the router cache with the state it had before it was left,
+  // older than what was saved on the way out. Read the server copy once on arrival; fields edited
+  // since the read started stay local.
+  useEffect(() => {
+    let alive = true;
+    const generation = edits.current;
+    void requestJson(`/api/sessions/${ref.current.id}`, { cache: "no-store" })
+      .then(data => { if (alive && data.session && data.session.version > ref.current.version) merge(data.session, generation); })
+      .catch(() => { /* the page keeps working on what it has; the next save reports a real conflict */ });
+    return () => { alive = false; };
+  }, [merge]);
+  // Unsent coach text left behind by the back button (or any exit) comes back when the page does.
+  useEffect(() => {
+    const stored = restorableDraft(readLocalDraft(draftKey), ref.current.messages.filter(m => m.role === "user").map(m => m.content));
+    if (stored && !composerDraftRef.current) setComposerDraft(stored);
+    else if (!stored) writeLocalDraft(draftKey, composerDraftRef.current);
+  }, [draftKey, setComposerDraft]);
+  // Leaving by the back button skips the page's leave checks: send any pending edit right away
+  // instead of dropping it with the debounce timer.
+  useEffect(() => () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    if (edits.current !== savedEdits.current || pendingWrite.current) void save();
+  }, [save]);
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => { if (edits.current !== savedEdits.current || composerDraftRef.current.trim() || unconfirmed.current) { event.preventDefault(); event.returnValue = ""; } };
     window.addEventListener("beforeunload", warn);

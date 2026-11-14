@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsWide } from "@/hooks/use-wide";
+import { quickDraftKey, readLocalDraft, restorableDraft, writeLocalDraft } from "@/lib/drafts/local-draft";
 import { cn } from "@/lib/utils";
 import { LeaveConfirmation } from "./leave-confirmation";
 
@@ -267,6 +268,20 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   }
   const saveRef = useRef(save);
   useEffect(() => { saveRef.current = save; });
+  // Leaving by the back button skips the page's leave checks: save what is typed right away
+  // instead of dropping it with the autosave timer. save() itself does nothing when all is saved.
+  useEffect(() => () => { void saveRef.current(); }, []);
+  // Unsent answers and asks survive any exit in this tab and come back with the page.
+  const sessionId = initial.session.id;
+  useEffect(() => {
+    const sent = (box: "answer" | "ask") => dataRef.current.session.messages.filter(m => m.role === "user" && m.stage === "quick" && (box === "answer" ? m.action === "quickAnswer" : m.action === "quickAsk")).map(m => m.content);
+    const storedAnswer = restorableDraft(readLocalDraft(quickDraftKey(sessionId, "answer")), sent("answer"));
+    const storedAsk = restorableDraft(readLocalDraft(quickDraftKey(sessionId, "ask")), sent("ask"));
+    if (storedAnswer) setAnswer(current => current || storedAnswer);
+    if (storedAsk) setAskDraft(current => current || storedAsk);
+  }, [sessionId]);
+  useEffect(() => { writeLocalDraft(quickDraftKey(sessionId, "answer"), answer); }, [sessionId, answer]);
+  useEffect(() => { writeLocalDraft(quickDraftKey(sessionId, "ask"), askDraft); }, [sessionId, askDraft]);
   // 停笔一会儿就自动保存；检查进行中先不存，免得这次检查对不上卡片版本；有冲突时等学生选择
   useEffect(() => {
     if (!dirty || overLimit || conflicted || !active || transitioning || running) return;
