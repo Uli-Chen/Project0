@@ -98,6 +98,8 @@ function useSessionController(initialState: SessionState) {
     }
     composerDraftRef.current = text; setComposerDraftState(text); writeLocalDraft(draftKey, text);
   }, [draftKey, discardKey]);
+  /** The student gave up the unsent coach text after this send started (also before the page unmounts). */
+  const discardedSinceSend = useCallback(() => Number(readLocalDraft(discardKey) || 0) > sendStarted.current, [discardKey]);
   // A sent coach message the server has not confirmed yet. The composer is already empty, so this is
   // the only copy: it counts as unsent text for leave protection and the backup until the server has it.
   const unconfirmed = useRef<{ requestId: string; text: string } | null>(null);
@@ -247,12 +249,13 @@ function useSessionController(initialState: SessionState) {
       const where = failedSendState(progress);
       if (where === "server" && ref.current.pendingAction?.requestId === requestId && ref.current.pendingAction.retryable === false) {
         const recovered = recoverComposerDraft(composerDraftRef.current, input);
-        if (recovered !== composerDraftRef.current) setComposerDraft(recovered);
+        if (recovered !== composerDraftRef.current && !discardedSinceSend()) setComposerDraft(recovered);
       } else if (where === "absent" && typed) {
         // The server never got it: put the words back where the student typed them, unless they already
         // started a new message. Then the failed text stays in the notice and leave protection, and 重试 resends it.
         const recovered = recoverComposerDraft(composerDraftRef.current, input);
-        if (recovered !== composerDraftRef.current) {
+        if (discardedSinceSend()) setUnconfirmed(null);
+        else if (recovered !== composerDraftRef.current) {
           setComposerDraft(recovered); setUnconfirmed(null);
           lastAction.current = null; lastRequestId.current = null; setFailedInput(null);
           update(s => s.pendingAction?.requestId === requestId ? { ...s, pendingAction: null } : s);
@@ -262,7 +265,7 @@ function useSessionController(initialState: SessionState) {
     } finally { busy.current = false; setCoachBusy(false); setPendingActionName(null); }
     if (ref.current.completedRequests?.includes(requestId) && edits.current !== savedEdits.current) void save();
     return ref.current.completedRequests?.includes(requestId) ?? false;
-  }, [enqueue, merge, saveNow, update, save, setComposerDraft, setUnconfirmed, confirmDelivered]);
+  }, [enqueue, merge, saveNow, update, save, setComposerDraft, setUnconfirmed, confirmDelivered, discardedSinceSend]);
 
   const changeLifecycle = useCallback(async (action: "setAside" | "resume" | "close") => {
     if (busy.current || lifecycleChanging.current) return false;
@@ -435,8 +438,10 @@ function useSessionController(initialState: SessionState) {
         // Compare with what the server confirmed; without that, put back every field the stage saves, so
         // the save that follows decides. The record is not used up here: once the server confirms the
         // restored content, the offer check drops it; what the stage cannot take stays as a download.
-        const kept = leftover.record, editable = editableFields(ref.current.stage), server = confirmed.current;
-        const fields = (server ? differingFields(kept, server) : (["original", "revision", "outline"] as const)).filter(f => editable.includes(f));
+        // The whole copy replaces the current essay and outline for every field this stage saves, as the
+        // banner says; comparing with the server only decides when the record is used up.
+        const kept = leftover.record, editable = editableFields(ref.current.stage);
+        const fields = (["original", "revision", "outline"] as const).filter(f => editable.includes(f) && (f === "outline" ? JSON.stringify(kept.outline) !== JSON.stringify(ref.current.outline) : kept.drafts[f] !== ref.current.drafts[f]) || (editable.includes(f) && !confirmed.current));
         for (const kind of ["original", "revision"] as const) {
           if (fields.includes(kind)) edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: kept.drafts[kind] } }));
         }

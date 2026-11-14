@@ -134,7 +134,7 @@ function Screen({ cardRequirements, banner }: { cardRequirements?: QuestionRequi
   // Text from the last visit that could not be saved after leaving. Offered, never applied by itself.
   const leftoverNotice = leftover && state.lifecycle === "open" && (
     <div role="status" className="flex shrink-0 flex-wrap items-center gap-3 border-b bg-warn-soft px-4 py-2.5 text-[14px]">
-      <p className="min-w-0 flex-1">{leftover.restorable ? "上次离开时有内容没能保存上。恢复会用当时的作文和提纲替换现在的内容。" : "上次离开时有内容没能保存上，这个阶段已经不能再改它，可以下载留存。"}</p>
+      <p className="min-w-0 flex-1">{leftover.record.at ? `${new Date(leftover.record.at).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })} 离开时有内容没能保存上。` : "上次离开时有内容没能保存上。"}{leftover.restorable ? "恢复会用当时的作文和提纲替换现在的内容。" : "这个阶段已经不能再改它，可以下载留存。"}</p>
       {leftover.restorable
         ? <Button size="xs" variant="outline" disabled={lifecycleBusy || coachBusy || !actions.canRestoreLeftover()} onClick={actions.restoreLeftover}>恢复离开前的内容</Button>
         : <Button size="xs" variant="outline" onClick={actions.downloadLeftover}>下载</Button>}
