@@ -1,5 +1,6 @@
 import { inRequest } from "./helpers/request-context";
 import assert from "node:assert/strict";
+import { GRADE_REQUEST_DAYS, presentationKey } from "../lib/learning/review-items";
 import { after, test } from "node:test";
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -68,4 +69,14 @@ test("两个标签页交错评分（A、B、重放 A）：重放 A 不再推进�
 test("没有呈现键的请求照常评分；未知条目 404", async () => {
   assert.equal((await grade({ id, result: "again" })).body.review.box, 0);
   assert.equal((await grade({ id: "fix:missing:1", result: "good", key: "k" })).status, 404);
+});
+
+test("评分请求超过有效期直接拒绝，不改进度；新呈现键照常评分", async () => {
+  const before = stored();
+  const stale = presentationKey(Date.now() - (GRADE_REQUEST_DAYS + 1) * 86_400_000);
+  const refused = await grade({ id, result: "good", key: stale });
+  assert.equal(refused.status, 409); assert.equal(refused.body.code, "review_expired");
+  assert.deepEqual(stored(), before);
+  const fresh = await grade({ id, result: "good", key: presentationKey() });
+  assert.equal(fresh.status, 200); assert.equal(fresh.body.replayed, false);
 });

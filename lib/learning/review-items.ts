@@ -88,6 +88,16 @@ export function dueItems(items: ReviewItem[], state: ReviewState, now = new Date
 
 /** Retries arrive within minutes; keep a month of receipts so interleaved tabs can never regrade. */
 export const GRADED_KEEP_DAYS = 30;
+/** A grade request older than this is refused outright. It is shorter than the keep window, so every
+ * request that can still be accepted also still has its receipt: a stale replay can never regrade. */
+export const GRADE_REQUEST_DAYS = GRADED_KEEP_DAYS - 1;
+/** One key per time a card is shown: when it was shown, then a random part. */
+export function presentationKey(now = Date.now(), random = crypto.randomUUID()) { return `${now.toString(36)}.${random}`; }
+/** Keys from before timestamps were added carry no time; they are judged by their receipt alone. */
+export function gradeRequestExpired(key: string | undefined, now = new Date()) {
+  const stamp = key?.includes(".") ? parseInt(key.slice(0, key.indexOf(".")), 36) : NaN;
+  return Number.isFinite(stamp) && stamp < now.getTime() - GRADE_REQUEST_DAYS * DAY;
+}
 /** Size guard only: far above what one card collects in a month of real use. */
 export const GRADED_KEYS = 500;
 

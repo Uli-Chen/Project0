@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Check, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { ReviewItem } from "@/lib/learning/review-items";
+import { presentationKey, type ReviewItem } from "@/lib/learning/review-items";
 import { cn } from "@/lib/utils";
 
 /** One card at a time: try first, then compare with your own earlier answer and grade yourself. */
@@ -22,7 +22,7 @@ export function ReviewDeck({ items }: { items: ReviewItem[] }) {
   const [error, setError] = useState("");
   // One key per time a card is shown. A retry after a lost response reuses it, so the server
   // records the grade once; the next card (or the same card coming back) gets a fresh key.
-  const [presentation, setPresentation] = useState(() => crypto.randomUUID());
+  const [presentation, setPresentation] = useState(() => presentationKey());
   const total = round.length;
   const item = queue[0];
   const waiting = items.filter(next => !cleared.includes(next.id));
@@ -33,13 +33,16 @@ export function ReviewDeck({ items }: { items: ReviewItem[] }) {
     try {
       const response = await fetch("/api/review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: item.id, result: choice, key: presentation }) });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "没有保存成功，请重试。");
+      if (!response.ok) {
+        if (data.code === "review_expired") { setPresentation(presentationKey()); router.refresh(); }
+        throw new Error(typeof data.error === "string" ? data.error : "没有保存成功，请重试。");
+      }
       // A replayed request reports the grade that was recorded the first time.
       const result: "good" | "again" = data.result === "good" || data.result === "again" ? data.result : choice;
       // 没记住的排到这一轮最后再来一次
       setQueue(([head, ...rest]) => result === "again" ? [...rest, head] : rest);
       if (result === "good") { setDone(n => n + 1); setCleared(ids => [...ids, item.id]); }
-      setPresentation(crypto.randomUUID());
+      setPresentation(presentationKey());
       setAttempt(""); setRevealed(false);
       // The due count in the sidebar and on the tabs comes from the server.
       router.refresh();

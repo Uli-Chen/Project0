@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createSession } from "../lib/pipeline/initial";
-import { dueItems, gradeReview, GRADED_KEEP_DAYS, GRADED_KEYS, matchRevision, nextReview, reviewItems } from "../lib/learning/review-items";
+import { dueItems, gradeRequestExpired, GRADE_REQUEST_DAYS, gradeReview, GRADED_KEEP_DAYS, presentationKey, GRADED_KEYS, matchRevision, nextReview, reviewItems } from "../lib/learning/review-items";
 import { draftMarks, remainingByIssue } from "../lib/learning/revision-marks";
 
 function practised() {
@@ -119,4 +119,14 @@ test("改写稿里的标记：只标还原样留着的问题句，改过的不�
   const marks = draftMarks(original, edited, issues);
   assert.deepEqual(marks.map(m => m.sentenceId), [2, 3]);
   assert.deepEqual(remainingByIssue(marks, issues), [{ rank: 1, total: 2, remaining: 1 }, { rank: 2, total: 2, remaining: 2 }]);
+});
+
+test("评分请求的有效期比回执保留期短：能被接受的请求一定还有回执", () => {
+  const now = new Date("2026-11-14T00:00:00.000Z");
+  assert.ok(GRADE_REQUEST_DAYS < GRADED_KEEP_DAYS);
+  assert.equal(gradeRequestExpired(presentationKey(now.getTime() - GRADE_REQUEST_DAYS * 86_400_000 + 1000), now), false);
+  assert.equal(gradeRequestExpired(presentationKey(now.getTime() - (GRADE_REQUEST_DAYS + 1) * 86_400_000), now), true);
+  // Old keys without a time, and no key at all, are judged by their receipt as before.
+  assert.equal(gradeRequestExpired("shown-1", now), false);
+  assert.equal(gradeRequestExpired(undefined, now), false);
 });
