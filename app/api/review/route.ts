@@ -6,7 +6,7 @@ import { getRequestReceipt, writeRequestReceipt } from "@/lib/db/request-receipt
 import { listSessions } from "@/lib/db/queries/sessions";
 import { updateUserProfile, userById } from "@/lib/db/queries/users";
 import { DEFAULT_PROFILE, type UserProfile } from "@/lib/auth/types";
-import { gradeReview, legacyGrade, reviewItems, type ReviewEntry, type ReviewState } from "@/lib/learning/review-items";
+import { gradeReview, legacyGrade, legacyGrades, reviewItems, type ReviewEntry, type ReviewState } from "@/lib/learning/review-items";
 
 export const runtime = "nodejs";
 // `key` names one presentation of a card; the client reuses it when it retries the same grade.
@@ -44,6 +44,12 @@ export async function POST(request: Request) {
         }
         const earlier = legacyGrade(existing, input.key);
         if (earlier) return { entry: existing, result: earlier, replayed: true };
+      }
+      // The new entry no longer carries receipts an earlier build kept in the profile: move them to the
+      // table first, so those old requests stay recognised as replays.
+      for (const [oldKey, oldGrade] of legacyGrades(existing)) {
+        const key = `review:${oldKey}`;
+        if (!getRequestReceipt(sqlite, user.id, key)) writeRequestReceipt(sqlite, { userId: user.id, idempotencyKey: key, attemptId: item.sessionId, action: "review", paramsHash: input.id, resultRef: oldGrade, createdAt: now.toISOString() });
       }
       const entry: ReviewEntry = gradeReview(existing, input.result, now);
       review[input.id] = entry;

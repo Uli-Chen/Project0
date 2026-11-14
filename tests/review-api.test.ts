@@ -82,3 +82,16 @@ test("回执存在请求回执表里，不随时间失效，也不写进资料",
   const row = db.$client.prepare("SELECT action, params_hash FROM request_receipts WHERE request_key='review:kept-forever'").get() as { action: string; params_hash: string };
   assert.deepEqual(row, { action: "review", params_hash: id });
 });
+
+test("之前版本记在资料里的回执：新评分后会转进回执表，旧请求重放仍只算一次", async () => {
+  const profile = JSON.parse(userById("u")!.profileJson);
+  profile.review[id] = { box: 2, due: new Date().toISOString(), graded: [["legacy-a", "good"]], key: "legacy-b", result: "again" };
+  db.$client.prepare("UPDATE users SET profile_json=? WHERE id='u'").run(JSON.stringify(profile));
+  const fresh = await grade({ id, result: "again", key: "after-switch" });
+  assert.equal(fresh.body.replayed, false); assert.equal(stored().box, 0);
+  assert.equal("graded" in stored(), false);
+  const replayA = await grade({ id, result: "again", key: "legacy-a" });
+  assert.equal(replayA.body.replayed, true); assert.equal(replayA.body.result, "good"); assert.equal(stored().box, 0);
+  const replayB = await grade({ id, result: "good", key: "legacy-b" });
+  assert.equal(replayB.body.replayed, true); assert.equal(replayB.body.result, "again"); assert.equal(stored().box, 0);
+});

@@ -89,11 +89,17 @@ export function dueItems(items: ReviewItem[], state: ReviewState, now = new Date
 /** One key per time a card is shown; a retry of the same grade reuses it. */
 export function presentationKey() { return crypto.randomUUID(); }
 
+/** Grades an earlier build recorded in the profile entry, as [presentation key, grade]. */
+export function legacyGrades(entry: ReviewEntry | undefined): [string, Grade][] {
+  if (!entry) return [];
+  const list: [string, Grade][] = (entry.graded ?? []).map(([key, grade]) => [key, grade]);
+  if (entry.key && entry.result && !list.some(([key]) => key === entry.key)) list.push([entry.key, entry.result]);
+  return list;
+}
 /** The grade an earlier build recorded in the profile for this presentation, if any. */
 export function legacyGrade(entry: ReviewEntry | undefined, key: string | undefined): Grade | null {
-  if (!entry || !key) return null;
-  const graded: [string, Grade, string?][] = entry.graded ?? (entry.key && entry.result ? [[entry.key, entry.result]] : []);
-  return graded.find(([seen]) => seen === key)?.[1] ?? null;
+  if (!key) return null;
+  return legacyGrades(entry).find(([seen]) => seen === key)?.[1] ?? null;
 }
 
 /** Apply one self-grade: the next schedule, without any of the legacy receipt fields. */
