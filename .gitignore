@@ -30,3 +30,6 @@ __pycache__/
 # Versioned synthetic tutor evaluation fixtures
 !data/coach-cases/
 !data/coach-cases/**
+
+# Reference snapshot of third-party exam questions. No licence: never commit or import.
+bank/
