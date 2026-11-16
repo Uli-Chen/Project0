@@ -3,8 +3,8 @@
 - **Author:** uli-chen（产品方向）；由 Claude Code 根据头脑风暴和 Goldfish 评审整理。
 - **Created:** 2026-11-03。
 - **Status:** RFC，修正草案 v2（2026-11-03）。原产品决定见 §13；已完成实现者第一轮静态审阅。新增的实现边界和试用阈值是本次修正建议，尚未实现、实测或授权上线。
-- **唯一依据：** 本文。[concepts_brief_tutor.md](../../concepts_brief_tutor.md) 是头脑风暴的过程记录，之后不再同步维护。
-- **评审输入：** [Goldfish 评审报告](../../goldfish_brainstorm_tutor.md)（2026-11-03，6 个视角，4 个阻断、19 个重要、12 个次要）。
+- **唯一依据：** 本文。头脑风暴的过程记录 `concepts_brief_tutor.md` 已于 2026-11-16 删除，需要时从 Git 历史（`tutor-style-tiers` 分支）查看。
+- **评审输入：** Goldfish 评审报告 `goldfish_brainstorm_tutor.md`（已删除，见 Git 历史；2026-11-03，6 个视角，4 个阻断、19 个重要、12 个次要）。
 
 ## 1. 目标与范围
 

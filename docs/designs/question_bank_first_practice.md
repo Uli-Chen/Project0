@@ -3,7 +3,7 @@
 - **Author:** uli-chen (product direction); initial brief compiled by Claude Code; revised with Codex team feedback.
 - **Created:** 2026-10-31. **Revised:** 2026-11-01.
 - **Status:** RFC, revised for team feedback; one independent revision-review round completed, with four follow-up defects fixed and confirmed closed (2026-11-01). The owner requested the review fixes and provisionally adopted the bank size and Quick limits on 2026-11-01. This specifies proposed behavior; it does not describe deployed features or authorize a production release.
-- **Current source of truth:** this RFC. `concepts_brief.md` remains the historical brainstorming input and is not maintained in parallel.
+- **Current source of truth:** this RFC. The historical brainstorming input `concepts_brief.md` was removed on 2026-11-16; see Git history.
 - **Review inputs:** [team review](../reviews/question_bank_first_practice_team_review_20261101.md). [Previous RFC snapshot](../reviews/question_bank_first_practice_rfc_before_20261101.md) retains the original Round 1/2 decisions and review history.
 
 ## 1. Current proposal and scope
