@@ -7,7 +7,7 @@ import { checkpoints, completionEvents, questions, familiarity, users } from "./
 import { isExposureUnknown } from "./practice-facts";
 import { createSession } from "../pipeline/initial";
 import { saveNewPractice } from "./create-practice";
-import { getSession } from "./queries/sessions";
+import { deleteSession, getSession } from "./queries/sessions";
 import { getRequestReceipt, writeRequestReceipt, ReceiptConflict } from "./request-receipts";
 import { SessionError } from "../pipeline/engine";
 import { checkpointState } from "../rules/checkpoint";
@@ -54,6 +54,43 @@ export function startCheckpoint(userId: string, input: {questionId: string; decl
   if("error" in result) throw new SessionError(result.error!,409,"checkpoint_ineligible");
   return result.session;
 }
+/** How long after starting a mock the learner may still say they have practised the question and swap it. */
+export const SWAP_WINDOW_MS = 5 * 60_000;
+
+/** "这道题我练过，换一道": records the question as practised elsewhere, removes the untouched attempt and
+ * starts a fresh 40 minutes on the next candidate. Only before anything is written and within the first
+ * five minutes, so a mock that has begun is never thrown away. A retry returns the session it started. */
+export function swapCheckpoint(userId: string, attemptId: string, idempotencyKey: string, now = new Date().toISOString()) {
+  if (!readFeatures().CHECKPOINTS_ENABLED) throw new SessionError("独立模考尚未开放。",403,"feature_disabled");
+  const db = getDb(), sqlite = db.$client, startKey = `${idempotencyKey}:start`;
+  const replay = (key: string, action: string) => {
+    const receipt = getRequestReceipt(sqlite,userId,key);
+    if (!receipt) return null;
+    if (receipt.action !== action || (action === "checkpoint_swap" && receipt.paramsHash !== attemptId)) throw new ReceiptConflict();
+    const session = getSession(userId,receipt.resultRef!);
+    if (!session) throw new SessionError("换的那次模考已删除。",409,"practice_deleted");
+    return session;
+  };
+  const done = replay(idempotencyKey,"checkpoint_swap") ?? replay(startKey,"checkpoint");
+  if (done) return done;
+  sqlite.transaction(() => {
+    const row = db.select().from(checkpoints).where(and(eq(checkpoints.userId,userId),eq(checkpoints.attemptId,attemptId),eq(checkpoints.status,"in_progress"))).get();
+    if (!row) throw new SessionError("这次模考已经结束，不能换题。",409,"checkpoint_closed");
+    const session = getSession(userId,attemptId);
+    if (!session) throw new SessionError("模考不存在。",404);
+    if (session.drafts.original.trim() || session.originalSubmittedAt) throw new SessionError("你已经开始写了，不能再换题。",409,"checkpoint_started");
+    if (Date.parse(now) - Date.parse(row.startedAt) > SWAP_WINDOW_MS) throw new SessionError("开考已超过 5 分钟，不能再换题。",409,"checkpoint_started");
+    db.insert(familiarity).values({userId,exposureKey:row.exposureKey,firstAttemptId:"external-declaration",externalPractice:"yes"}).onConflictDoUpdate({target:[familiarity.userId,familiarity.exposureKey],set:{externalPractice:"yes"}}).run();
+  }).immediate();
+  // The untouched attempt goes; it was never written, so it is not kept as a practice.
+  deleteSession(userId,attemptId);
+  const candidate = getCheckpointState(userId,now).candidateQuestionId;
+  if (!candidate) throw new SessionError("暂时没有你没练过的题，可以回到模考页改做普通模考。",409,"checkpoint_unavailable");
+  const session = startCheckpoint(userId,{questionId:candidate,declaration:"no",idempotencyKey:startKey},now);
+  writeRequestReceipt(sqlite,{userId,idempotencyKey,action:"checkpoint_swap",paramsHash:attemptId,attemptId:session.id,resultRef:session.id,createdAt:now});
+  return session;
+}
+
 export function deferCheckpoint(userId: string, now = new Date().toISOString()) {
   const db=getDb(); return db.$client.transaction(() => {
     const row=db.select().from(users).where(eq(users.id,userId)).get()!;

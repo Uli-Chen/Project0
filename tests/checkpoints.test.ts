@@ -9,7 +9,7 @@ import { importQuestions } from "../lib/db/import-questions";
 import { markNewUserScanned } from "../lib/db/migrate-0.4";
 import { users, completionEvents, familiarity } from "../lib/db/schema";
 import { catalog, requirements, evaluation } from "./helpers/practice-db";
-import { getCheckpointState, startCheckpoint, checkpointHistory, deferCheckpoint } from "../lib/db/checkpoints";
+import { getCheckpointState, startCheckpoint, checkpointHistory, deferCheckpoint, swapCheckpoint } from "../lib/db/checkpoints";
 import { createQuestionPractice } from "../lib/db/create-practice";
 import { deleteSession, saveSession, getSession } from "../lib/db/queries/sessions";
 import { commitPracticeCheckpoint } from "../lib/db/practice-facts";
@@ -42,3 +42,20 @@ test("checkpoint HTTP cookie auth, start, refresh deadline, skip and feature gat
 });
 
 test("external declaration during active checkpoint disqualifies completion; frozen start evidence retained",()=>{const id=user(),s=start(id),before=checkpointHistory(id)[0];const evidence=JSON.parse(before.startEvidenceJson);assert.ok(evidence.questionVersion);assert.ok(evidence.bankVersion);assert.ok(evidence.aliasVersion);assert.equal(evidence.priorAppAttempt,false);assert.throws(()=>startCheckpoint(id,{questionId:s.question!.id,declaration:"unsure",idempotencyKey:crypto.randomUUID()},now));s.submitted.original="essay";commitPracticeCheckpoint(db.$client,id,s,"acceptOriginal",v=>saveSession(id,v),now);s.stage="feedback";s.evaluation=evaluation;commitPracticeCheckpoint(db.$client,id,s,"completeOriginal",v=>saveSession(id,v),now);assert.equal(checkpointHistory(id)[0].status,"ineligible");assert.equal(checkpointHistory(id)[0].startEvidenceJson,before.startEvidenceJson);});
+
+test("这道题练过就换一道：没动笔、开考 5 分钟内才能换；旧的那次删除，记为练过，新题重新计时，重放返回同一次",()=>{
+ const id=user(),first=start(id),startedAt=checkpointHistory(id).find(c=>c.attemptId===first.id)!.startedAt;
+ const at=new Date(Date.parse(startedAt)+60_000).toISOString();
+ const next=swapCheckpoint(id,first.id,"swap-1",at);
+ assert.notEqual(next.id,first.id);assert.notEqual(next.question!.id,first.question!.id);
+ assert.equal(getSession(id,first.id),null);
+ assert.equal(checkpointHistory(id).find(c=>c.attemptId===first.id)!.status,"abandoned");
+ assert.equal(db.select().from(familiarity).all().some(f=>f.userId===id&&f.exposureKey===first.question!.exposureKey&&f.externalPractice==="yes"),true);
+ assert.equal(checkpointHistory(id).find(c=>c.attemptId===next.id)!.status,"in_progress");
+ assert.equal(swapCheckpoint(id,first.id,"swap-1",at).id,next.id,"a retry returns the swap it made");
+ const written=getSession(id,next.id)!;written.drafts.original="I partly agree.";saveSession(id,written);
+ assert.throws(()=>swapCheckpoint(id,next.id,"swap-2",at),/开始写了/);
+ written.drafts.original="";saveSession(id,written);
+ const late=new Date(Date.parse(checkpointHistory(id).find(c=>c.attemptId===next.id)!.startedAt)+6*60_000).toISOString();
+ assert.throws(()=>swapCheckpoint(id,next.id,"swap-3",late),/5 分钟/);
+});
