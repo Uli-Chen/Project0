@@ -693,7 +693,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
             {childGone && <DropdownMenuItem disabled={transitioning} onClick={() => void continueDeep(true)}>明确另开一次练习</DropdownMenuItem>}
             {active && <DropdownMenuItem disabled={transitioning} onClick={() => void lifecycle("setAside")}>先放一放</DropdownMenuItem>}
             <DropdownMenuSeparator />
-            <DropdownMenuItem render={<Link href="/cards?tab=cards&drafts=true" onNavigate={e => allowNavigation(e, "/cards?tab=cards&drafts=true")} />}>全部卡片</DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/ideas?status=all" onNavigate={e => allowNavigation(e, "/ideas?status=all")} />}>全部卡片</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         <Button size="sm" disabled={!active || transitioning || (running && !passed) || (!passed && checksLeft === 0)} onClick={() => passed ? void continueDeep() : void model("quickCheck")}>
