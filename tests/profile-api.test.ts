@@ -33,3 +33,15 @@ test("an ended weeks plan kept unchanged can still be saved with other settings;
   const moved = await patch({ ...ended, examDate: "2026-10-01" });
   assert.equal(moved.status, 400);
 });
+
+test("the goal form needs only the target, the exam time and the weekly count", async () => {
+  const goal = { target: "7.0", timeBy: "weeks", weeks: "8", examDate: "", perWeek: "3", explainLanguage: "zh", onboardingCompleted: true };
+  db.update(users).set({ profileJson: "{}" }).run();
+  const saved = await patch(goal);
+  assert.equal(saved.status, 200, await saved.clone().text());
+  assert.equal((await saved.json()).user.profile.explainLanguage, "zh");
+  db.update(users).set({ profileJson: "{}" }).run();
+  assert.equal((await patch({ ...goal, perWeek: undefined })).status, 400);
+  db.update(users).set({ profileJson: "{}" }).run();
+  assert.equal((await patch({ ...goal, weeks: "" })).status, 400);
+});

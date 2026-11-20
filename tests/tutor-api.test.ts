@@ -31,14 +31,13 @@ const valid=(extra:Record<string,unknown>={})=>({move:"ask",reply:"What conseque
 const response=(value:unknown)=>new Response(JSON.stringify({choices:[{finish_reason:"stop",message:{content:JSON.stringify(value)}}],usage:{prompt_tokens:10,completion_tokens:20}}));
 beforeEach(()=>{process.env.TUTOR_V2_ENABLED="true";profile();globalThis.fetch=async()=>{throw new Error("unexpected fetch");};});
 after(()=>{globalThis.fetch=originalFetch;db.$client.close();rmSync(directory,{recursive:true,force:true});});
-for(const change of [{difficulties:[]},{difficulties:["changed"]},{excludedMemoryIds:["self:没想法"]}]) test(`late source mutation ${JSON.stringify(change)} rejects without committing teaching state`,async()=>{
- const s=state(), before=getSession("owner",s.id)!;let release!:()=>void, started!:()=>void;
+test("tutor requests carry only the explanation language; a late difficulty change no longer invalidates the turn",async()=>{
+ const s=state();let release!:()=>void, started!:()=>void, body="";
  const waiting=new Promise<void>(r=>{release=r;}), entered=new Promise<void>(r=>{started=r;});
- globalThis.fetch=async()=>{started();await waiting;return response(valid());};
- const pending=call(s.id,{action:"prewrite",text:"My original idea",requestId:crypto.randomUUID()});await entered;profile(change);release();
- const result=await pending;assert.equal(result.status,409);const body=await result.json();
- assert.equal(body.session.pendingAction.retryable,false);assert.equal(body.session.pendingAction.input.text,"My original idea");
- assert.deepEqual(body.session.tutor,before.tutor);assert.deepEqual(body.session.messages,before.messages);assert.deepEqual(body.session.outline,before.outline);
+ globalThis.fetch=async(_url,init)=>{body=String(init?.body);started();await waiting;return response(valid());};
+ const pending=call(s.id,{action:"prewrite",text:"My original idea",requestId:crypto.randomUUID()});await entered;profile({difficulties:["changed"],excludedMemoryIds:["self:没想法"]});release();
+ const result=await pending;assert.equal(result.status,200);
+ const sent=JSON.parse(JSON.parse(body).messages[1].content);assert.deepEqual(sent.learner,{explainLanguage:"en"});
 });
 test("same request retries frozen language/path after preference and feature changes; fresh request uses new config",async()=>{
  const s=state(), requestId=crypto.randomUUID();const input={action:"prewrite",text:"My idea",requestId};

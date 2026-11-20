@@ -25,8 +25,8 @@ export async function PATCH(request: Request) {
     // A past date is only refused when it is new: an ended plan that is kept unchanged can still be saved.
     const storedDate = (raw as { examDate?: unknown }).examDate;
     if (patch.examDate && patch.examDate < today && patch.examDate !== storedDate) throw new AuthError("考试日期不能早于今天。", 400);
-    if (profile.onboardingCompleted && (!profile.target || !profile.level || !profile.perWeek || !profile.minutes || !profile.difficulties.length || !profile.lang || !(profile.timeBy === "date" ? profile.examDate : profile.weeks || profile.examDate))) {
-      throw new AuthError("请先填写完整的学习目标与练习偏好。", 400);
+    if (profile.onboardingCompleted && (!profile.target || !profile.perWeek || !(profile.timeBy === "date" ? profile.examDate : profile.weeks || profile.examDate))) {
+      throw new AuthError("请先填写目标分、考试时间和每周练习次数。", 400);
     }
     const updated = updateUserProfile(user.id, profile, name);
     return Response.json({ user: updated });

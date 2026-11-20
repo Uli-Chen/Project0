@@ -39,8 +39,8 @@ export async function runTutorAction(state: SessionState, input: AgentAction, pr
   }
   let tutor: TutorState;
   try { tutor = readTutorState(state.tutor) ?? emptyTutor(); } catch { console.error("Invalid tutor state; preserved"); throw new SessionError("这个练习的教学状态需要新版本，请刷新页面。", 409, "tutor_stale"); }
-  const excluded = new Set(profile?.excludedMemoryIds ?? []);
-  const learner = { target: profile?.target, difficulties: profile?.difficulties.filter(d => !excluded.has(`self:${d}`)), explainLanguage: execution.explainLanguage };
+  // The goal form no longer collects difficulties, and no prompt reads the target: send only the language.
+  const learner = { explainLanguage: execution.explainLanguage };
   const allStudent = state.messages.filter(m => m.role === "user" && m.action !== "hint").map(m => m.content);
   const student = "text" in input ? input.text ?? "" : "";
   if (student && !(input.action === "prewrite" && input.intent === "more")) allStudent.push(student);

@@ -46,11 +46,16 @@ export function learningSummary(sessions: SessionState[], profile: UserProfile, 
   const taipeiNow = new Date(Date.now() + 8 * 60 * 60 * 1000);
   const weekStart = new Date(Date.UTC(taipeiNow.getUTCFullYear(), taipeiNow.getUTCMonth(), taipeiNow.getUTCDate() - (taipeiNow.getUTCDay() + 6) % 7) - 8 * 60 * 60 * 1000);
   const weekCompleted = completionEvents ? practiceCounts(completionEvents, new Date()).weekCompleted : sessions.filter((session) => session.completedAt && new Date(session.completedAt) >= weekStart && new Date(session.completedAt).getTime() < weekStart.getTime() + 7 * 86400000).length;
-  const examPassed = Boolean(profile.examDate) && weeks === 0;
-  // Only a date counts down. A profile that has just a week count shows it as the plan's length.
-  const countsDown = Boolean(profile.examDate);
-  const timeLeft = examPassed ? "考试日期已过" : countsDown ? `还有 ${weeks} 周` : `计划备考 ${weeks} 周`;
+  const { examPassed, countsDown, timeLeft } = examTime(profile);
   return { evaluated, finished, resume, latest, totalMinutes, target, weeks, countsDown, timeLeft, focus, weekCompleted, examPassed };
+}
+
+/** How the time to the exam reads: only a date counts down; a profile that has just a week count shows it as the plan's length. */
+export function examTime(profile: Pick<UserProfile, "timeBy" | "examDate" | "weeks">, now = new Date()) {
+  const weeks = weeksLeft(profile, now);
+  const examPassed = Boolean(profile.examDate) && weeks === 0;
+  const countsDown = Boolean(profile.examDate);
+  return { examPassed, countsDown, timeLeft: examPassed ? "考试日期已过" : countsDown ? `还有 ${weeks} 周` : `计划备考 ${weeks} 周` };
 }
 
 const WEEK = 7 * 86400000;
@@ -104,13 +109,6 @@ export function buildMemory(sessions: SessionState[], profile: UserProfile): Mem
         });
       }
     }
-  }
-  for (const difficulty of profile.difficulties ?? []) {
-    const id = `self:${difficulty}`;
-    items.set(id, { id, kind: "self_report", code: null, summary: difficulty, status: null, seen: 0, checked: 0, evidence: null, topicTags: [] });
-  }
-  if (profile.lang) {
-    items.set("preference:lang", { id: "preference:lang", kind: "preference", code: null, summary: profile.lang === "zh" ? "习惯先用中文整理思路，再写英文" : "习惯直接用英文构思", status: null, seen: 0, checked: 0, evidence: null, topicTags: [] });
   }
   return [...items.values()].map((item) => ({ ...item, deleted: profile.excludedMemoryIds?.includes(item.id) ?? false }));
 }

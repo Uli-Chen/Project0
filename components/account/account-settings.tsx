@@ -11,6 +11,7 @@ import { StatusButton, type AsyncStatus } from "@/components/ui/status-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { CurrentUser } from "@/lib/auth/types";
+import { examTime } from "@/lib/learning/summary";
 
 async function send(url: string, body: unknown, method = "POST") {
   const response = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -80,7 +81,7 @@ export function AccountSettings({ user, tutorV2Enabled = false, privacyVisible =
       </Row>
       <Row title="目标与节奏">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">{user.profile.onboardingCompleted ? <span className="font-medium text-foreground tabular-nums">{user.profile.target} 分 · 每周 {user.profile.perWeek} 次 · {user.profile.minutes} 分钟</span> : "未设置"}</p>
+          <p className="text-sm text-muted-foreground">{user.profile.onboardingCompleted ? <span className="font-medium text-foreground tabular-nums">{user.profile.target} 分 · 每周 {user.profile.perWeek} 次 · {examTime(user.profile).timeLeft}</span> : "未设置"}</p>
           <Link href="/onboarding" className={buttonVariants({ variant: "outline" })}>{user.profile.onboardingCompleted ? "修改" : "设置"}<ChevronRight /></Link>
         </div>
       </Row>
@@ -134,8 +135,8 @@ function LearningPreferences({ user }: { user: CurrentUser }) {
   const [busy, setBusy] = useState(false), [message, setMessage] = useState(""), [error, setError] = useState("");
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); const data = new FormData(event.currentTarget); setBusy(true); setError(""); setMessage("");
-    try { await send("/api/profile", { explainLanguage: data.get("explainLanguage"), lang: data.get("lang"), nudgesDefault: data.get("nudgesDefault") === "on" }, "PATCH"); setMessage("已保存，下次新请求生效。段落提醒偏好仅影响新建练习。"); }
+    try { await send("/api/profile", { explainLanguage: data.get("explainLanguage"), nudgesDefault: data.get("nudgesDefault") === "on" }, "PATCH"); setMessage("已保存，下次新请求生效。段落提醒偏好仅影响新建练习。"); }
     catch (e) { setError(e instanceof Error ? e.message : "保存失败"); } finally { setBusy(false); }
   }
-  return <form onSubmit={save} onChange={() => setMessage("")} className="flex max-w-sm flex-col gap-4"><label className="text-sm">讲解语言<select name="explainLanguage" defaultValue={user.profile.explainLanguage === "zh" ? "zh" : "en"} disabled={busy} className="ml-3 rounded border bg-background p-2"><option value="en">English（默认）</option><option value="zh">中文</option></select></label><label className="text-sm">写作思考语言<select name="lang" defaultValue={user.profile.lang ?? "zh"} disabled={busy} className="ml-3 rounded border bg-background p-2"><option value="zh">中文</option><option value="en">英文</option></select></label><label className="text-sm"><input type="checkbox" name="nudgesDefault" defaultChecked={user.profile.nudgesDefault !== false} disabled={busy} className="mr-2" />新建练习开启段落提醒</label><Status error={error} message={message} /><StatusButton type="submit" variant="outline" className="self-start" status={statusOf(busy, message, error)} successLabel="已保存" errorLabel="重试">保存偏好</StatusButton></form>;
+  return <form onSubmit={save} onChange={() => setMessage("")} className="flex max-w-sm flex-col gap-4"><label className="text-sm">讲解语言<select name="explainLanguage" defaultValue={user.profile.explainLanguage === "en" ? "en" : "zh"} disabled={busy} className="ml-3 rounded border bg-background p-2"><option value="zh">中文</option><option value="en">English</option></select></label><label className="text-sm"><input type="checkbox" name="nudgesDefault" defaultChecked={user.profile.nudgesDefault !== false} disabled={busy} className="mr-2" />新建练习开启段落提醒</label><Status error={error} message={message} /><StatusButton type="submit" variant="outline" className="self-start" status={statusOf(busy, message, error)} successLabel="已保存" errorLabel="重试">保存偏好</StatusButton></form>;
 }

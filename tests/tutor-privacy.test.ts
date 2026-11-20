@@ -30,7 +30,7 @@ test("privacy page excludes maintenance notes and appendices but keeps publicati
 test("new preference validation and effective values preserve unknown stored fields", () => {
  assert.equal(profilePatchSchema.safeParse({explainLanguage:"fr"}).success,false);
  assert.equal(profilePatchSchema.safeParse({explainLanguage:null,nudgesDefault:false}).success,true);
- for(const [stored,effective] of [[null,"en"],["en","en"],["zh","zh"],["future","en"]] as const) {
+ for(const [stored,effective] of [[null,"zh"],["en","en"],["zh","zh"],["future","zh"]] as const) {
   const row={id:"u",email:"u@test.invalid",name:"U",passwordHash:"x",createdAt:"now",updatedAt:"now",profileJson:JSON.stringify({explainLanguage:stored,nudgesDefault:false,extra:"keep"})};
   const before=row.profileJson; assert.equal(publicUser(row).profile.explainLanguage,effective);
   assert.equal(publicUser(row).profile.nudgesDefault,false); assert.equal(row.profileJson,before);

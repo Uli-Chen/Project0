@@ -1,7 +1,6 @@
 "use client";
 
 import { RotateCcw, X } from "lucide-react";
-import Link from "next/link";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,6 @@ export function IssueMemory({ initial, excludedMemoryIds }: { initial: MemoryIte
   const issues = items.filter((item) => item.kind === "thinking");
   const active = issues.filter((item) => !item.deleted).sort((a, b) => b.seen - a.seen);
   const removed = issues.filter((item) => item.deleted);
-  const notes = items.filter((item) => item.kind !== "thinking" && !item.deleted);
 
   const pending = useRef(false);
 
@@ -42,7 +40,7 @@ export function IssueMemory({ initial, excludedMemoryIds }: { initial: MemoryIte
   }
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_240px]">
+    <div>
       <div className="min-w-0">
         {active.length === 0 ? <p className="py-10 text-sm text-muted-foreground">评估后的问题会出现在这里</p> : (
           <Table className="table-fixed">
@@ -83,11 +81,6 @@ export function IssueMemory({ initial, excludedMemoryIds }: { initial: MemoryIte
           </details>
         )}
       </div>
-      <aside>
-        <h3 className="text-[14px] text-muted-foreground">偏好与难点</h3>
-        {notes.length ? <ul className="mt-2.5 flex flex-col gap-2 text-[14px]">{notes.map((item) => <li key={item.id}>{item.summary}</li>)}</ul> : <p className="mt-2.5 text-[14px] text-muted-foreground">未填写</p>}
-        <Link href="/onboarding" className="mt-3 inline-block text-[14px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">修改</Link>
-      </aside>
     </div>
   );
 }

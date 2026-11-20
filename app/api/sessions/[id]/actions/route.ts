@@ -1,4 +1,4 @@
-import { executionFor, tutorActions, sourcesStillValid } from "@/lib/tutor/execution";
+import { executionFor, tutorActions } from "@/lib/tutor/execution";
 import { publicUser, userById } from "@/lib/db/queries/users";
 import { runQuickModel } from "@/lib/pipeline/quick-model";
 import { quickModelActionSchema } from "@/lib/quick/schemas";
@@ -66,10 +66,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       persist(current);
       const acceptedVersion = current.version;
       const acceptedTutor = JSON.stringify(current.tutor);
-      const usedDifficulties = profile.difficulties.filter(d => !profile.excludedMemoryIds.includes(`self:${d}`));
       const beforeTutorCommit = () => {
-        const latest = getSession(user.id, id), row = userById(user.id);
-        if (!latest || !row || latest.version !== acceptedVersion || JSON.stringify(latest.tutor) !== acceptedTutor || !sourcesStillValid(usedDifficulties, publicUser(row).profile)) throw new SessionError("设置已更改，请重新发送。你的文字已保留。", 409, "tutor_stale");
+        const latest = getSession(user.id, id);
+        if (!latest || !userById(user.id) || latest.version !== acceptedVersion || JSON.stringify(latest.tutor) !== acceptedTutor) throw new SessionError("设置已更改，请重新发送。你的文字已保留。", 409, "tutor_stale");
       };
       try {
         const session = await withModelAdmission(user.id, () => runAction(current, input, (state, event) => event ? commitPracticeCheckpoint(getDb().$client, user.id, state, event, persist) : persist(state), input.action === "finish" ? listSessions(user.id) : [], profile, { userId: user.id, operationId: requestId, beforeTutorCommit }));

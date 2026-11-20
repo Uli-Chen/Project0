@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusButton } from "@/components/ui/status-button";
 import { Segmented } from "@/components/ui/segmented";
@@ -10,11 +10,12 @@ import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/lib/auth/types";
 import { examDateToSave, weeksLeft } from "@/lib/learning/summary";
 
-const DIFFICULTIES = ["没想法", "想法说不清", "英文表达不出来", "语法错误多", "写不完"];
+const BAND_MIN = 5, BAND_MAX = 9, BAND_STEP = 0.5, BAND_DEFAULT = "7.0";
+type MissingField = "exam" | "perWeek";
 
 export function OnboardingForm({ initial }: { initial: UserProfile }) {
   const router = useRouter();
-  const [target, setTarget] = useState(initial.target);
+  const [target, setTarget] = useState(initial.target ?? BAND_DEFAULT);
   const [timeBy, setTimeBy] = useState(initial.timeBy);
   const [examDate, setExamDate] = useState(initial.examDate);
   // Weeks are stored as the date they end on; show what is left of them, not the number first typed.
@@ -22,19 +23,34 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
   const [weeks, setWeeks] = useState(() => initial.timeBy === "weeks" && initial.examDate ? (weeksLeft(initial) > 0 ? String(weeksLeft(initial)) : "") : initial.weeks);
   // Saving without touching the week count keeps the plan's end date where it is.
   const [weeksChanged, setWeeksChanged] = useState(false);
-  const [level, setLevel] = useState(initial.level);
   const [perWeek, setPerWeek] = useState(initial.perWeek);
-  const [minutes, setMinutes] = useState(initial.minutes);
-  const [difficulties, setDifficulties] = useState<string[]>(initial.difficulties);
-  const [lang, setLang] = useState(initial.lang);
+  const [explainLanguage, setExplainLanguage] = useState<"zh" | "en">(initial.explainLanguage === "en" ? "en" : "zh");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Missing fields are flagged only after the learner tries to save, at the field itself.
+  const [attempted, setAttempted] = useState(false);
+  const examRef = useRef<HTMLDivElement>(null), perWeekRef = useRef<HTMLDivElement>(null);
+
+  // An ended weeks plan that the learner leaves untouched keeps its date, so other settings can still be saved.
+  const keepsPlan = initial.timeBy === "weeks" && !!initial.examDate && !weeksChanged;
+  const missing: MissingField[] = [
+    ...(!(timeBy === "date" ? examDate : weeks || keepsPlan) ? ["exam" as const] : []),
+    ...(!perWeek ? ["perWeek" as const] : []),
+  ];
+  const flagged = (field: MissingField) => attempted && missing.includes(field);
 
   async function save() {
-    if (missing.length || busy) return;
+    if (busy) return;
+    if (missing.length) {
+      setAttempted(true);
+      const first = missing[0] === "exam" ? examRef.current : perWeekRef.current;
+      first?.scrollIntoView({ behavior: "smooth", block: "center" });
+      first?.querySelector<HTMLElement>("input, [role=radio][tabindex='0']")?.focus({ preventScroll: true });
+      return;
+    }
     setBusy(true); setError("");
     try {
-      const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, timeBy, examDate: examDateToSave(initial, { timeBy, examDate, weeks, weeksChanged }), weeks: timeBy === "weeks" ? weeks : "", level, perWeek, minutes, difficulties, lang, onboardingCompleted: true }) });
+      const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, timeBy, examDate: examDateToSave(initial, { timeBy, examDate, weeks, weeksChanged }), weeks: timeBy === "weeks" ? weeks : "", perWeek, explainLanguage, onboardingCompleted: true }) });
       const data = await response.json();
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "保存失败，请检查填写内容。");
       router.push("/");
@@ -42,33 +58,16 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
     } catch (error) { setError(error instanceof Error ? error.message : "网络连接失败，请重试。"); setBusy(false); }
   }
 
-  // An ended weeks plan that the learner leaves untouched keeps its date, so other settings can still be saved.
-  const keepsPlan = initial.timeBy === "weeks" && !!initial.examDate && !weeksChanged;
-  const missing = [
-    !target && "目标分",
-    !(timeBy === "date" ? examDate : weeks || keepsPlan) && "备考时间",
-    !level && "目前水平",
-    !perWeek && "每周次数",
-    !minutes && "每次时长",
-    difficulties.length === 0 && "最难的地方",
-    !lang && "写作习惯",
-  ].filter(Boolean) as string[];
-
   return (
     <div className="max-w-[680px]">
       <h1 className="page-heading">{initial.onboardingCompleted ? "目标与节奏" : "设置目标"}</h1>
 
-      <form aria-busy={busy} className="surface mt-8 flex flex-col p-6 sm:p-8" onSubmit={(event) => { event.preventDefault(); void save(); }}>
-        <fieldset disabled={busy} className="flex min-w-0 flex-col gap-7">
+      <form aria-busy={busy} noValidate className="surface mt-8 flex flex-col p-6 sm:p-8" onSubmit={(event) => { event.preventDefault(); void save(); }}>
+        <fieldset disabled={busy} className="flex min-w-0 flex-col gap-8">
           <Field label="目标分">
-            <Segmented
-              ariaLabel="目标分"
-              value={target}
-              onChange={setTarget}
-              options={["5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0"].map((v) => ({ value: v, label: v }))}
-            />
+            <BandSlider value={target} onChange={setTarget} />
           </Field>
-          <Field label="还有多久考试">
+          <Field label="还有多久考试" ref={examRef} problem={flagged("exam") ? "选一个考试日期，或者填准备周数" : undefined}>
             <Segmented
               ariaLabel="备考时间设置方式"
               size="sm"
@@ -81,72 +80,35 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
             />
             <div className="mt-3">
               {timeBy === "date" ? (
-                <input aria-label="考试日期" type="date" required min={examDate && examDate === initial.examDate ? undefined : new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" })} value={examDate} onChange={(e) => setExamDate(e.target.value)} className={inputClass} />
+                <input aria-label="考试日期" aria-invalid={flagged("exam")} type="date" min={examDate && examDate === initial.examDate ? undefined : new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" })} value={examDate} onChange={(e) => setExamDate(e.target.value)} className={cn(inputClass, flagged("exam") && invalidClass)} />
               ) : (
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="number"
                     aria-label="准备周数"
-                    required={!keepsPlan}
+                    aria-invalid={flagged("exam")}
                     min={1}
                     max={52}
                     value={weeks}
                     onChange={(e) => { setWeeks(e.target.value); setWeeksChanged(true); }}
-                    className={cn(inputClass, "w-24")}
+                    className={cn(inputClass, "w-24", flagged("exam") && invalidClass)}
                   />
                   周
                 </label>
               )}
             </div>
           </Field>
-          <Field label="目前的写作水平">
-            <Segmented
-              ariaLabel="目前的写作水平"
-              value={level}
-              onChange={setLevel}
-              options={["未考过", "5 左右", "6 左右", "6.5 以上"].map((v) => ({ value: v, label: v }))}
-            />
-          </Field>
-          <Field label="写作时最难的地方" hint="可多选">
-            <div className="flex flex-wrap gap-2">
-              {DIFFICULTIES.map((d) => {
-                const on = difficulties.includes(d);
-                return (
-                  <button
-                    key={d}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => setDifficulties((list) => (on ? list.filter((x) => x !== d) : [...list, d]))}
-                    className={cn(
-                      "h-8 rounded-full border px-3.5 text-[14px] transition-colors",
-                      on ? "border-primary bg-primary text-primary-foreground" : "bg-sheet text-foreground/80 hover:border-faint",
-                    )}
-                  >
-                    {d}
-                  </button>
-                );
-              })}
-            </div>
-          </Field>
-          <Field label="每周练几次">
+          <Field label="每周练几次" ref={perWeekRef} problem={flagged("perWeek") ? "选每周练几次" : undefined}>
             <Segmented ariaLabel="每周练习次数" value={perWeek} onChange={setPerWeek} options={["1", "2", "3", "4", "5", "6", "7"].map((v) => ({ value: v, label: v }))} />
           </Field>
-          <Field label="每次多长时间">
+          <Field label="教练讲解用">
             <Segmented
-              ariaLabel="每次练习时长"
-              value={minutes}
-              onChange={setMinutes}
-              options={["30", "45", "60", "90"].map((v) => ({ value: v, label: `${v} 分钟` }))}
-            />
-          </Field>
-          <Field label="想观点时你更习惯">
-            <Segmented
-              ariaLabel="写作思考语言"
-              value={lang}
-              onChange={setLang}
+              ariaLabel="教练讲解语言"
+              value={explainLanguage}
+              onChange={setExplainLanguage}
               options={[
-                { value: "zh", label: "先用中文想，再写英文" },
-                { value: "en", label: "尽量直接用英文" },
+                { value: "zh", label: "中文" },
+                { value: "en", label: "English" },
               ]}
             />
           </Field>
@@ -154,29 +116,56 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
 
         {error && <p role="alert" className="mt-6 rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
         <div className="mt-8 flex flex-wrap items-center gap-3 border-t pt-6">
-          <StatusButton type="submit" variant="default" size="lg" status={busy ? "pending" : "idle"} pendingLabel="正在保存" disabled={missing.length > 0}>
+          <StatusButton type="submit" variant="default" size="lg" status={busy ? "pending" : "idle"} pendingLabel="正在保存">
             保存
           </StatusButton>
           <Link href="/" className={buttonVariants({ variant: "ghost", size: "lg" })}>
             {initial.onboardingCompleted ? "取消" : "稍后"}
           </Link>
         </div>
-        {missing.length > 0 && <p className="mt-3 text-[14px] text-muted-foreground">还需要填写：{missing.join("、")}</p>}
       </form>
     </div>
   );
 }
 
 const inputClass = "h-8 rounded-lg border border-input bg-sheet px-3 text-[14px] tabular-nums outline-none focus:border-primary/60";
+const invalidClass = "border-warn focus:border-warn";
+const ticks = [5, 6, 7, 8, 9];
+const position = (band: number) => (band - BAND_MIN) / (BAND_MAX - BAND_MIN);
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function BandSlider({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const band = Number(value);
   return (
-    <div role="group" aria-label={label}>
-      <p className="mb-2.5 text-sm text-foreground/80">
-        {label}
-        {hint && <span className="ml-2 text-[14px] text-muted-foreground">{hint}</span>}
-      </p>
+    <div className="max-w-[440px]">
+      <p className="text-[40px] leading-none font-semibold tracking-[-0.03em] tabular-nums" aria-hidden>{band.toFixed(1)}</p>
+      <input
+        type="range"
+        aria-label="目标分"
+        aria-valuetext={`${band.toFixed(1)} 分`}
+        min={BAND_MIN}
+        max={BAND_MAX}
+        step={BAND_STEP}
+        value={band}
+        onChange={(event) => onChange(Number(event.target.value).toFixed(1))}
+        className="band-slider mt-4 block"
+        style={{ "--p": position(band) } as React.CSSProperties}
+      />
+      {/* Labels sit under the thumb's centre at each whole band. */}
+      <div className="relative mt-2 h-5 text-[13px] text-muted-foreground tabular-nums" aria-hidden>
+        {ticks.map((tick) => (
+          <span key={tick} className="absolute -translate-x-1/2" style={{ left: `calc(0.625rem + (100% - 1.25rem) * ${position(tick)})` }}>{tick}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, problem, children, ref }: { label: string; problem?: string; children: React.ReactNode; ref?: React.Ref<HTMLDivElement> }) {
+  return (
+    <div role="group" aria-label={label} ref={ref}>
+      <p className="mb-2.5 text-sm text-foreground/80">{label}</p>
       {children}
+      {problem && <p role="alert" className="mt-2 text-sm text-warn">{problem}</p>}
     </div>
   );
 }
