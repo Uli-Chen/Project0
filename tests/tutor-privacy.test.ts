@@ -22,9 +22,9 @@ test("backup retention deletes only expired own regular files, never arbitrary f
   assert.deepEqual((await readdir(dir)).sort(),[recent,link,"important.db"].sort());
  } finally { await rm(dir,{recursive:true,force:true}); }
 });
-test("privacy page excludes maintenance notes and appendices but keeps publication blockers", () => {
+test("privacy page excludes maintenance notes and appendices, and is published with nothing left open", () => {
  const text=privacyNotice();
- assert.match(text,/AI 调用内容/); assert.match(text,/【待定/);
+ assert.match(text,/AI 调用内容/); assert.doesNotMatch(text,/【待定/); assert.match(text,/help@auglearn\.org/);
  assert.doesNotMatch(text,/维护说明|附录（维护用|说法与代码依据/);
 });
 test("new preference validation and effective values preserve unknown stored fields", () => {
