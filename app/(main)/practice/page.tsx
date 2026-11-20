@@ -11,11 +11,14 @@ import { libraryEntryState } from "@/lib/learning/library";
 import { pickQuestion, type QuestionPick } from "@/lib/rules/pick-question";
 import { PracticeRecords, type PracticeRecord } from "@/components/practice/practice-records";
 import { QuestionBank, type BankQuestion } from "@/components/practice/question-bank";
+import { BankFilters, type FilterGroup } from "@/components/practice/bank-filters";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "练习" };
 
-type Params = { tab?: string; type?: string; topic?: string };
+type Params = { tab?: string; type?: string; topic?: string; done?: string };
+// Practised or not: unpractised questions by default.
+const DONE: [string | null, string][] = [[null, "没练过"], ["yes", "练过"], ["all", "全部"]];
 
 /** 练习: the question bank filtered by question type and topic, and every practice so far. */
 export default async function PracticePage({ searchParams }: { searchParams: Promise<Params> }) {
@@ -46,43 +49,33 @@ export default async function PracticePage({ searchParams }: { searchParams: Pro
   const all = practice.map((q) => bankQuestion(q, data, sessions));
   const type = params.type && questionTypeLabels[params.type] ? params.type : null;
   const topic = params.topic && data.topics.some((t) => t.topic === params.topic) ? params.topic : null;
-  const shown = all.filter((_, i) => (!type || practice[i].questionType === type) && (!topic || practice[i].primaryTopic === topic));
+  const done = params.done === "yes" || params.done === "all" ? params.done : null;
+  const shown = all.filter((q, i) => (!type || practice[i].questionType === type) && (!topic || practice[i].primaryTopic === topic) && (done === "all" || (done === "yes") === (q.status !== "new")));
   const picked = pickQuestion(data.questions, data.completions, data.attempts);
   const pickedQuestion = picked && all.find((q) => q.id === picked.questionId);
   const pick = picked && pickedQuestion ? { question: pickedQuestion, reason: pickReason(picked, data.questions.find((q) => q.id === picked.questionId)!) } : null;
-  const href = (next: { type?: string | null; topic?: string | null }) => {
-    const query = new URLSearchParams(Object.entries({ type, topic, ...next }).filter((entry): entry is [string, string] => !!entry[1]));
+  const href = (next: { type?: string | null; topic?: string | null; done?: string | null }) => {
+    const query = new URLSearchParams(Object.entries({ type, topic, done, ...next }).filter((entry): entry is [string, string] => !!entry[1]));
     return query.size ? `/practice?${query}` : "/practice";
   };
-
-  const filters = (
-    <div className="flex flex-col gap-3">
-      <FilterRow label="题型" options={Object.entries(questionTypeLabels)} active={type} href={(value) => href({ type: value })} />
-      <FilterRow label="话题" options={data.topics.map((t) => [t.topic, topicLabels[t.topic] ?? t.topic])} active={topic} href={(value) => href({ topic: value })} />
-    </div>
-  );
+  const group = (label: string, key: "type" | "topic" | "done", options: [string | null, string][], active: string | null): FilterGroup => ({ label, options: options.map(([value, name]) => ({ label: name, href: href({ [key]: value }), active: active === value })) });
+  const groups = [
+    group("题型", "type", [[null, "全部"], ...Object.entries(questionTypeLabels)], type),
+    group("话题", "topic", [[null, "全部"], ...data.topics.map((t): [string, string] => [t.topic, topicLabels[t.topic] ?? t.topic])], topic),
+    group("状态", "done", DONE, done),
+  ];
 
   return (
     <div className="flex flex-col">
       <h1 className="page-heading">练习</h1>
-      <QuestionBank tabs={tabs} filters={filters} questions={shown} pick={pick} quickEnabled={features.QUICK_ENABLED} />
+      <div className="mt-8 border-b">{tabs}</div>
+      <QuestionBank filters={<BankFilters groups={groups} />} questions={shown} pick={pick} quickEnabled={features.QUICK_ENABLED} />
     </div>
   );
 }
 
 function TabLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
   return <Link href={href} aria-current={active ? "page" : undefined} className={cn("-mb-px border-b-2 pb-3 text-[16px] transition-colors", active ? "border-foreground font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}>{children}</Link>;
-}
-
-function FilterRow({ label, options, active, href }: { label: string; options: [string, string][]; active: string | null; href: (value: string | null) => string }) {
-  const chip = (selected: boolean) => cn("rounded-full px-3 py-1 text-[14px] transition-colors", selected ? "bg-foreground text-background" : "text-muted-foreground hover:bg-sunk hover:text-foreground");
-  return (
-    <div role="group" aria-label={label} className="flex flex-wrap items-center gap-1">
-      <span className="mr-3 w-8 text-[14px] text-muted-foreground">{label}</span>
-      <Link href={href(null)} aria-current={active === null ? "true" : undefined} className={chip(active === null)}>全部</Link>
-      {options.map(([value, name]) => <Link key={value} href={href(value)} aria-current={active === value ? "true" : undefined} className={chip(active === value)}>{name}</Link>)}
-    </div>
-  );
 }
 
 type Data = ReturnType<typeof getTopicData>;
@@ -99,7 +92,7 @@ function bankQuestion(q: Question, data: Data, sessions: Sessions): BankQuestion
     : essays.length ? ["written", `写过 ${essays.length} 篇${Number.isFinite(best) ? ` · 最高 ${best.toFixed(1)}` : ""}`] as const
     : card ? ["card", "有卡片"] as const
     : ["new", "没练过"] as const;
-  return { id: q.id, text: q.text, meta: [topicLabels[q.primaryTopic] ?? q.primaryTopic, questionTypeLabels[q.questionType] ?? q.questionType], status, statusLabel, openAttemptId: open?.id ?? null };
+  return { id: q.id, text: q.text, tags: [topicLabels[q.primaryTopic] ?? q.primaryTopic, questionTypeLabels[q.questionType] ?? q.questionType], status, statusLabel, openAttemptId: open?.id ?? null };
 }
 
 function pickReason(pick: QuestionPick, q: Question) {
