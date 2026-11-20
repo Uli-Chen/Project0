@@ -19,7 +19,7 @@ const newsreader = localFont({
 });
 
 export const metadata: Metadata = {
-  title: { default: "project 0", template: "%s · project 0" },
+  title: { default: "AugWrite", template: "%s · AugWrite" },
   description: "IELTS 写作练习与教练",
 };
 

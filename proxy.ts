@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-// Logged-out visitors to the home page are sent to the coming-soon page. Anyone
+// Logged-out visitors to the home page are sent to the marketing page. Anyone
 // with a session cookie continues to the app, which still checks the session
 // itself and sends expired sessions to /login.
 //
@@ -15,7 +15,7 @@ export function proxy(request: NextRequest) {
   const host = request.headers.get("host");
   const forwarded = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
   const scheme = forwarded === "https" || forwarded === "http" ? forwarded : request.nextUrl.protocol.replace(":", "");
-  const target = new URL("/coming-soon", host ? `${scheme}://${host}` : request.nextUrl.origin);
+  const target = new URL("/welcome", host ? `${scheme}://${host}` : request.nextUrl.origin);
   const response = NextResponse.redirect(target, 307);
   response.headers.set("Cache-Control", "no-store");
   return response;

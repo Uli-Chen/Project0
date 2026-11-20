@@ -42,7 +42,7 @@ export function CollageDemo() {
     <div className={s.stage} data-background-only={backgroundOnly}>
       <MotionCollage items={materials} speed={speed} density={density} blur={blur} paused={paused} />
       {!backgroundOnly && <div className={s.foreground}>
-        <div className={s.intro}><span>project <em>0</em></span><h4>给想法一点空间。</h4><p>从一句话开始，慢慢写清楚。</p></div>
+        <div className={s.intro}><span>Aug<em>Write</em></span><h4>给想法一点空间。</h4><p>从一句话开始，慢慢写清楚。</p></div>
         <div className={s.paper}><div className={s.paperTop}><span>写作练习 / 教育与成长</span><span><Check size={11} />已保存</span></div><h5>Every idea begins<br />with a first draft.</h5><p>Good writing is not about finding complicated words. It is about making your thinking clear.</p><div className={s.coach}><span>0</span><div><strong>从你熟悉的例子开始。</strong><p>想一想，哪次课堂经历改变了你的看法？</p></div><ArrowRight size={14} /></div><div className={s.paperBottom}><span>Task 2 · 论证练习</span><span>让思考落在纸上</span></div></div>
       </div>}
       <div className={s.stageFooter}><span><i data-paused={stopped} />{reduced ? "已减少动态 · 静态构图" : globalPaused ? "已跟随全局暂停" : paused ? "画面已暂停" : "向右漂移 · 双层景深"}</span><span>素材均为虚构示例</span></div>
