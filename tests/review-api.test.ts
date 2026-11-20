@@ -25,7 +25,7 @@ after(() => { db.$client.close(); rmSync(directory, { recursive: true, force: tr
 const session = createSession({ kind: "free", mode: "practice" });
 session.submitted.original = "He go to school every day. The rent is expensive.";
 session.evaluation = { scores: { overall: 6, dims: { TR: 6, CC: 6, LR: 6, GRA: 6 }, rationale: { TR: "", CC: "", LR: "", GRA: "" } },
-  issues: [{ rank: 1, code: "sva", title: "主谓一致", why: "", sentenceIds: [1], hintL1: "先找主语", recurring: false }],
+  issues: [{ rank: 1, code: "GRA_SVA", title: "主谓一致", why: "", sentenceIds: [1], hintL1: "先找主语", recurring: false }],
   review: { outlineCoverage: [], breakthrough: null, focusResult: null, selfReportContrast: null, aiRatio: 0 } };
 saveSession("u", session);
 const id = `fix:${session.id}:1`;

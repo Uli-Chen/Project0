@@ -1,17 +1,18 @@
 import { splitSentences } from "../rules/text";
+import { sessionTopic } from "./session-topic";
 import type { SessionState } from "../pipeline/types";
 
 /** Everything here is derived from the student's own practice: expressions they adopted and
  * sentences that were flagged in their essays. Nothing is generated for the review page. */
-export type PhraseItem = { id: string; kind: "phrase"; prompt: string; answer: string; note: string; sessionId: string; date: string };
+export type PhraseItem = { id: string; kind: "phrase"; prompt: string; answer: string; note: string; sessionId: string; date: string; topic: string | null };
 /** `answer` is the student's own rewrite, only when a check confirmed the problem was fixed (the
  * full-revision comparison judged the issue resolved); otherwise null, shown as "not fixed yet".
  * `revised` says whether the essay has a submitted revision at all. */
-export type FixItem = { id: string; kind: "fix"; prompt: string; answer: string | null; revised: boolean; issueTitle: string; hint: string; sessionId: string; rank: number; date: string };
+export type FixItem = { id: string; kind: "fix"; prompt: string; answer: string | null; revised: boolean; issueTitle: string; hint: string; sessionId: string; rank: number; date: string; topic: string | null };
 /** A sentence the student fixed and a check confirmed. Mixed into spot-the-problem reviews, where
  * the right answer is that nothing is wrong; it only appears once its flagged sentence is past the
  * hinted stage, and is never listed on its own. */
-export type SoundItem = { id: string; kind: "sound"; prompt: string; fixId: string; sessionId: string; date: string };
+export type SoundItem = { id: string; kind: "sound"; prompt: string; fixId: string; sessionId: string; date: string; topic: string | null };
 export type ReviewItem = PhraseItem | FixItem | SoundItem;
 type Grade = "good" | "again";
 /** One card's schedule. Which presentations were already graded is kept in the request_receipts table
@@ -29,6 +30,14 @@ export const HINTED_UNTIL = 2;
 /** At most this many reviews a day, oldest due first. */
 export const DAILY_LIMIT = 8;
 const DAY = 86_400_000;
+
+/** Only language problems (grammar, vocabulary) become sentence cards: their rule carries over to any
+ * sentence. Argument and structure problems are a skill practised on new material, not a sentence to
+ * re-fix. The issue code is written by the grader; its band prefix (GRA, LR or LEX) is the signal,
+ * and a code without a recognised prefix is left out rather than risk drilling an argument problem. */
+export function languageIssue(code: string) {
+  return /^(GRA(MMAR)?|LR|LEX(ICAL)?|VOCAB(ULARY)?)(?![A-Z])/i.test(code.trim());
+}
 
 /** Rough stems, so that "feels" → "feel" or "costs" → "cost" still count as the same word. */
 const words = (text: string) => new Set((text.toLowerCase().match(/[a-z]+(?:['’-][a-z]+)*/g) ?? []).map(word => word.length > 3 ? word.replace(/(?:ies|es|s|ed|ing)$/, "") : word));
@@ -54,12 +63,14 @@ export function reviewItems(sessions: SessionState[]): ReviewItem[] {
   for (const session of sessions) {
     if (session.activity !== "deep") continue;
     const date = session.completedAt ?? session.updatedAt ?? session.createdAt;
+    // Every item is tagged with its essay's topic, so the libraries can be filtered by topic.
+    const topic = sessionTopic(session);
     for (const suggestion of Object.values(session.suggestions ?? {})) {
       if (suggestion.type !== "express" || suggestion.status !== "accepted") continue;
       const reply = session.messages.findIndex(m => m.role === "coach" && m.suggestionIds?.includes(suggestion.id));
       const asked = reply > 0 ? session.messages.slice(0, reply).reverse().find(m => m.role === "user") : undefined;
       if (!asked?.content.trim()) continue;
-      items.push({ id: `phrase:${session.id}:${suggestion.id}`, kind: "phrase", prompt: asked.content.trim(), answer: suggestion.suggestedText, note: suggestion.reason, sessionId: session.id, date });
+      items.push({ id: `phrase:${session.id}:${suggestion.id}`, kind: "phrase", prompt: asked.content.trim(), answer: suggestion.suggestedText, note: suggestion.reason, sessionId: session.id, date, topic });
     }
     const original = session.submitted?.original;
     if (!session.evaluation || !original) continue;
@@ -68,7 +79,8 @@ export function reviewItems(sessions: SessionState[]): ReviewItem[] {
     // Which flagged sentences get a card must not depend on the revision: a card created from the
     // first feedback keeps its id (and its review progress) after the student submits a rewrite.
     const drilled = new Set<number>();
-    for (const issue of session.evaluation.issues) {
+    const language = session.evaluation.issues.filter(issue => languageIssue(issue.code));
+    for (const issue of language) {
       let kept = 0;
       for (const sentenceId of issue.sentenceIds) {
         if (kept >= 2 || drilled.has(sentenceId) || !sentences.some(s => s.id === sentenceId)) continue;
@@ -76,7 +88,7 @@ export function reviewItems(sessions: SessionState[]): ReviewItem[] {
       }
     }
     const seen = new Set<number>();
-    for (const issue of session.evaluation.issues) {
+    for (const issue of language) {
       // Only a rewrite the comparison judged resolved counts as the answer, matched among the
       // revision sentences it cited for this issue.
       const result = session.comparison?.issues.find(item => item.rank === issue.rank);
@@ -88,8 +100,8 @@ export function reviewItems(sessions: SessionState[]): ReviewItem[] {
         if (!answer && !drilled.has(sentenceId)) continue;
         seen.add(sentenceId);
         const id = `fix:${session.id}:${sentenceId}`;
-        items.push({ id, kind: "fix", prompt: before, answer, revised: revision.length > 0, issueTitle: issue.title, hint: issue.hintL1, sessionId: session.id, rank: issue.rank, date });
-        if (answer) items.push({ id: `sound:${session.id}:${sentenceId}`, kind: "sound", prompt: answer, fixId: id, sessionId: session.id, date });
+        items.push({ id, kind: "fix", prompt: before, answer, revised: revision.length > 0, issueTitle: issue.title, hint: issue.hintL1, sessionId: session.id, rank: issue.rank, date, topic });
+        if (answer) items.push({ id: `sound:${session.id}:${sentenceId}`, kind: "sound", prompt: answer, fixId: id, sessionId: session.id, date, topic });
       }
     }
   }

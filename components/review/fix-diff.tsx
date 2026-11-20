@@ -2,7 +2,7 @@ import Link from "next/link";
 import { wordDiff, type DiffPart } from "@/lib/learning/word-diff";
 import { cn } from "@/lib/utils";
 
-export type FixDiffRow = { id: string; before: string; after: string | null; issueTitle: string; progress: string; mastered: boolean; sessionId: string; source: string };
+export type FixDiffRow = { id: string; before: string; after: string | null; issueTitle: string; topic: string | null; progress: string; mastered: boolean; sessionId: string; source: string };
 
 /** 错句本 as a diff: the flagged sentence as the removed line, the checked fix as the added line,
  * with the changed words marked. Without a checked fix the added line says so. */
@@ -16,6 +16,7 @@ export function FixDiffList({ rows }: { rows: FixDiffRow[] }) {
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b bg-sunk/60 px-4 py-2.5">
               <ul className="flex flex-wrap gap-1.5" aria-label="标签">
                 <li className="rounded-md bg-sheet px-2 py-0.5 text-[14px] shadow-[0_0_0_1px_var(--border)]">{row.issueTitle}</li>
+                {row.topic && <li className="rounded-md px-2 py-0.5 text-[14px] text-muted-foreground">{row.topic}</li>}
                 <li className={cn("rounded-md px-2 py-0.5 text-[14px]", row.mastered ? "bg-good-soft text-good" : "text-muted-foreground")}>{row.progress}</li>
               </ul>
               <Link href={`/essays/${row.sessionId}`} className="text-[14px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{row.source}</Link>

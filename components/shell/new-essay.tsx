@@ -12,10 +12,10 @@ import type { Mode, SessionKind } from "@/lib/prototype/types";
 import { cn } from "@/lib/utils";
 
 const TOPICS = [
-  { name: "科技与生活", text: "Some people believe that technology has made our lives more complicated. Others think it has made life easier. Discuss both views and give your own opinion." },
-  { name: "教育与成长", text: "Some people think schools should focus on teaching practical skills, while others believe academic subjects are more important. Discuss both views and give your own opinion." },
-  { name: "工作与社会", text: "More people are choosing to work from home. Do the advantages of this development outweigh the disadvantages?" },
-  { name: "环境与城市", text: "Some people believe that governments should invest more in public transport than in building new roads. To what extent do you agree or disagree?" },
+  { name: "科技与生活", id: "technology", text: "Some people believe that technology has made our lives more complicated. Others think it has made life easier. Discuss both views and give your own opinion." },
+  { name: "教育与成长", id: "education", text: "Some people think schools should focus on teaching practical skills, while others believe academic subjects are more important. Discuss both views and give your own opinion." },
+  { name: "工作与社会", id: "work", text: "More people are choosing to work from home. Do the advantages of this development outweigh the disadvantages?" },
+  { name: "环境与城市", id: "environment", text: "Some people believe that governments should invest more in public transport than in building new roads. To what extent do you agree or disagree?" },
 ];
 
 export function useStartEssay() {
@@ -25,9 +25,9 @@ export function useStartEssay() {
   // One key per creation intent. Retrying the same choice after a lost response reuses it, so the
   // server returns the essay it already created; a different choice is a new intent.
   const intent = useRef<{ signature: string; key: string } | null>(null);
-  async function start(input: { kind: SessionKind; mode: Mode; prompt?: string }) {
+  async function start(input: { kind: SessionKind; mode: Mode; prompt?: string; topic?: string }) {
     setBusy(true); setError("");
-    const signature = JSON.stringify([input.kind, input.mode, input.prompt ?? null]);
+    const signature = JSON.stringify([input.kind, input.mode, input.prompt ?? null, input.topic ?? null]);
     if (intent.current?.signature !== signature) intent.current = { signature, key: crypto.randomUUID() };
     try {
       const response = await fetch("/api/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...input, idempotencyKey: intent.current.key }) });
@@ -63,14 +63,16 @@ export function NewEssayDialog({ trigger, focus, pasteOnly = false }: { trigger:
   const [source, setSource] = useState(pasteOnly ? "paste" : "suggested");
   const [topic, setTopic] = useState(0);
   const [text, setText] = useState("");
+  // A pasted question is filed under a topic as it is created, so what it produces can be found by topic.
+  const [pastedTopic, setPastedTopic] = useState<string | null>(null);
   const { busy, error, start } = useStartEssay();
   const pasted = text.trim();
-  const ready = source !== "paste" || pasted.length >= 20;
+  const ready = source !== "paste" || (pasted.length >= 20 && pastedTopic !== null);
 
   const submit = () => {
     if (!ready || busy) return;
     if (source === "suggested") return start({ kind: mode === "practice" && focus ? "task" : "free", mode });
-    return start({ kind: "free", mode, prompt: source === "topic" ? TOPICS[topic].text : pasted });
+    return source === "topic" ? start({ kind: "free", mode, prompt: TOPICS[topic].text, topic: TOPICS[topic].id }) : start({ kind: "free", mode, prompt: pasted, topic: pastedTopic! });
   };
 
   return (
@@ -90,7 +92,7 @@ export function NewEssayDialog({ trigger, focus, pasteOnly = false }: { trigger:
           ))}
         </div>
 
-        {pasteOnly ? <PastedPromptInput text={text} setText={setText} /> : <Tabs value={source} onValueChange={(value) => setSource(String(value))} className="gap-3">
+        {pasteOnly ? <><PastedPromptInput text={text} setText={setText} /><TopicChoice value={pastedTopic} onChange={setPastedTopic} /></> : <Tabs value={source} onValueChange={(value) => setSource(String(value))} className="gap-3">
           <TabsList className="w-full">
             <TabsTrigger value="suggested">推荐</TabsTrigger>
             <TabsTrigger value="topic">话题</TabsTrigger>
@@ -114,7 +116,7 @@ export function NewEssayDialog({ trigger, focus, pasteOnly = false }: { trigger:
               ))}
             </div>
           </TabsContent>
-          <TabsContent value="paste" className="min-h-28"><PastedPromptInput text={text} setText={setText} /></TabsContent>
+          <TabsContent value="paste" className="min-h-28"><PastedPromptInput text={text} setText={setText} /><div className="mt-4"><TopicChoice value={pastedTopic} onChange={setPastedTopic} /></div></TabsContent>
         </Tabs>}
 
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
@@ -129,4 +131,17 @@ export function NewEssayDialog({ trigger, focus, pasteOnly = false }: { trigger:
 function PastedPromptInput({ text, setText }: { text: string; setText(text: string): void }) {
   const pasted = text.trim();
   return <div className="min-h-28"><Textarea value={text} onChange={event => setText(event.target.value)} maxLength={3000} rows={5} placeholder="Some people think that…" aria-label="题目" className="font-serif text-[15px]" /><p className="meta mt-1.5 text-right">{pasted.length < 20 ? `至少 20 个字符 · ${pasted.length}` : `${pasted.length} / 3000`}</p></div>;
+}
+
+const PASTE_TOPICS: [string, string][] = [["education", "教育"], ["technology", "科技"], ["environment", "环境"], ["society", "社会"], ["work", "工作"], ["health", "健康"], ["culture", "文化"], ["other", "其他"]];
+
+function TopicChoice({ value, onChange }: { value: string | null; onChange: (topic: string) => void }) {
+  return (
+    <div role="radiogroup" aria-label="话题" className="flex flex-wrap items-center gap-1">
+      <span className="mr-2 text-[14px] text-muted-foreground">话题</span>
+      {PASTE_TOPICS.map(([key, name]) => (
+        <button key={key} type="button" role="radio" aria-checked={value === key} onClick={() => onChange(key)} className={cn("rounded-full px-3 py-1 text-[14px] transition-colors", value === key ? "bg-foreground text-background" : "text-muted-foreground hover:bg-sunk hover:text-foreground")}>{name}</button>
+      ))}
+    </div>
+  );
 }

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createSession } from "../lib/pipeline/initial";
-import { DAILY_LIMIT, dueItems, gradeReview, legacyGrade, matchRevision, nextReview, reviewItems, spotStage, todayItems, type ReviewItem } from "../lib/learning/review-items";
+import { DAILY_LIMIT, dueItems, languageIssue, gradeReview, legacyGrade, matchRevision, nextReview, reviewItems, spotStage, todayItems, type ReviewItem } from "../lib/learning/review-items";
 import { draftMarks, remainingByIssue } from "../lib/learning/revision-marks";
 
 function practised() {
@@ -9,7 +9,7 @@ function practised() {
   session.submitted.original = "He go to school every day. The rent is expensive.\n\nStudents feels homesick.";
   session.submitted.revision = "He goes to school every day. The rent is expensive.\n\nSome students feel homesick at first.";
   session.evaluation = { scores: { overall: 6, dims: { TR: 6, CC: 6, LR: 6, GRA: 6 }, rationale: { TR: "", CC: "", LR: "", GRA: "" } },
-    issues: [{ rank: 1, code: "sva", title: "主谓一致", why: "", sentenceIds: [1, 3], hintL1: "先找主语", recurring: false }],
+    issues: [{ rank: 1, code: "GRA_SVA", title: "主谓一致", why: "", sentenceIds: [1, 3], hintL1: "先找主语", recurring: false }],
     review: { outlineCoverage: [], breakthrough: null, focusResult: null, selfReportContrast: null, aiRatio: 0 } };
   session.comparison = { issues: [{ rank: 1, status: "resolved", reason: "", revisionSentenceIds: [1, 3] }], idea: { stanceKept: true, keptPoints: [], deepened: [], changed: [] }, aiRatio: 0 };
   session.completedAt = "2026-11-09T00:00:00.000Z";
@@ -126,4 +126,31 @@ test("评分只决定下一次排期；之前版本记在资料里的回执仍�
   assert.equal(legacyGrade({ box: 2, due: now.toISOString(), graded: [["a", "again"], ["b", "good"]] }, "a"), "again");
   assert.equal(legacyGrade({ box: 2, due: now.toISOString() }, "a"), null);
   assert.equal(legacyGrade(undefined, "a"), null);
+});
+
+test("复习内容带上作文的话题：题库题用题目的话题，自己的题用创建时选的话题，没选过的为空", () => {
+  const own = practised();
+  own.prompt = { ...own.prompt, topicTags: [] };
+  assert.deepEqual([...new Set(reviewItems([own]).map(item => item.topic))], [null]);
+  const chosen = createSession({ kind: "free", mode: "practice", prompt: "Some people think cities should ban private cars entirely.", topic: "environment" });
+  assert.deepEqual(chosen.prompt.topicTags, ["environment"]);
+  assert.deepEqual(createSession({ kind: "free", mode: "practice", prompt: "Some people think cities should ban private cars entirely.", topic: "other" }).prompt.topicTags, []);
+  Object.assign(own, { prompt: chosen.prompt });
+  assert.deepEqual([...new Set(reviewItems([own]).map(item => item.topic))], ["environment"]);
+  own.question = { id: "q", version: 1, exposureKey: "f", primaryTopic: "education", questionType: "agree_disagree" } as unknown as typeof own.question;
+  assert.deepEqual([...new Set(reviewItems([own]).map(item => item.topic))], ["education"]);
+});
+
+test("只有语言类问题做成改句卡：论证、结构和认不出的问题不进复习", () => {
+  for (const code of ["GRA_SVA", "GRA-sva", "GRA", "gra_articles", "LR_COLLOCATION", "LEX_REPETITION", "GRAMMAR", "VOCAB_CHOICE"]) assert.equal(languageIssue(code), true, code);
+  for (const code of ["TR-reason", "TR_DEVELOPMENT", "CC_PARAGRAPHING", "DISADV_DEPTH", "EXAMPLE_RELEVANCE", "LRX", "sva", ""]) assert.equal(languageIssue(code), false, code);
+  const session = practised();
+  session.evaluation!.issues = [
+    { rank: 1, code: "TR_DEVELOPMENT", title: "论证展开不足", why: "", sentenceIds: [2], hintL1: "", recurring: false },
+    { rank: 2, code: "GRA_SVA", title: "主谓一致", why: "", sentenceIds: [1, 3], hintL1: "先找主语", recurring: false },
+  ];
+  session.comparison!.issues = [{ rank: 2, status: "resolved", reason: "", revisionSentenceIds: [1, 3] }];
+  const fixes = reviewItems([session]).filter(item => item.kind === "fix");
+  assert.deepEqual(fixes.map(item => item.kind === "fix" && item.issueTitle), ["主谓一致", "主谓一致"]);
+  assert.equal(fixes.some(item => item.prompt === "The rent is expensive."), false);
 });

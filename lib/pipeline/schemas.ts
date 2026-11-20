@@ -4,7 +4,7 @@ const short = z.string().trim().min(1).max(2000);
 export const slotPathSchema = z.enum(["stance", "reasons.0.claim", "reasons.0.why", "reasons.0.example", "reasons.1.claim", "reasons.1.why", "reasons.1.example", "counter.view", "counter.response"]);
 const slot = z.object({ text: short, sources: z.array(z.string().max(3000)).max(12) }).nullable();
 export const outlineSchema = z.object({ stance: slot, reasons: z.array(z.object({ claim: slot, why: slot, example: slot })).length(2), counter: z.object({ view: slot, response: slot }), userEdited: z.boolean() });
-const legacyCreateSessionSchema = z.object({ kind: z.enum(["assessment", "task", "free"]).default("free"), mode: z.enum(["practice", "mock"]).default("practice"), prompt: z.string().trim().min(15).max(3000).optional() }).strict();
+const legacyCreateSessionSchema = z.object({ kind: z.enum(["assessment", "task", "free"]).default("free"), mode: z.enum(["practice", "mock"]).default("practice"), prompt: z.string().trim().min(15).max(3000).optional(), topic: z.enum(["education", "technology", "environment", "society", "work", "health", "culture", "other"]).optional() }).strict();
 export const questionCreateSessionSchema = z.object({ questionId: z.string().min(1).max(200), activity: z.enum(["deep", "quick"]), mode: z.enum(["practice", "mock"]), idempotencyKey: z.string().min(1).max(200), rewriteOfDeepId: z.string().min(1).max(200).optional() }).strict();
 // Presence of questionId discriminates the two strict shapes; mixed payloads fail.
 export const createSessionSchema = z.union([questionCreateSessionSchema, legacyCreateSessionSchema]);
