@@ -4,7 +4,7 @@ import type { CurrentUser } from '@/lib/auth/types';
 import { getTopicData } from '@/lib/db/queries/topics';
 import { listSessions } from '@/lib/db/queries/sessions';
 import { libraryEntryState } from '@/lib/learning/library';
-import { dueItems, reviewItems } from '@/lib/learning/review-items';
+import { reviewItems, todayItems } from '@/lib/learning/review-items';
 import { examTime, learningSummary } from '@/lib/learning/summary';
 import { fixedIssues } from '@/lib/learning/fixes';
 import { countWords } from '@/lib/rules/text';
@@ -48,7 +48,7 @@ export function TopicHome({ user, quickEnabled }: { user: CurrentUser; quickEnab
   const cards = data.topics.reduce((sum, t) => sum + t.passedCards, 0);
   const fixed = fixedIssues(sessions);
   const focus = learningSummary(sessions.filter((s) => s.activity === 'deep'), profile).focus;
-  const due = dueItems(reviewItems(sessions), profile.review ?? {}).length;
+  const due = todayItems(reviewItems(sessions), profile.review ?? {}).length;
   const time = examTime(profile);
 
   // Why this question, as specific to the learner as the data allows.

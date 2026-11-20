@@ -7,14 +7,14 @@ import { Wordmark } from "@/components/shell/wordmark";
 import { requireUser } from "@/lib/auth/server";
 import { listSessions } from "@/lib/db/queries/sessions";
 import { learningSummary } from "@/lib/learning/summary";
-import { dueItems, reviewItems } from "@/lib/learning/review-items";
+import { reviewItems, todayItems } from "@/lib/learning/review-items";
 
 export default async function MainLayout({ children }: { children: ReactNode }) {
   const user = await requireUser();
   const sessions = listSessions(user.id);
   const { focus } = learningSummary(sessions, user.profile);
   const flags = readFeatures();
-  const reviewDue = dueItems(reviewItems(sessions), user.profile.review ?? {}).length;
+  const reviewDue = todayItems(reviewItems(sessions), user.profile.review ?? {}).length;
   const open = (await cookies()).get("sidebar_state")?.value !== "false";
   return (
     <SidebarProvider defaultOpen={open}>

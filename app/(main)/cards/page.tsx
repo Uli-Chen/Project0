@@ -1,65 +1,75 @@
 import Link from "next/link";
-import { eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/server";
 import { readFeatures } from "@/lib/config/features";
-import { getDb } from "@/lib/db/client";
-import { topicCards } from "@/lib/db/schema";
-import { getCard, cardRequirements } from "@/lib/db/queries/cards";
-import { getSession, listSessions } from "@/lib/db/queries/sessions";
-import { CardReadonly } from "@/components/quick/card-readonly";
-import { ReviewDeck } from "@/components/review/review-deck";
-import { dueItems, reviewItems, type ReviewItem } from "@/lib/learning/review-items";
+import { listSessions } from "@/lib/db/queries/sessions";
+import { ReviewDeck, type DeckCard } from "@/components/review/review-deck";
+import { FixDiffList } from "@/components/review/fix-diff";
+import { dueAt, mastered, reviewItems, spotStage, todayItems, type ReviewItem, type ReviewState } from "@/lib/learning/review-items";
 import { formatDate } from "@/lib/learning/summary";
-import { topicLabels } from "@/lib/question-bank/labels";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "复习" };
-type Tab = "today" | "phrases" | "sentences" | "cards";
-const CARD_STATE: Record<string, string> = { draft: "草稿", passed: "已通过检查", unchecked: "已修改，待复查", needs_development: "还需展开" };
-const TABS: { key: Tab; label: string }[] = [{ key: "today", label: "今日复习" }, { key: "phrases", label: "表达库" }, { key: "sentences", label: "错句本" }, { key: "cards", label: "观点卡片" }];
+type Tab = "today" | "phrases" | "sentences";
+const TABS: { key: Tab; label: string }[] = [{ key: "today", label: "今日复习" }, { key: "phrases", label: "表达库" }, { key: "sentences", label: "错句本" }];
 
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ tab?: string; drafts?: string }> }) {
   const user = await requireUser();
   const params = await searchParams;
   const flags = readFeatures();
-  const tabs = TABS.filter(tab => tab.key !== "cards" || flags.QUICK_ENABLED);
-  const tab = tabs.find(t => t.key === params.tab)?.key ?? (params.drafts ? "cards" : "today");
+  // Idea cards have their own page now; old links to the card tab land there.
+  if (params.tab === "cards" && flags.QUICK_ENABLED) redirect(params.drafts ? "/ideas?status=all" : "/ideas");
+  const tabs = TABS;
+  const tab = tabs.find(t => t.key === params.tab)?.key ?? "today";
   const items = reviewItems(listSessions(user.id));
-  const due = dueItems(items, user.profile.review ?? {});
-  const counts: Record<Tab, number | null> = { today: due.length, phrases: items.filter(i => i.kind === "phrase").length, sentences: items.filter(i => i.kind === "fix").length, cards: null };
+  const state: ReviewState = user.profile.review ?? {};
+  const today = todayItems(items, state);
+  const deck: DeckCard[] = today.map(item => ({ item, spot: spotStage(item, state), source: `${formatDate(item.date)} 的作文` }));
+  const fixes = items.filter(i => i.kind === "fix");
+  const counts: Record<Tab, number> = { today: today.length, phrases: items.filter(i => i.kind === "phrase").length, sentences: fixes.length };
 
   return (
     <div className="flex flex-col gap-8">
       <h1 className="page-heading">复习</h1>
-      <nav aria-label="复习内容" className="flex flex-wrap gap-1 border-b">
+      <nav aria-label="复习内容" className="flex flex-wrap gap-x-6 border-b">
         {tabs.map(t => (
-          <Link key={t.key} href={t.key === "today" ? "/cards" : `/cards?tab=${t.key}`} aria-current={tab === t.key ? "page" : undefined} className={cn("-mb-px flex items-baseline gap-1.5 border-b-2 px-3 py-2.5 text-[15px] transition-colors", tab === t.key ? "border-foreground font-semibold" : "border-transparent text-muted-foreground hover:text-foreground")}>
-            {t.label}{counts[t.key] !== null && <span className="text-[14px] font-normal text-muted-foreground tabular-nums">{counts[t.key]}</span>}
+          <Link key={t.key} href={t.key === "today" ? "/cards" : `/cards?tab=${t.key}`} aria-current={tab === t.key ? "page" : undefined} className={cn("-mb-px flex items-baseline gap-1.5 border-b-2 pb-3 text-[16px] transition-colors", tab === t.key ? "border-foreground font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}>
+            {t.label}{<span className="text-[14px] font-normal text-muted-foreground tabular-nums">{counts[t.key]}</span>}
           </Link>
         ))}
       </nav>
-      {tab === "today" && <ReviewDeck items={due.slice(0, 12)} />}
-      {tab === "phrases" && <ItemList items={items.filter(i => i.kind === "phrase")} empty="在精练里用“英文怎么说”问教练，采纳的说法会收进这里。" />}
-      {tab === "sentences" && <ItemList items={items.filter(i => i.kind === "fix")} empty="拿到第一次写作反馈之后，被指出的句子会收进这里。" />}
-      {tab === "cards" && <TopicCards userId={user.id} drafts={params.drafts === "true"} />}
+      {tab === "today" && <ReviewDeck cards={deck} />}
+      {tab === "phrases" && <ItemList items={items.filter(i => i.kind === "phrase")} state={state} empty="写作文时用“英文怎么说”问教练，采纳的说法会收进这里。" />}
+      {tab === "sentences" && (fixes.length
+        ? <FixDiffList rows={fixes.map(item => ({ id: item.id, before: item.prompt, after: item.answer, issueTitle: item.issueTitle, progress: progressLabel(item, state), mastered: mastered(state[item.id]), sessionId: item.sessionId, source: `${formatDate(item.date)} 的作文` }))} />
+        : <p className="surface px-8 py-14 text-center text-[15px] text-muted-foreground">拿到第一次写作反馈之后，被指出的句子会收进这里。</p>)}
     </div>
   );
 }
 
-function ItemList({ items, empty }: { items: ReviewItem[]; empty: string }) {
-  if (!items.length) return <p className="rounded-2xl border border-dashed border-input px-8 py-14 text-center text-[15px] text-muted-foreground">{empty}</p>;
+function ItemList({ items, state, empty }: { items: ReviewItem[]; state: ReviewState; empty: string }) {
+  if (!items.length) return <p className="surface px-8 py-14 text-center text-[15px] text-muted-foreground">{empty}</p>;
   return (
-    <ul className="surface divide-y overflow-hidden">
+    <ul className="grid gap-4 lg:grid-cols-2">
       {items.map(item => (
-        <li key={item.id} className="grid gap-x-8 gap-y-2 px-6 py-5 md:grid-cols-2">
-          <div>
-            {item.kind === "fix" && <p className="mb-1.5 text-sm font-medium text-muted-foreground">{item.issueTitle}</p>}
-            <p className={cn("leading-relaxed", item.kind === "fix" ? "font-serif text-[17px] text-muted-foreground line-through decoration-foreground/25" : "text-[16px]")}>{item.prompt}</p>
-          </div>
-          <div>
-            {item.kind === "fix" && <p className="mb-1.5 text-sm font-medium text-muted-foreground">{item.answer ? "你的改法" : "改写方向"}</p>}
-            <p className={cn("leading-relaxed", item.answer ? "font-serif text-[17px]" : "text-[15px]")}>{item.answer ?? (item.kind === "fix" ? item.hint : "")}</p>
-            <Link href={`/essays/${item.sessionId}`} className="mt-2 inline-block text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">{formatDate(item.date)} 的作文</Link>
+        <li key={item.id} className="surface flex flex-col gap-4 p-5">
+          {item.kind === "phrase" ? (
+            <div>
+              <p className="text-[15px] text-muted-foreground">{item.prompt}</p>
+              <p className="mt-1.5 font-serif text-[19px] leading-[1.5]">{item.answer}</p>
+            </div>
+          ) : item.kind === "fix" ? (
+            <div>
+              <p className="font-serif text-[16px] leading-[1.55] text-muted-foreground line-through decoration-foreground/25">{item.prompt}</p>
+              {item.answer ? <p className="mt-2 font-serif text-[17px] leading-[1.55]">{item.answer}</p> : <p className="mt-2 text-[15px] text-warn">尚未改对</p>}
+            </div>
+          ) : null}
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-3">
+            <ul className="flex flex-wrap gap-1.5" aria-label="标签">
+              {item.kind === "fix" && <li className="rounded-md bg-sunk px-2 py-0.5 text-[14px] text-muted-foreground">{item.issueTitle}</li>}
+              <li className={cn("rounded-md px-2 py-0.5 text-[14px]", mastered(state[item.id]) ? "bg-good-soft text-good" : "bg-sunk text-muted-foreground")}>{progressLabel(item, state)}</li>
+            </ul>
+            <Link href={`/essays/${item.sessionId}`} className="text-[14px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{formatDate(item.date)} 的作文</Link>
           </div>
         </li>
       ))}
@@ -67,41 +77,9 @@ function ItemList({ items, empty }: { items: ReviewItem[]; empty: string }) {
   );
 }
 
-function TopicCards({ userId, drafts }: { userId: string; drafts: boolean }) {
-  const cards = getDb().select().from(topicCards).where(eq(topicCards.userId, userId)).all().flatMap(row => {
-    const card = getCard(userId, row.attemptId), session = getSession(userId, row.attemptId);
-    return card && session && (drafts || (card.state === "passed" && card.lastCheckedVersion === card.contentVersion)) ? [{ card, session }] : [];
-  });
-  return (
-    <div className="space-y-10">
-      <nav aria-label="筛选卡片" className="flex gap-1.5">
-        {[{ label: "已通过检查", href: "/cards?tab=cards", on: !drafts }, { label: "全部", href: "/cards?tab=cards&drafts=true", on: drafts }].map(filter => (
-          <Link key={filter.label} href={filter.href} aria-current={filter.on ? "true" : undefined} className={cn("inline-flex h-8.5 items-center rounded-full border px-4 text-sm transition-colors", filter.on ? "border-foreground bg-foreground text-background" : "border-input hover:border-foreground/40 hover:bg-sunk")}>{filter.label}</Link>
-        ))}
-      </nav>
-      {cards.length === 0 && <p className="rounded-2xl border border-dashed border-input px-8 py-14 text-center text-[15px] text-muted-foreground">这里还没有{drafts ? "" : "已通过检查的"}卡片。<Link href="/practice" className="ml-2 text-foreground underline underline-offset-4">去练习</Link></p>}
-      {Object.entries(topicLabels).map(([topic, name]) => {
-        const group = cards.filter(c => c.session.question?.primaryTopic === topic);
-        return group.length > 0 && (
-          <section key={topic}>
-            <div className="flex items-baseline justify-between gap-4">
-              <h2 className="section-heading">{name}</h2>
-              <Link href={`/topics/${topic}`} className="text-[15px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">这个主题的题目</Link>
-            </div>
-            <div className="mt-4">
-              {group.map(({ card, session }) => (
-                <article key={card.id} className="border-t py-7">
-                  <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
-                    <Link href={`/essays/${session.id}`} className="max-w-[40em] font-serif text-[19px] leading-[1.6] underline-offset-4 hover:underline">{session.question?.text ?? session.prompt.text}</Link>
-                    {drafts && <span className={cn("mt-1.5 shrink-0 rounded-full px-2.5 py-0.5 text-sm", card.state === "passed" ? "bg-good-soft font-medium text-good" : "bg-sunk text-muted-foreground")}>{CARD_STATE[card.state] ?? card.state}</span>}
-                  </div>
-                  <CardReadonly plain content={card.content} requirements={cardRequirements(card)} />
-                </article>
-              ))}
-            </div>
-          </section>
-        );
-      })}
-    </div>
-  );
+/** Where an item stands: mastered, due now, or the date it comes back. */
+function progressLabel(item: ReviewItem, state: ReviewState) {
+  if (mastered(state[item.id])) return "已掌握";
+  const at = dueAt(item, state);
+  return at <= Date.now() ? "待复习" : `${formatDate(new Date(at).toISOString())} 复习`;
 }

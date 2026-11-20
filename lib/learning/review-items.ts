@@ -4,10 +4,15 @@ import type { SessionState } from "../pipeline/types";
 /** Everything here is derived from the student's own practice: expressions they adopted and
  * sentences that were flagged in their essays. Nothing is generated for the review page. */
 export type PhraseItem = { id: string; kind: "phrase"; prompt: string; answer: string; note: string; sessionId: string; date: string };
-/** `answer` is the student's own rewrite of the sentence, null while it has not been rewritten;
+/** `answer` is the student's own rewrite, only when a check confirmed the problem was fixed (the
+ * full-revision comparison judged the issue resolved); otherwise null, shown as "not fixed yet".
  * `revised` says whether the essay has a submitted revision at all. */
 export type FixItem = { id: string; kind: "fix"; prompt: string; answer: string | null; revised: boolean; issueTitle: string; hint: string; sessionId: string; rank: number; date: string };
-export type ReviewItem = PhraseItem | FixItem;
+/** A sentence the student fixed and a check confirmed. Mixed into spot-the-problem reviews, where
+ * the right answer is that nothing is wrong; it only appears once its flagged sentence is past the
+ * hinted stage, and is never listed on its own. */
+export type SoundItem = { id: string; kind: "sound"; prompt: string; fixId: string; sessionId: string; date: string };
+export type ReviewItem = PhraseItem | FixItem | SoundItem;
 type Grade = "good" | "again";
 /** One card's schedule. Which presentations were already graded is kept in the request_receipts table
  * (see app/api/review/route.ts), not here. `graded`/`key`/`result` are what earlier builds stored in
@@ -15,8 +20,14 @@ type Grade = "good" | "again";
 export type ReviewEntry = { box: number; due: string; graded?: [string, Grade, string?][]; key?: string; result?: Grade };
 export type ReviewState = Record<string, ReviewEntry>;
 
-/** Days until the next review after a correct recall, by box. */
-export const REVIEW_INTERVALS = [1, 3, 7, 14, 30];
+/** A new item is first due a day after it was made; after a correct answer the next review comes
+ * these many days later, by box; the third correct answer in a row retires the item ("已掌握"). */
+export const REVIEW_INTERVALS = [3, 7];
+export const MASTERED_AT = 3;
+/** Flagged sentences show the problem and the hint for their first two reviews, then only the sentence. */
+export const HINTED_UNTIL = 2;
+/** At most this many reviews a day, oldest due first. */
+export const DAILY_LIMIT = 8;
 const DAY = 86_400_000;
 
 /** Rough stems, so that "feels" → "feel" or "costs" → "cost" still count as the same word. */
@@ -53,10 +64,9 @@ export function reviewItems(sessions: SessionState[]): ReviewItem[] {
     const original = session.submitted?.original;
     if (!session.evaluation || !original) continue;
     const sentences = splitSentences(original);
-    const revision = session.submitted.revision ? splitSentences(session.submitted.revision).map(s => s.text) : [];
+    const revision = session.submitted.revision ? splitSentences(session.submitted.revision) : [];
     // Which flagged sentences get a card must not depend on the revision: a card created from the
     // first feedback keeps its id (and its review progress) after the student submits a rewrite.
-    // A revision only adds the student's own fix as the answer, or reveals more rewritten sentences.
     const drilled = new Set<number>();
     for (const issue of session.evaluation.issues) {
       let kept = 0;
@@ -67,23 +77,47 @@ export function reviewItems(sessions: SessionState[]): ReviewItem[] {
     }
     const seen = new Set<number>();
     for (const issue of session.evaluation.issues) {
+      // Only a rewrite the comparison judged resolved counts as the answer, matched among the
+      // revision sentences it cited for this issue.
+      const result = session.comparison?.issues.find(item => item.rank === issue.rank);
+      const verified = result?.status === "resolved" ? revision.filter(s => result.revisionSentenceIds.includes(s.id)).map(s => s.text) : [];
       for (const sentenceId of issue.sentenceIds) {
         const before = sentences.find(s => s.id === sentenceId)?.text;
         if (!before || seen.has(sentenceId)) continue;
-        // null: not rewritten yet (or no revision at all). The card stays and says so.
-        const answer = revision.length ? matchRevision(before, revision) : null;
+        const answer = verified.length ? matchRevision(before, verified) : null;
         if (!answer && !drilled.has(sentenceId)) continue;
         seen.add(sentenceId);
-        items.push({ id: `fix:${session.id}:${sentenceId}`, kind: "fix", prompt: before, answer, revised: revision.length > 0, issueTitle: issue.title, hint: issue.hintL1, sessionId: session.id, rank: issue.rank, date });
+        const id = `fix:${session.id}:${sentenceId}`;
+        items.push({ id, kind: "fix", prompt: before, answer, revised: revision.length > 0, issueTitle: issue.title, hint: issue.hintL1, sessionId: session.id, rank: issue.rank, date });
+        if (answer) items.push({ id: `sound:${session.id}:${sentenceId}`, kind: "sound", prompt: answer, fixId: id, sessionId: session.id, date });
       }
     }
   }
   return items.sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
 }
 
-/** New items are due at once; reviewed items come back when their interval has passed. */
+export const mastered = (entry: { box: number } | undefined) => (entry?.box ?? 0) >= MASTERED_AT;
+/** When an item is next due: its schedule, or a day after it was made. */
+export function dueAt(item: ReviewItem, state: ReviewState) {
+  const entry = state[item.id];
+  return entry ? Date.parse(entry.due) : Date.parse(item.date) + DAY;
+}
+/** Whether a flagged sentence (or a sound sentence) is shown as "spot the problem", without hints. */
+export function spotStage(item: ReviewItem, state: ReviewState) {
+  return item.kind === "sound" || (item.kind === "fix" && (state[item.id]?.box ?? 0) >= HINTED_UNTIL);
+}
+
+/** Everything due now and not mastered, oldest due first. A sound sentence waits until the sentence
+ * it was fixed from has reached the spot-the-problem stage. */
 export function dueItems(items: ReviewItem[], state: ReviewState, now = new Date()): ReviewItem[] {
-  return items.filter(item => { const entry = state[item.id]; return !entry || Date.parse(entry.due) <= now.getTime(); });
+  return items
+    .filter(item => !mastered(state[item.id]) && dueAt(item, state) <= now.getTime() && (item.kind !== "sound" || (state[item.fixId]?.box ?? 0) >= HINTED_UNTIL))
+    .sort((a, b) => dueAt(a, state) - dueAt(b, state) || a.id.localeCompare(b.id));
+}
+
+/** Today's reviews: what is due, capped at the daily limit. */
+export function todayItems(items: ReviewItem[], state: ReviewState, now = new Date()): ReviewItem[] {
+  return dueItems(items, state, now).slice(0, DAILY_LIMIT);
 }
 
 /** One key per time a card is shown; a retry of the same grade reuses it. */
@@ -109,6 +143,7 @@ export function gradeReview(entry: ReviewEntry | undefined, result: Grade, now =
 
 export function nextReview(entry: { box: number } | undefined, result: Grade, now = new Date()): ReviewEntry {
   if (result === "again") return { box: 0, due: now.toISOString() };
-  const box = Math.min((entry?.box ?? 0) + 1, REVIEW_INTERVALS.length);
-  return { box, due: new Date(now.getTime() + REVIEW_INTERVALS[box - 1] * DAY).toISOString() };
+  const box = Math.min((entry?.box ?? 0) + 1, MASTERED_AT);
+  // A mastered item is never due again; its date only records when it was mastered.
+  return { box, due: new Date(now.getTime() + (REVIEW_INTERVALS[box - 1] ?? 0) * DAY).toISOString() };
 }
