@@ -22,14 +22,14 @@ export function Avatar({ name, size = 24 }: { name: string; size?: number }) {
   return <span aria-hidden="true" className="inline-flex shrink-0 items-center justify-center rounded-full bg-foreground font-medium text-background" style={{ width: size, height: size, fontSize: size * 0.46 }}>{Array.from(name)[0]}</span>;
 }
 
-export function AppSidebar({ user, focus, bankEnabled=false, checkpointsEnabled=false, reviewDue=0 }: { user: { name: string; email: string }; focus?: string; bankEnabled?: boolean; checkpointsEnabled?: boolean; reviewDue?: number }) {
+export function AppSidebar({ user, focus, bankEnabled=false, checkpointsEnabled=false }: { user: { name: string; email: string }; focus?: string; bankEnabled?: boolean; checkpointsEnabled?: boolean }) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
   // On a phone the navigation is a sheet over the page; get it out of the way as soon as you pick a page.
   const closeMobile = () => setOpenMobile(false);
   // 题库开启后“练习”页就是开始写的地方，不再另放一个去同一处的“新建作文”
   const items = bankEnabled
-    ? [{ href: "/", label: "主页", icon: House }, { href: "/practice", label: "练习", icon: PenLine }, { href: "/cards", label: "复习", icon: Layers, count: reviewDue }, ...(checkpointsEnabled ? [{ href: "/mock", label: "模考", icon: Timer }] : []), NAV[1]]
+    ? [{ href: "/", label: "主页", icon: House }, { href: "/practice", label: "练习", icon: PenLine }, { href: "/cards", label: "复习", icon: Layers }, ...(checkpointsEnabled ? [{ href: "/mock", label: "模考", icon: Timer }] : []), NAV[1]]
     : NAV;
   return (
     <Sidebar collapsible="icon">
@@ -51,12 +51,10 @@ export function AppSidebar({ user, focus, bankEnabled=false, checkpointsEnabled=
             )}
             {items.map((item) => {
               const active = item.href === "/" ? pathname === "/" : item.href === "/practice" ? pathname.startsWith("/practice") || pathname.startsWith("/topics") : pathname.startsWith(item.href);
-              const count = "count" in item ? item.count ?? 0 : 0;
               return (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton isActive={active} tooltip={item.label} className="h-10 gap-3 rounded-lg px-3 text-[15px] text-muted-foreground data-active:bg-sidebar-accent data-active:font-medium data-active:text-foreground [&_svg]:size-[18px]" render={<Link href={item.href} onNavigate={closeMobile} />}>
                     <item.icon />{item.label}
-                    {count > 0 && <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-[14px] font-medium text-primary-foreground tabular-nums group-data-[collapsible=icon]:hidden" aria-label={`${count} 条待复习`}>{count}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );

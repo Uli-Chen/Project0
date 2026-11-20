@@ -4,7 +4,6 @@ import type { CurrentUser } from '@/lib/auth/types';
 import { getTopicData } from '@/lib/db/queries/topics';
 import { listSessions } from '@/lib/db/queries/sessions';
 import { libraryEntryState } from '@/lib/learning/library';
-import { reviewItems, todayItems } from '@/lib/learning/review-items';
 import { examTime, learningSummary } from '@/lib/learning/summary';
 import { fixedIssues } from '@/lib/learning/fixes';
 import { countWords } from '@/lib/rules/text';
@@ -48,7 +47,6 @@ export function TopicHome({ user, quickEnabled }: { user: CurrentUser; quickEnab
   const cards = data.topics.reduce((sum, t) => sum + t.passedCards, 0);
   const fixed = fixedIssues(sessions);
   const focus = learningSummary(sessions.filter((s) => s.activity === 'deep'), profile).focus;
-  const due = todayItems(reviewItems(sessions), profile.review ?? {}).length;
   const time = examTime(profile);
 
   // Why this question, as specific to the learner as the data allows.
@@ -64,14 +62,12 @@ export function TopicHome({ user, quickEnabled }: { user: CurrentUser; quickEnab
     ? (offer.activity === 'quick' ? { activity: 'deep' as const, label: '直接写作文' } : quickEnabled ? { activity: 'quick' as const, label: '先做卡片' } : null)
     : null;
 
-  // Always the same five rows, so a new learner sees what will fill up.
-  const dueText = due > 0 ? <span className="text-[17px]">{due} 条到期<span className="text-muted-foreground"> · 约 {Math.max(2, Math.round(due * 0.7))} 分钟</span></span> : <span className="text-[17px] text-muted-foreground">今天没有到期的</span>;
+  // Always the same four rows, so a new learner sees what will fill up.
   const rows = [
-    <Row key="due" n={1} label="先复习" href="/cards">{dueText}</Row>,
-    <Row key="focus" n={2} label="这次留意" href={focus ? '/progress' : undefined}><span className={cn('text-[17px]', !focus && 'text-muted-foreground')}>{focus ? focus.title : '—'}</span></Row>,
-    <Row key="fixed" n={3} label="改好的问题" href={fixed.length ? '/progress' : undefined}><Big value={fixed.length} unit="个" note={fixed[0] ? `最近：${fixed[0].title}` : undefined} /></Row>,
-    <Row key="done" n={4} label="已完成" href={essays ? '/essays' : undefined}><Big value={essays} unit={`篇作文 · ${cards} 张卡片`} /></Row>,
-    <Row key="new" n={5} label="新的练习" href="/practice"><span className="text-[17px]">全部主题和题目</span></Row>,
+    <Row key="focus" n={1} label="这次留意" href={focus ? '/progress' : undefined}><span className={cn('text-[17px]', !focus && 'text-muted-foreground')}>{focus ? focus.title : '—'}</span></Row>,
+    <Row key="fixed" n={2} label="改好的问题" href={fixed.length ? '/progress' : undefined}><Big value={fixed.length} unit="个" note={fixed[0] ? `最近：${fixed[0].title}` : undefined} /></Row>,
+    <Row key="done" n={3} label="已完成" href={essays ? '/essays' : undefined}><Big value={essays} unit={`篇作文 · ${cards} 张卡片`} /></Row>,
+    <Row key="new" n={4} label="新的练习" href="/practice"><span className="text-[17px]">全部主题和题目</span></Row>,
   ];
   // Days with practice: a practice started, last worked on or completed.
   const activity = [...data.attempts.flatMap((a) => [a.createdAt, a.lastStudentActionAt]), ...data.completions.map((c) => c.completedAt)];

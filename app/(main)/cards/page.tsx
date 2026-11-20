@@ -2,20 +2,19 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth/server";
 import { readFeatures } from "@/lib/config/features";
 import { listSessions } from "@/lib/db/queries/sessions";
-import { ReviewDeck, type DeckCard } from "@/components/review/review-deck";
 import { FixDiffList } from "@/components/review/fix-diff";
 import { IdeaCards } from "@/components/review/idea-cards";
 import { FilterChips } from "@/components/review/filter-chips";
 import { TOPIC_ORDER } from "@/components/review/topics";
-import { dueAt, mastered, reviewItems, spotStage, todayItems, type ReviewItem, type ReviewState } from "@/lib/learning/review-items";
+import { dueAt, mastered, reviewItems, type ReviewItem, type ReviewState } from "@/lib/learning/review-items";
 import { formatDate } from "@/lib/learning/summary";
 import { topicLabels } from "@/lib/question-bank/labels";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "复习" };
-type Tab = "today" | "phrases" | "sentences" | "ideas";
+type Tab = "phrases" | "sentences" | "ideas";
 type Params = { tab?: string; topic?: string; status?: string; drafts?: string };
-const TABS: { key: Tab; label: string }[] = [{ key: "today", label: "今日复习" }, { key: "phrases", label: "表达库" }, { key: "sentences", label: "错句本" }, { key: "ideas", label: "观点卡片" }];
+const TABS: { key: Tab; label: string }[] = [{ key: "ideas", label: "观点卡片" }, { key: "phrases", label: "表达库" }, { key: "sentences", label: "错句本" }];
 // Items from an own question saved before topics were asked for.
 const OTHER = "other";
 
@@ -26,13 +25,11 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   const tabs = TABS.filter(t => t.key !== "ideas" || flags.QUICK_ENABLED);
   // "cards" is the idea-card tab's old name.
   const requested = params.tab === "cards" ? "ideas" : params.tab;
-  const tab = tabs.find(t => t.key === requested)?.key ?? "today";
+  const tab = tabs.find(t => t.key === requested)?.key ?? tabs[0].key;
   const items = reviewItems(listSessions(user.id));
   const state: ReviewState = user.profile.review ?? {};
-  const today = todayItems(items, state);
-  const deck: DeckCard[] = today.map(item => ({ item, spot: spotStage(item, state), source: `${formatDate(item.date)} 的作文` }));
   const phrases = items.filter(i => i.kind === "phrase"), fixes = items.filter(i => i.kind === "fix");
-  const counts: Record<Tab, number | null> = { today: today.length, phrases: phrases.length, sentences: fixes.length, ideas: null };
+  const counts: Record<Tab, number | null> = { phrases: phrases.length, sentences: fixes.length, ideas: null };
 
   // Libraries are filtered by topic; the filter lives in the URL.
   const topic = params.topic === OTHER || (params.topic && topicLabels[params.topic]) ? params.topic : null;
@@ -53,12 +50,11 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
       <h1 className="page-heading">复习</h1>
       <nav aria-label="复习内容" className="flex flex-wrap gap-x-6 border-b">
         {tabs.map(t => (
-          <Link key={t.key} href={t.key === "today" ? "/cards" : `/cards?tab=${t.key}`} aria-current={tab === t.key ? "page" : undefined} className={cn("-mb-px flex items-baseline gap-1.5 border-b-2 pb-3 text-[16px] transition-colors", tab === t.key ? "border-foreground font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}>
+          <Link key={t.key} href={t.key === tabs[0].key ? "/cards" : `/cards?tab=${t.key}`} aria-current={tab === t.key ? "page" : undefined} className={cn("-mb-px flex items-baseline gap-1.5 border-b-2 pb-3 text-[16px] transition-colors", tab === t.key ? "border-foreground font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}>
             {t.label}{counts[t.key] !== null && <span className="text-[14px] font-normal text-muted-foreground tabular-nums">{counts[t.key]}</span>}
           </Link>
         ))}
       </nav>
-      {tab === "today" && <ReviewDeck cards={deck} />}
       {tab === "phrases" && <>
         {phrases.length > 0 && <FilterChips label="话题" options={topicOptions(phrases)} active={topic} href={value => href({ topic: value })} />}
         <ItemList items={phrases.filter(inTopic)} state={state} empty={phrases.length ? "这个话题下还没有表达。" : "写作文时用“英文怎么说”问教练，采纳的说法会收进这里。"} />
