@@ -84,7 +84,7 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
     <header className="relative z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-sheet px-3">
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
         <Link href="/essays" onClick={leave} className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
-          {!leaving && <ChevronLeft className="size-4" />}{leaving ? "正在保存…" : "作文"}
+          {!leaving && <ChevronLeft className="size-4" />}{leaving ? "正在保存…" : "练习"}
         </Link>
         <span className="text-input" aria-hidden>/</span>
         <Popover>

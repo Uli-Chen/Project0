@@ -9,8 +9,6 @@ import { examTime, learningSummary } from '@/lib/learning/summary';
 import { fixedIssues } from '@/lib/learning/fixes';
 import { countWords } from '@/lib/rules/text';
 import { StartPractice } from '@/components/topics/start-practice';
-import { TopicPicker, type TopicChoice } from '@/components/topics/topic-picker';
-import { topicChoices } from '@/components/topics/topic-choices';
 import { Row, Big } from '@/components/topics/home-row';
 import { PracticeHeatmap } from '@/components/topics/practice-heatmap';
 import { WeekPips } from '@/components/topics/week-pips';
@@ -52,7 +50,6 @@ export function TopicHome({ user, quickEnabled }: { user: CurrentUser; quickEnab
   const focus = learningSummary(sessions.filter((s) => s.activity === 'deep'), profile).focus;
   const due = dueItems(reviewItems(sessions), profile.review ?? {}).length;
   const time = examTime(profile);
-  const topics = topicChoices(data, topic);
 
   // Why this question, as specific to the learner as the data allows.
   const typeName = question ? questionTypeLabels[question.questionType] ?? question.questionType : '';
@@ -100,7 +97,7 @@ export function TopicHome({ user, quickEnabled }: { user: CurrentUser; quickEnab
       </header>
 
       <section aria-label="今天的推荐" className="mt-14">
-        {resume ? <Resume session={resume} topics={topics} /> : question && offer ? (
+        {resume ? <Resume session={resume} /> : question && offer ? (
           <>
             <Reason>{reason}</Reason>
             <Question>{question.text}</Question>
@@ -110,7 +107,7 @@ export function TopicHome({ user, quickEnabled }: { user: CurrentUser; quickEnab
                 ? <StartPractice size="lg" questionId={offer.questionId} activity="deep" rewriteOfDeepId={offer.rewriteOfDeepId}>同题重写</StartPractice>
                 : <StartPractice size="lg" questionId={offer.questionId} activity={offer.activity} continueFromQuickId={offer.continueFromQuickId} explicitNew={offer.needsExplicitNew}>{offer.needsExplicitNew ? '另开一篇作文' : offer.continueFromQuickId ? '用卡片写成作文' : offer.activity === 'quick' ? '开始卡片' : '开始写作'}</StartPractice>}
               {alternative && <StartPractice size="lg" variant="ghost" className="text-muted-foreground" questionId={offer.questionId} activity={alternative.activity}>{alternative.label}</StartPractice>}
-              <TopicPicker topics={topics} className={ghostPill}>换一个</TopicPicker>
+              <Link href="/practice" className={ghostPill}>换一个</Link>
             </div>
           </>
         ) : (
@@ -120,7 +117,7 @@ export function TopicHome({ user, quickEnabled }: { user: CurrentUser; quickEnab
             <div className="mt-8 flex flex-wrap items-center gap-2">
               {pick?.kind === 'resume'
                 ? <Link href={`/essays/${pick.attemptId}`} className={solidPill}>继续练习</Link>
-                : <TopicPicker topics={topics} className={solidPill}>选主题</TopicPicker>}
+                : <Link href="/practice" className={solidPill}>去选题</Link>}
             </div>
           </>
         )}
@@ -152,7 +149,7 @@ function Meta({ items }: { items: string[] }) {
 
 type Session = ReturnType<typeof listSessions>[number];
 
-function Resume({ session, topics }: { session: Session; topics: TopicChoice[] }) {
+function Resume({ session }: { session: Session }) {
   const quick = session.activity === 'quick';
   const kind = session.stage === 'revising' && session.drafts.revision ? 'revision' : 'original';
   const words = countWords(session.drafts[kind] ?? '');
@@ -167,7 +164,7 @@ function Resume({ session, topics }: { session: Session; topics: TopicChoice[] }
       <Meta items={[topic ? topicLabels[topic] ?? topic : '', type ? questionTypeLabels[type] ?? type : '', !quick && words > 0 ? `${statusLabel} · 已写 ${words} 词` : statusLabel]} />
       <div className="mt-8 flex flex-wrap items-center gap-2">
         <Link href={`/essays/${session.id}`} className={solidPill}>{quick ? '继续写卡片' : words ? '继续写作' : '开始写作'}</Link>
-        <TopicPicker topics={topics} className={ghostPill}>换一个</TopicPicker>
+        <Link href="/practice" className={ghostPill}>换一个</Link>
       </div>
     </>
   );

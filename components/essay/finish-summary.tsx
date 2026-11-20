@@ -54,7 +54,7 @@ export function FinishDialog() {
         <FinishSummary animate />
         <DialogFooter>
           <button type="button" onClick={() => setOpen(false)} className={buttonVariants({ variant: "ghost" })}>留在此页</button>
-          <Link href={assessment ? "/progress" : "/essays"} className={buttonVariants()}>{assessment ? "查看进展" : "回到作文"}</Link>
+          <Link href={assessment ? "/progress" : "/essays"} className={buttonVariants()}>{assessment ? "查看进展" : "回到练习"}</Link>
         </DialogFooter>
       </DialogContent>
     </Dialog>

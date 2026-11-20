@@ -29,7 +29,7 @@ export function AppSidebar({ user, focus, bankEnabled=false, checkpointsEnabled=
   const closeMobile = () => setOpenMobile(false);
   // 题库开启后“练习”页就是开始写的地方，不再另放一个去同一处的“新建作文”
   const items = bankEnabled
-    ? [{ href: "/", label: "主页", icon: House }, { href: "/practice", label: "练习", icon: PenLine }, { href: "/essays", label: "作文", icon: FileText }, { href: "/cards", label: "复习", icon: Layers, count: reviewDue }, ...(checkpointsEnabled ? [{ href: "/mock", label: "模考", icon: Timer }] : []), NAV[1]]
+    ? [{ href: "/", label: "主页", icon: House }, { href: "/practice", label: "练习", icon: PenLine }, { href: "/cards", label: "复习", icon: Layers, count: reviewDue }, ...(checkpointsEnabled ? [{ href: "/mock", label: "模考", icon: Timer }] : []), NAV[1]]
     : NAV;
   return (
     <Sidebar collapsible="icon">
