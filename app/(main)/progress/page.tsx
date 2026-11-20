@@ -2,15 +2,15 @@ import { checkpointScorePoints } from "@/lib/learning/checkpoints";
 import { readFeatures } from "@/lib/config/features";
 import { getTopicData } from "@/lib/db/queries/topics";
 import { checkpointHistory } from "@/lib/db/checkpoints";
-import { CheckpointInvitation, CheckpointTitle } from "@/components/checkpoints/checkpoint-invitation";
+import { CheckpointInvitation } from "@/components/checkpoints/checkpoint-invitation";
 import Link from "next/link";
 import { MockScoreChart, PracticeDumbbell } from "@/components/pages/progress-charts";
 import { IssueMemory } from "@/components/progress/issue-memory";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { requireUser } from "@/lib/auth/server";
 import { listSessions } from "@/lib/db/queries/sessions";
-import { buildMemory, formatDate, learningSummary, sessionDate } from "@/lib/learning/summary";
+import { buildMemory, learningSummary, sessionDate } from "@/lib/learning/summary";
 
 export const metadata = { title: "进展" };
 
@@ -21,10 +21,6 @@ export default async function ProgressPage() {
   const perWeek = Number(user.profile.perWeek) || 0;
   const checkpointsEnabled = readFeatures().CHECKPOINTS_ENABLED;
   const checkpoints = checkpointHistory(user.id);
-  const lastEligible = checkpoints.filter(c => c.status === "eligible" && c.completedAt).map(c => c.completedAt!).sort().at(-1);
-  const nextCheckpointAt = lastEligible ? new Date(Date.parse(lastEligible) + 14 * 86400000).toISOString() : null;
-  const checkpointWaiting = Boolean(lastEligible) && Date.parse(lastEligible!) + 14 * 86400000 > new Date().getTime();
-  const deepDone = sessions.some(s => s.activity === "deep" && s.evaluation);
   const qualified = new Set(checkpoints.filter(c => c.status === "eligible").map(c => c.attemptId));
   const otherMocks = summary.evaluated.filter(s => s.mode === "mock" && !qualified.has(s.id));
   const mockPoints = checkpointsEnabled ? checkpointScorePoints(sessions, checkpoints) : summary.evaluated.filter(session => session.mode === "mock").slice().reverse().map((session, index) => ({ date: sessionDate(session), label: `第 ${index + 1} 篇`, overall: session.evaluation!.scores.overall, dims: session.evaluation!.scores.dims }));
@@ -38,7 +34,7 @@ export default async function ProgressPage() {
         <Link href="/onboarding" className={buttonVariants({ variant: "outline" })}>{user.profile.onboardingCompleted ? "调整目标" : "设置目标"}</Link>
       </header>
 
-      <CheckpointInvitation fallback={checkpointsEnabled ? <CheckpointNote firstDeepDone={deepDone} nextAt={nextCheckpointAt} waiting={checkpointWaiting} /> : null} />
+      <CheckpointInvitation onDemand />
       <section aria-label="目标" className="grid grid-cols-2 gap-x-10 gap-y-8 border-y py-8 md:grid-cols-4">
         <Stat label="目标分" value={summary.target?.toFixed(1) ?? "—"} />
         <Stat label={summary.countsDown ? "距考试" : "计划备考"} value={!user.profile.onboardingCompleted ? "—" : summary.examPassed ? "已过" : `${summary.weeks}`} unit={summary.examPassed ? undefined : "周"} />
@@ -96,19 +92,6 @@ function otherMockReason(reason: string | null | undefined) {
 
 /** Shown while no independent mock is on offer, so the feature is visible before it is due: the
  * title (rules on demand), when it opens, and a start button that is not yet available. */
-function CheckpointNote({ firstDeepDone, nextAt, waiting }: { firstDeepDone: boolean; nextAt: string | null; waiting: boolean }) {
-  const when = !firstDeepDone ? "完成第一篇精练后开放" : waiting ? `${formatDate(nextAt!)} 起可以做` : "已选择稍后再做，到时会提醒你";
-  return (
-    <section className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-      <CheckpointTitle />
-      <div className="flex items-center gap-3">
-        <p className="text-[15px]">{when}</p>
-        <Button size="sm" variant="outline" disabled>开始</Button>
-      </div>
-    </section>
-  );
-}
-
 function SectionTitle({ title, meta }: { title: string; meta?: string }) {
   return <div className="flex items-baseline justify-between gap-4"><h2 className="section-heading">{title}</h2>{meta && <span className="meta">{meta}</span>}</div>;
 }

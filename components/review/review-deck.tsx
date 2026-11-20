@@ -105,7 +105,7 @@ function Empty({ title, done = false, action, children }: { title: string; done?
       <h2 className="text-[19px] font-semibold">{title}</h2>
       <p className="mt-2 max-w-[30em] text-[15px] leading-relaxed text-muted-foreground">{children}</p>
       {action}
-      <Link href="/" className={cn("text-sm underline underline-offset-4", action ? "mt-4" : "mt-6")}>去练习</Link>
+      <Link href="/practice" className={cn("text-sm underline underline-offset-4", action ? "mt-4" : "mt-6")}>去练习</Link>
     </div>
   );
 }

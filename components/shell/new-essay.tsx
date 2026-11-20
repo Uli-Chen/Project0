@@ -54,7 +54,7 @@ export function StartEssayButton({ kind, mode, children, variant = "default" }: 
 /** Bank entry always goes to the actual catalog; pasted tasks stay explicit. */
 export function NewEssayButton({ bankEnabled, focus, variant = "default" }: { bankEnabled: boolean; focus?: string; variant?: "default" | "outline" }) {
   return bankEnabled
-    ? <Button variant={variant} nativeButton={false} render={<Link href="/#topics" />}><Plus />新建作文</Button>
+    ? <Button variant={variant} nativeButton={false} render={<Link href="/practice" />}><Plus />新建作文</Button>
     : <NewEssayDialog focus={focus} trigger={<Button variant={variant}><Plus />新建作文</Button>} />;
 }
 

@@ -9,7 +9,7 @@ const KEY = "p0:week-seen";
  * 本周进度格。比上次看到时多完成的格子会从左到右填上一次；
  * 第一次打开或读不到记录时直接显示，不做动画。
  */
-export function WeekPips({ week, perWeek, weekKey }: { week: number; perWeek: number; weekKey: string }) {
+export function WeekPips({ week, perWeek, weekKey, align = "end" }: { week: number; perWeek: number; weekKey: string; align?: "start" | "end" }) {
   const [seen, setSeen] = useState<number | null>(null);
   useEffect(() => {
     let previous = week;
@@ -24,7 +24,7 @@ export function WeekPips({ week, perWeek, weekKey }: { week: number; perWeek: nu
 
   const total = Math.min(perWeek, 14);
   return (
-    <div className="mt-2 flex justify-end gap-1" aria-hidden>
+    <div className={cn("flex gap-1", align === "end" ? "justify-end" : "justify-start")} aria-hidden>
       {Array.from({ length: total }, (_, i) => {
         const done = i < week;
         const fresh = done && seen !== null && i >= seen;

@@ -55,7 +55,7 @@ export function examTime(profile: Pick<UserProfile, "timeBy" | "examDate" | "wee
   const weeks = weeksLeft(profile, now);
   const examPassed = Boolean(profile.examDate) && weeks === 0;
   const countsDown = Boolean(profile.examDate);
-  return { examPassed, countsDown, timeLeft: examPassed ? "考试日期已过" : countsDown ? `还有 ${weeks} 周` : `计划备考 ${weeks} 周` };
+  return { weeks, examPassed, countsDown, timeLeft: examPassed ? "考试日期已过" : countsDown ? `还有 ${weeks} 周` : `计划备考 ${weeks} 周` };
 }
 
 const WEEK = 7 * 86400000;

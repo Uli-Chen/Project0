@@ -21,7 +21,7 @@ export default async function TopicPage({ params }: { params: Promise<{ topic: s
   const done = new Set(data.completions.filter(c => c.activity === 'deep').map(c => c.questionId));
   return (
     <div className="flex flex-col">
-      <Link href="/" className="-ml-2 inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[15px] text-muted-foreground hover:bg-sunk hover:text-foreground"><ChevronLeft className="size-4" />全部主题</Link>
+      <Link href="/practice" className="-ml-2 inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[15px] text-muted-foreground hover:bg-sunk hover:text-foreground"><ChevronLeft className="size-4" />全部主题</Link>
       <h1 className="page-heading mt-4">{topicLabels[topic] ?? topic}</h1>
 
       <section aria-label="下一次练习" className="lead mt-8 flex flex-col gap-4 px-7 py-8 sm:px-10">

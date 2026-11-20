@@ -20,7 +20,9 @@ async function loadStatus(): Promise<Load> {
   } catch { return { phase: "failed" }; }
 }
 
-export function CheckpointInvitation({ fallback = null }: { fallback?: React.ReactNode } = {}) {
+/** onDemand: the learner asked for a checkpoint (the 模考 entry), so a deferred invitation still offers
+ * the question and there is no "remind me later". */
+export function CheckpointInvitation({ fallback = null, onDemand = false }: { fallback?: React.ReactNode; onDemand?: boolean } = {}) {
   const [load, setLoad] = useState<Load>({ phase: "loading" });
   const [declaration, setDeclaration] = useState("");
   const [error, setError] = useState("");
@@ -67,7 +69,7 @@ export function CheckpointInvitation({ fallback = null }: { fallback?: React.Rea
   );
   const status = load.status;
   if (!status.enabled) return null;
-  if (status.state === "not_due" || status.state === "deferred") return <>{fallback}</>;
+  if (status.state === "deferred" && !onDemand) return <>{fallback}</>;
   const failure = error || mock.error;
   return (
     <section className="rounded-2xl bg-sunk px-6 py-5">
@@ -90,7 +92,7 @@ export function CheckpointInvitation({ fallback = null }: { fallback?: React.Rea
           </label>
           <div className="mt-3 flex gap-2.5">
             <Button size="sm" variant="outline" disabled={busy || !declaration} onClick={() => void act()}>开始独立模考</Button>
-            <Button size="sm" variant="ghost" disabled={busy} onClick={() => void act(true)}>七天后提醒</Button>
+            {!onDemand && <Button size="sm" variant="ghost" disabled={busy} onClick={() => void act(true)}>七天后提醒</Button>}
           </div>
         </div>
       )}
@@ -119,7 +121,6 @@ export function CheckpointTitle() {
 
 const CHECKPOINT_RULES = [
   "40 分钟写一道你没练过的题，不用教练。成绩单独记录，看你不靠帮助时写到什么水平。",
-  "完成第一篇精练后开放，两次之间至少隔两周。",
   "在别处练过这道题、超过 40 分钟提交或写作时用了教练，这次成绩不计入独立模考。",
   "没有可用的题时，可以改做普通模考：同样 40 分钟，有反馈，成绩不计入独立模考。",
 ];

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChartNoAxesColumn, ChevronsUpDown, FileText, Layers, LogOut, PenLine, Plus, Settings } from "lucide-react";
+import { ChartNoAxesColumn, ChevronsUpDown, FileText, House, Layers, LogOut, PenLine, Plus, Settings, Timer } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -22,14 +22,14 @@ export function Avatar({ name, size = 24 }: { name: string; size?: number }) {
   return <span aria-hidden="true" className="inline-flex shrink-0 items-center justify-center rounded-full bg-foreground font-medium text-background" style={{ width: size, height: size, fontSize: size * 0.46 }}>{Array.from(name)[0]}</span>;
 }
 
-export function AppSidebar({ user, focus, bankEnabled=false, reviewDue=0 }: { user: { name: string; email: string }; focus?: string; bankEnabled?: boolean; reviewDue?: number }) {
+export function AppSidebar({ user, focus, bankEnabled=false, checkpointsEnabled=false, reviewDue=0 }: { user: { name: string; email: string }; focus?: string; bankEnabled?: boolean; checkpointsEnabled?: boolean; reviewDue?: number }) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
   // On a phone the navigation is a sheet over the page; get it out of the way as soon as you pick a page.
   const closeMobile = () => setOpenMobile(false);
-  // 题库开启后“练习”就是开始写的地方，不再另放一个去同一处的“新建作文”
+  // 题库开启后“练习”页就是开始写的地方，不再另放一个去同一处的“新建作文”
   const items = bankEnabled
-    ? [{ href: "/", label: "练习", icon: PenLine }, { href: "/essays", label: "作文", icon: FileText }, { href: "/cards", label: "复习", icon: Layers, count: reviewDue }, NAV[1]]
+    ? [{ href: "/", label: "主页", icon: House }, { href: "/practice", label: "练习", icon: PenLine }, { href: "/essays", label: "作文", icon: FileText }, { href: "/cards", label: "复习", icon: Layers, count: reviewDue }, ...(checkpointsEnabled ? [{ href: "/mock", label: "模考", icon: Timer }] : []), NAV[1]]
     : NAV;
   return (
     <Sidebar collapsible="icon">
@@ -50,7 +50,7 @@ export function AppSidebar({ user, focus, bankEnabled=false, reviewDue=0 }: { us
               </SidebarMenuItem>
             )}
             {items.map((item) => {
-              const active = item.href === "/" ? pathname === "/" || pathname.startsWith("/topics") : pathname.startsWith(item.href);
+              const active = item.href === "/" ? pathname === "/" : item.href === "/practice" ? pathname.startsWith("/practice") || pathname.startsWith("/topics") : pathname.startsWith(item.href);
               const count = "count" in item ? item.count ?? 0 : 0;
               return (
                 <SidebarMenuItem key={item.href}>

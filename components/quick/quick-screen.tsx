@@ -678,7 +678,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
     <p aria-live="polite" className="sr-only">{announcement}</p>
     <header className="relative z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-sheet px-3">
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <Link href="/" onNavigate={e => allowNavigation(e, "/")} className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"><ChevronLeft className="size-4" />练习</Link>
+        <Link href="/practice" onNavigate={e => allowNavigation(e, "/practice")} className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"><ChevronLeft className="size-4" />练习</Link>
         <span className="text-input" aria-hidden>/</span>
         <h1 className="truncate px-2 text-[15px] font-semibold">速刷主题卡片</h1>
         <Badge variant="outline" className="hidden shrink-0 sm:inline-flex">{badge}</Badge>

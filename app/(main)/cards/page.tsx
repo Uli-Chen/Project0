@@ -79,7 +79,7 @@ function TopicCards({ userId, drafts }: { userId: string; drafts: boolean }) {
           <Link key={filter.label} href={filter.href} aria-current={filter.on ? "true" : undefined} className={cn("inline-flex h-8.5 items-center rounded-full border px-4 text-sm transition-colors", filter.on ? "border-foreground bg-foreground text-background" : "border-input hover:border-foreground/40 hover:bg-sunk")}>{filter.label}</Link>
         ))}
       </nav>
-      {cards.length === 0 && <p className="rounded-2xl border border-dashed border-input px-8 py-14 text-center text-[15px] text-muted-foreground">这里还没有{drafts ? "" : "已通过检查的"}卡片。<Link href="/" className="ml-2 text-foreground underline underline-offset-4">去练习</Link></p>}
+      {cards.length === 0 && <p className="rounded-2xl border border-dashed border-input px-8 py-14 text-center text-[15px] text-muted-foreground">这里还没有{drafts ? "" : "已通过检查的"}卡片。<Link href="/practice" className="ml-2 text-foreground underline underline-offset-4">去练习</Link></p>}
       {Object.entries(topicLabels).map(([topic, name]) => {
         const group = cards.filter(c => c.session.question?.primaryTopic === topic);
         return group.length > 0 && (

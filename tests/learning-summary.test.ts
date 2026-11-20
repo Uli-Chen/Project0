@@ -3,6 +3,8 @@ import { test } from "node:test";
 import { DEFAULT_PROFILE } from "../lib/auth/types";
 import { buildMemory, examDateFromWeeks, examDateToSave, learningSummary, weeksLeft } from "../lib/learning/summary";
 import { createSession } from "../lib/pipeline/initial";
+import { fixedIssues } from "../lib/learning/fixes";
+import { practiceDays } from "../lib/learning/practice-days";
 import type { Evaluation, Issue } from "../lib/prototype/types";
 
 const issue: Issue = { rank: 1, code: "TR-example", title: "展开例子", why: "例子缺少结果。", sentenceIds: [1], hintL1: "这个例子说明了什么？", recurring: false };
@@ -87,4 +89,25 @@ test("保存资料时没改备考周数，结束日期不变；改了才重算�
   assert.equal(legacySummary.timeLeft, "计划备考 8 周");
   assert.equal(learningSummary([], { ...DEFAULT_PROFILE, timeBy: "date", examDate: "2000-01-01" }).timeLeft, "考试日期已过");
   assert.equal(learningSummary([], { ...DEFAULT_PROFILE, ...plan, examDate: examDateFromWeeks("3") }).timeLeft, "还有 3 周");
+});
+
+test("fixed issues come from revision comparisons judged resolved, newest first", () => {
+  const older = evaluated("2025-01-01T00:00:00Z", [issue, { ...issue, rank: 2, title: "论证没说清原因" }]);
+  older.completedAt = "2025-01-02T00:00:00Z";
+  older.comparison = { issues: [{ rank: 1, status: "resolved", reason: "", revisionSentenceIds: [1] }, { rank: 2, status: "partly", reason: "", revisionSentenceIds: [] }] } as unknown as typeof older.comparison;
+  const newer = evaluated("2025-02-01T00:00:00Z", [{ ...issue, title: "论证没说清原因" }]);
+  newer.completedAt = "2025-02-02T00:00:00Z";
+  newer.comparison = { issues: [{ rank: 1, status: "resolved", reason: "", revisionSentenceIds: [2] }] } as unknown as typeof newer.comparison;
+  const noRevision = evaluated("2025-03-01T00:00:00Z");
+  assert.deepEqual(fixedIssues([older, newer, noRevision]).map((item) => [item.sessionId, item.title]), [[newer.id, "论证没说清原因"], [older.id, "展开例子"]]);
+});
+
+test("practice days count per Taipei day, Monday first, with no count after today", () => {
+  const now = new Date("2026-11-20T04:00:00Z"); // Friday in Taipei
+  const { weeks, activeDays } = practiceDays(["2026-11-19T17:30:00Z", "2026-11-20T01:00:00Z", "2026-11-17T03:00:00Z", null, "2025-01-01T00:00:00Z"], 2, now);
+  assert.equal(weeks.length, 2);
+  assert.equal(weeks[1][0].date, "2026-11-16");
+  assert.deepEqual(weeks[1].map((cell) => cell.count), [0, 1, 0, 0, 2, null, null]);
+  assert.equal(weeks[1][4].today, true);
+  assert.equal(activeDays, 2);
 });
