@@ -1,4 +1,4 @@
-# project0.auglearn.org 部署
+# AugWrite 部署（write.auglearn.org）
 
 ## 主域名上的 project0 入口
 
@@ -15,6 +15,17 @@ if ($project0_entry_redirect) {
 ```nginx
 proxy_redirect ~^https://project0\.auglearn\.org/coming-soon$ https://project0.auglearn.org/coming-soon$is_args$args;
 ```
+
+## 当前发布（2026-11-20，AugWrite 与新域名）
+
+已发布 `b06a7b4`（`walkthrough` 分支）：产品改名 AugWrite，未登录访问 `/` 307 到公开宣传页 `/welcome`，coming soon 与开发者密码入口已删除，注册保持关闭（`REGISTRATION_ENABLED=false`）。
+
+- 域名：`write.auglearn.org` 是主站；`project0.auglearn.org` 的所有请求 308 到新域名（保留路径和参数），主域名入口跳转也指向新域名。证书 `project0.auglearn.org` 已扩展为同时覆盖两个域名（certbot `--expand`），续期不变。`APP_ORIGIN=https://write.auglearn.org`。Cloudflare 上两条记录都是代理模式。
+- 开关：新开 `TUTOR_V2_ENABLED=true`（隐私说明 v1.0 已补齐，`npm run check:privacy` 通过）；新增 `DATABASE_BACKUP_KEEP_DAYS=30`。其余沿用：QUESTION_BANK/QUICK/CHECKPOINTS=true，FOCUS=false，LLM_PAYLOADS 未开。改动前的环境文件副本：`/home/squareofchen/env-local-before-augwrite-*`。
+- 数据：本地开发库的 `dev@auglearn.org` 账号及其全部练习、卡片、模考、复习进度导入生产库（只追加这一个账号，原有账户不动），导入后外键与 integrity_check 均正常。导入前备份：`opc-data/backups/2026-11-20T14-20-27.221Z-…db`；发布脚本备份：`2026-11-20T14-19-52.685Z-…db`。
+- 流程：服务器磁盘已满（100%），删除 11-04 的两个旧回滚副本和 npm 缓存后才能上传。发布目录完整 `npm run check` 通过（311 后端、72 UI、数据库四组、生产构建），备用端口带转发头冒烟后用 `release-staged.sh` 切换。之后发现 `/privacy` 在构建时被预渲染成 404，改为按请求渲染（`b06a7b4`），停服务约 2 分钟原地重建。
+- 回滚：代码 `/home/squareofchen/opc-before-patch-20261120T141951Z`（即 `7e69111`）；nginx 配置备份 `/home/squareofchen/nginx-before-augwrite-*.tgz` 与 `nginx-opc-before-write`。
+- 切换后：`/` 307 到 `/welcome`，`/welcome`、`/login`、`/register`（显示暂停）、`/privacy` 200，`/coming-soon` 404；旧域名 308 到新域名；新进程日志无报错。磁盘余量约 390M，需要尽快清理或扩容。
 
 ## 当前发布（2026-11-05，coming soon 与开发者预览）
 
