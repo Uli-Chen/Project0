@@ -54,6 +54,25 @@
         "3125"
       ],
       "port": 3125
+    },
+    {
+      "name": "web-latest",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DATABASE_PATH=./data/dev-full.sqlite",
+        "QUESTION_BANK_ENABLED=true",
+        "QUICK_ENABLED=true",
+        "CHECKPOINTS_ENABLED=true",
+        "REGISTRATION_ENABLED=true",
+        "TUTOR_V2_ENABLED=true",
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3126"
+      ],
+      "port": 3126
     }
   ]
 }
