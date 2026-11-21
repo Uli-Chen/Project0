@@ -13,6 +13,7 @@ import { coachCapabilities } from "@/lib/learning/essay-view";
 import { useSession } from "@/lib/prototype/session-store";
 import type { CoachMessage, Suggestion } from "@/lib/prototype/types";
 import { useEssayUi, type Intent } from "./essay-ui";
+import { RecallPanel } from "./recall";
 
 const INTENT_LABEL: Record<Intent, string> = { ask: "提问", attempt: "试写", express: "英文怎么说" };
 
@@ -95,6 +96,7 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{state.focus.instruction}</p>
           </section>
         )}
+        {state.mode === "practice" && ["prewriting", "writing", "revising"].includes(stage) && <RecallPanel />}
         {nudge && (
           <div className="motion-reveal mb-5 flex items-start gap-3 rounded-lg bg-coach-soft px-3.5 py-3">
             <p className="flex-1 text-[14.5px] leading-relaxed text-foreground">{nudge.message}</p>

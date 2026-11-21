@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth/server";
 import { readFeatures } from "@/lib/config/features";
 import { listSessions } from "@/lib/db/queries/sessions";
 import { FixDiffList } from "@/components/review/fix-diff";
+import { SelfTest } from "@/components/review/self-test";
 import { IdeaCards } from "@/components/review/idea-cards";
 import { FilterChips } from "@/components/review/filter-chips";
 import { TOPIC_ORDER } from "@/components/review/topics";
@@ -66,7 +67,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
       {tab === "sentences" && <div className="motion-enter flex flex-col gap-6" style={{ "--i": 2 } as React.CSSProperties}>
         {fixes.length > 0 && <FilterChips label="话题" options={topicOptions(fixes)} active={topic} href={value => href({ topic: value })} />}
         {fixes.filter(inTopic).length
-          ? <Batches total={fixes.filter(inTopic).length} unit="句" render={(from, to) => <FixDiffList rows={fixes.filter(inTopic).slice(from, to).map(item => ({ id: item.id, before: item.prompt, after: item.answer, issueTitle: item.issueTitle, topic: item.topic ? topicLabels[item.topic] : null, topicKey: item.topic, progress: progressLabel(item, state), mastered: mastered(state[item.id]), sessionId: item.sessionId, source: `${formatDate(item.date)} 的作文` }))} />} />
+          ? <Batches total={fixes.filter(inTopic).length} unit="句" render={(from, to) => <FixDiffList rows={fixes.filter(inTopic).slice(from, to).map(item => ({ id: item.id, before: item.prompt, after: item.answer, issueTitle: item.issueTitle, topic: item.topic ? topicLabels[item.topic] : null, topicKey: item.topic, progress: progressLabel(item, state), due: isDue(item, state), mastered: mastered(state[item.id]), sessionId: item.sessionId, source: `${formatDate(item.date)} 的作文` }))} />} />
           : <Empty><EmptyMedia variant="icon"><FileDiff /></EmptyMedia><EmptyDescription>{fixes.length ? "这个话题下还没有错句。" : "拿到第一次写作反馈之后，被指出的句子会收进这里。"}</EmptyDescription></Empty>}
       </div>}
       {tab === "ideas" && <div className="motion-enter flex flex-col gap-6" style={{ "--i": 2 } as React.CSSProperties}>
@@ -89,7 +90,7 @@ function ItemList({ items, state, empty }: { items: ReviewItem[]; state: ReviewS
           {item.kind === "phrase" ? (
             <div>
               <p className="text-[15px] text-muted-foreground">{item.prompt}</p>
-              <p className="mt-1.5 font-serif text-[19px] leading-[1.5]">{item.answer}</p>
+              <div className="mt-1.5"><SelfTest id={item.id} due={isDue(item, state)}><p className="font-serif text-[19px] leading-[1.5]">{item.answer}</p></SelfTest></div>
             </div>
           ) : item.kind === "fix" ? (
             <div>
@@ -121,6 +122,11 @@ function Batches({ total, unit, render }: { total: number; unit: string; render:
       <CollapsibleTrigger className="group -ml-3 inline-flex h-8 w-fit items-center gap-1.5 rounded-full px-3 text-[14px] text-muted-foreground transition-colors duration-(--dur-fast) hover:bg-sunk hover:text-foreground"><span className="group-data-panel-open:hidden">显示其余 {total - BATCH} {unit}</span><span className="hidden group-data-panel-open:inline">收起</span><ChevronDown className="size-4 transition-transform duration-(--dur-layout) ease-(--ease-soft) group-data-panel-open:rotate-180" aria-hidden /></CollapsibleTrigger>
     </Collapsible>
   );
+}
+
+/** Due for a self-test: not mastered, and its date has come. */
+function isDue(item: ReviewItem, state: ReviewState) {
+  return !mastered(state[item.id]) && dueAt(item, state) <= Date.now();
 }
 
 /** Where an item stands: mastered, due now, or the date it comes back. */

@@ -17,6 +17,7 @@ import { countWords } from "@/lib/rules";
 import { MOCK_DURATION_SECONDS } from "@/lib/rules/checkpoint";
 import { useSession } from "@/lib/prototype/session-store";
 import type { EssayKind } from "@/lib/prototype/types";
+import { SubmitSelfCheck } from "./recall";
 import { cn } from "@/lib/utils";
 import { useEssayUi } from "./essay-ui";
 
@@ -204,6 +205,7 @@ function PrimaryAction({ onSubmit, assessment }: { onSubmit: () => void; assessm
           <PopoverTrigger render={<Button size="sm" disabled={busy} />}>{revision ? "提交改写稿" : "提交评估"}</PopoverTrigger>
           <PopoverContent align="end" className="w-72">
             {words < MIN_WORDS && <p className="mb-2 rounded-md bg-warn-soft px-2.5 py-2 text-sm">现在 {words} 词，题目要求至少 {MIN_WORDS} 词。考试中字数不足会影响任务回应的得分。</p>}
+            {state.mode === "practice" && <SubmitSelfCheck />}
             <p className="text-sm">提交后不能再修改{revision ? "改写稿" : "本稿"}。</p>
             <div className="mt-3 flex justify-end gap-1.5">
               <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>再看看</Button>

@@ -25,7 +25,7 @@ type Spotlight = { question: BankQuestion; reason: string; random?: boolean };
 
 /** The bank tab: filters beside three ways to get a question, then every matching question as a card. */
 /** `questions` is every match (随机一题 draws from all of them); `visible` is the page on screen. */
-export function QuestionBank({ filters, questions, visible, pager, pick, quickEnabled }: { filters: React.ReactNode; questions: BankQuestion[]; visible: BankQuestion[]; pager: React.ReactNode; pick: Spotlight | null; quickEnabled: boolean }) {
+export function QuestionBank({ filters, coverage, questions, visible, pager, pick, quickEnabled }: { filters: React.ReactNode; coverage?: React.ReactNode; questions: BankQuestion[]; visible: BankQuestion[]; pager: React.ReactNode; pick: Spotlight | null; quickEnabled: boolean }) {
   const [spotlight, setSpotlight] = useState<Spotlight | null>(null);
   const drawable = questions.filter((q) => q.status !== "open");
   const random = (avoid?: string) => {
@@ -43,6 +43,8 @@ export function QuestionBank({ filters, questions, visible, pager, pick, quickEn
           <NewEssayDialog pasteOnly trigger={<Button variant="outline" size="sm" title="粘贴任意一道大作文题"><ClipboardPaste className="text-primary" />用自己的题</Button>} />
         </div>
       </div>
+
+      {coverage}
 
       {visible.length > 0 ? (
         // Keyed by the visible ids so a new filter or page quietly replays the stagger.

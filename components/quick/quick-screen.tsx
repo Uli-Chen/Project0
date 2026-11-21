@@ -26,6 +26,7 @@ import { useIsWide } from "@/hooks/use-wide";
 import { addOrphan, answerToRestore, decodeAnswer, encodeAnswer, joinDraft, quickDiscardKey, quickDraftKey, readLocalDraft, takeOrphan, writeLocalDraft } from "@/lib/drafts/local-draft";
 import { cn } from "@/lib/utils";
 import { LeaveConfirmation } from "./leave-confirmation";
+import { OwnBreakdown } from "./own-breakdown";
 
 export { QUICK_STARTERS } from "@/lib/quick/client-state";
 
@@ -63,7 +64,7 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<Reply<T>> 
   } finally { clearTimeout(timer); }
 }
 
-export function QuickScreen({ initial, requirements }: { initial: QuickData; requirements: QuestionRequirements }) {
+export function QuickScreen({ initial, requirements, ownBreakdown = false }: { initial: QuickData; requirements: QuestionRequirements; ownBreakdown?: boolean }) {
   const router = useRouter();
   const [data, setData] = useState(initial);
   const [draft, setDraftState] = useState<Record<string, string>>(() => texts(initial));
@@ -728,6 +729,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
           </div>}
           <article className="paper motion-enter px-6 pt-8 pb-10 sm:px-14 sm:pt-11 sm:pb-12" style={{ "--i": 1 } as CSSProperties}>
             <p className="font-serif text-[21px] leading-[1.45] tracking-[-0.005em] text-pretty sm:text-[26px]">{data.session.question?.text ?? data.session.prompt.text}</p>
+            <Breakdown ask={ownBreakdown && requirements.subquestions.length > 1 && data.card.state === "draft" && data.card.content.parts.every(p => !p.text.trim())} storageKey={`p0:breakdown:${data.session.id}`} parts={requirements.subquestions.map(q => q.zh)}>
             <section aria-label="我的卡片" className="motion-stagger mt-9 space-y-10 border-t pt-8">
               {requirements.subquestions.map((q, index) => {
                 // While the draft differs from the checked version, only the gaps stay, as hints for the edit.
@@ -761,6 +763,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
                 </fieldset>;
               })}
             </section>
+            </Breakdown>
           </article>
         </div>
       </main>
@@ -773,4 +776,10 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
       </SheetContent>
     </Sheet>}
   </div>;
+}
+
+/** Whether to ask is decided once, when the card opens: typing the first answer must not take the step away mid-way. */
+function Breakdown({ ask, storageKey, parts, children }: { ask: boolean; storageKey: string; parts: string[]; children: React.ReactNode }) {
+  const [asking] = useState(ask);
+  return asking ? <OwnBreakdown storageKey={storageKey} parts={parts}>{children}</OwnBreakdown> : <>{children}</>;
 }

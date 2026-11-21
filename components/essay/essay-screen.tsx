@@ -26,13 +26,15 @@ import { EssayTopbar } from "./essay-topbar";
 import { EssayUiProvider, useEssayRefs, useEssayUi } from "./essay-ui";
 import { FeedbackTab } from "./feedback-tab";
 import { FinishDialog } from "./finish-summary";
+import type { Recall } from "@/lib/learning/recall";
+import { RecallProvider } from "./recall";
 import { cn } from "@/lib/utils";
 
 const PANEL_LABEL: Record<Panel, string> = { coach: "教练", feedback: "反馈", compare: "对比" };
 
 type ScreenProps = { cardRequirements?: QuestionRequirements; timing?: CheckpointTiming };
-export function EssayScreen(props: ScreenProps = {}) {
-  return <EssayUiProvider><Screen {...props} /></EssayUiProvider>;
+export function EssayScreen({ recall, ...props }: ScreenProps & { recall?: Recall } = {}) {
+  return <RecallProvider value={recall}><EssayUiProvider><Screen {...props} /></EssayUiProvider></RecallProvider>;
 }
 
 function Screen({ cardRequirements, timing }: ScreenProps) {

@@ -11,6 +11,7 @@ import { draftMarks, remainingByIssue, type DraftMark } from "@/lib/learning/rev
 import { IssueBadge } from "@/components/feedback/issue-list";
 import { useSession } from "@/lib/prototype/session-store";
 import { Button } from "@/components/ui/button";
+import { recordTyping } from "./pace";
 import { cn } from "@/lib/utils";
 import { useEssayRefs, useEssayUi } from "./essay-ui";
 
@@ -67,6 +68,7 @@ export function EssayBody({ prewrite }: { prewrite?: React.ReactNode } = {}) {
                 readOnly={lifecycleBusy || (coachBusy && pendingActionName === "evaluate")}
                 value={state.drafts[essayKind]}
                 onChange={(text) => actions.setDraft(essayKind, text)}
+                onTyping={(text, caret) => recordTyping(state.id, essayKind, text, caret)}
                 assist={assist}
                 onAction={assist ? handleAction : undefined}
                 onParagraphPause={(index) => actions.requestNudge(essayKind, index)}

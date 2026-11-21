@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PenLine } from "lucide-react";
+import { ChevronDown, PenLine } from "lucide-react";
 import { notFound } from "next/navigation";
 import { readFeatures } from "@/lib/config/features";
 import { requireUser } from "@/lib/auth/server";
@@ -13,13 +13,14 @@ import { pickQuestion, type QuestionPick } from "@/lib/rules/pick-question";
 import { pageWindow } from "@/lib/rules/page-window";
 import { PracticeRecords, type PracticeRecord } from "@/components/practice/practice-records";
 import { QuestionBank, type BankQuestion } from "@/components/practice/question-bank";
-import { BankFilters, type FilterGroup } from "@/components/practice/bank-filters";
+import { BankFilters, BankSearch, type FilterGroup } from "@/components/practice/bank-filters";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Empty, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "练习" };
 
-type Params = { tab?: string; type?: string; topic?: string; done?: string; page?: string };
+type Params = { tab?: string; type?: string; topic?: string; done?: string; page?: string; q?: string };
 // Questions per page: five rows of two.
 const PAGE_SIZE = 10;
 // Practised or not: unpractised questions by default.
@@ -66,13 +67,24 @@ export default async function PracticePage({ searchParams }: { searchParams: Pro
   const type = params.type && questionTypeLabels[params.type] ? params.type : null;
   const topic = params.topic && data.topics.some((t) => t.topic === params.topic) ? params.topic : null;
   const done = params.done === "yes" || params.done === "all" ? params.done : null;
-  const shown = all.filter((q, i) => (!type || practice[i].questionType === type) && (!topic || practice[i].primaryTopic === topic) && (done === "all" || (done === "yes") === (q.status !== "new")));
+  // A search looks through every question, practised or not: someone hunting for a question they saw elsewhere should find it.
+  const search = (params.q ?? "").trim().slice(0, 80);
+  const words = search.toLowerCase().split(/\s+/).filter(Boolean);
+  const shown = all.filter((q, i) => (!type || practice[i].questionType === type) && (!topic || practice[i].primaryTopic === topic)
+    && (words.length ? words.every((word) => q.text.toLowerCase().includes(word)) : done === "all" || (done === "yes") === (q.status !== "new")));
+  // Where practice has and has not reached: every topic against every question type.
+  const types = Object.keys(questionTypeLabels);
+  const coverage = data.topics.map((t) => ({ topic: t.topic, cells: types.map((kind) => {
+    const cell = all.filter((_, i) => practice[i].primaryTopic === t.topic && practice[i].questionType === kind);
+    return { kind, total: cell.length, done: cell.filter((q) => q.status !== "new").length };
+  }) }));
+  const reached = coverage.flatMap((row) => row.cells).filter((cell) => cell.done > 0).length, cells = coverage.flatMap((row) => row.cells).filter((cell) => cell.total > 0).length;
   const picked = pickQuestion(data.questions, data.completions, data.attempts);
   const pickedQuestion = picked && all.find((q) => q.id === picked.questionId);
   const pick = picked && pickedQuestion ? { question: pickedQuestion, reason: pickReason(picked, data.questions.find((q) => q.id === picked.questionId)!) } : null;
   // Changing a filter starts again from page one; only the pager carries a page number.
   const href = (next: { type?: string | null; topic?: string | null; done?: string | null; page?: string | null }) => {
-    const query = new URLSearchParams(Object.entries({ type, topic, done, page: null, ...next }).filter((entry): entry is [string, string] => !!entry[1]));
+    const query = new URLSearchParams(Object.entries({ type, topic, done, q: search || null, page: null, ...next }).filter((entry): entry is [string, string] => !!entry[1]));
     return query.size ? `/practice?${query}` : "/practice";
   };
   const pages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
@@ -89,7 +101,36 @@ export default async function PracticePage({ searchParams }: { searchParams: Pro
     <div className="flex flex-col">
       {heading}
       <div className="motion-enter mt-6 border-b" style={{ "--i": 1 } as React.CSSProperties}>{tabs}</div>
-      <QuestionBank filters={<BankFilters groups={groups} />} questions={shown} visible={visible} pager={pages > 1 ? <Pager page={page} pages={pages} total={shown.length} href={(n) => href({ page: n > 1 ? String(n) : null })} /> : null} pick={pick} quickEnabled={features.QUICK_ENABLED} />
+      <QuestionBank filters={<><BankSearch value={search} /><BankFilters groups={groups} /></>} coverage={cells > 0 && (
+        <Collapsible className="mt-3">
+          <CollapsibleTrigger className="group -ml-3 inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[14px] text-muted-foreground transition-colors duration-(--dur-fast) hover:bg-sunk hover:text-foreground">练习覆盖<span className="text-foreground tabular-nums">{reached} / {cells}</span><ChevronDown className="size-4 transition-transform duration-(--dur-layout) ease-(--ease-soft) group-data-panel-open:rotate-180" aria-hidden /></CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="max-w-full overflow-x-auto pt-2 pb-1">
+              <table className="border-separate border-spacing-1 text-[13px] tabular-nums">
+                <caption className="sr-only">每个话题和题型练过几道、共几道</caption>
+                <thead><tr><td />{types.map((kind) => <th key={kind} scope="col" className="px-1 pb-1 font-normal whitespace-nowrap text-muted-foreground">{questionTypeLabels[kind]}</th>)}</tr></thead>
+                <tbody>
+                  {coverage.map((row) => (
+                    <tr key={row.topic}>
+                      <th scope="row" className="pr-2 text-left font-normal"><span className="topic-tag" data-topic={row.topic}>{topicLabels[row.topic] ?? row.topic}</span></th>
+                      {row.cells.map((cell) => (
+                        <td key={cell.kind} className="p-0">
+                          {cell.total === 0 ? <span className="flex h-8 min-w-[4.5rem] items-center justify-center text-faint">—</span> : (
+                            <Link href={`/practice?topic=${row.topic}&type=${cell.kind}&done=all`} scroll={false} title={`${topicLabels[row.topic] ?? row.topic}，${questionTypeLabels[cell.kind]}：练过 ${cell.done} 道，共 ${cell.total} 道`}
+                              className={cn("flex h-8 min-w-[4.5rem] items-center justify-center rounded-md transition-shadow duration-(--dur-fast) hover:shadow-[0_0_0_1px_var(--primary)]", cell.done === 0 ? "bg-sunk text-faint" : cell.done / cell.total < 0.5 ? "bg-primary/15 text-foreground" : "bg-primary/35 text-foreground")}>
+                              {cell.done} / {cell.total}
+                            </Link>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )} questions={shown} visible={visible} pager={pages > 1 ? <Pager page={page} pages={pages} total={shown.length} href={(n) => href({ page: n > 1 ? String(n) : null })} /> : null} pick={pick} quickEnabled={features.QUICK_ENABLED} />
     </div>
   );
 }

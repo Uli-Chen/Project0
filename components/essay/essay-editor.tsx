@@ -42,6 +42,7 @@ const ACTIONS: Array<{ action: SelectionAction; label: string; icon: typeof Spar
 export function EssayEditor({
   value,
   onChange,
+  onTyping,
   onAction,
   onParagraphPause,
   assist = true,
@@ -54,6 +55,8 @@ export function EssayEditor({
 }: {
   value: string;
   onChange: (text: string) => void;
+  /** Every edit, with the caret position, for the per-paragraph timing. */
+  onTyping?: (text: string, caret: number) => void;
   onAction?: (action: SelectionAction, selection: EditorSelection) => void;
   onParagraphPause?: (paragraphIndex: number, paragraphText: string) => void;
   assist?: boolean;
@@ -132,6 +135,7 @@ export function EssayEditor({
         readOnly={readOnly}
         onChange={(e) => {
           onChange(e.target.value);
+          onTyping?.(e.target.value, e.target.selectionStart);
           setToolbar(null);
           schedulePause(e.target.value, e.target.selectionStart);
         }}

@@ -12,6 +12,7 @@ import { useSession } from "@/lib/prototype/session-store";
 import { cn } from "@/lib/utils";
 import { useEssayUi } from "./essay-ui";
 import { FinishSummary } from "./finish-summary";
+import { PaceSummary } from "./pace";
 
 const ACHIEVED = { yes: "做到了", partial: "部分做到", no: "还没做到" } as const;
 
@@ -48,6 +49,7 @@ export function FeedbackTab() {
     <div className="h-full overflow-y-auto px-4 pt-5 pb-10">
       {state.finish && <div className="mb-8"><FinishSummary /></div>}
       <ScoreCard scores={scores} label={state.mode === "practice" ? "原稿的练习成绩" : "原稿的模考成绩"} />
+      <PaceSummary id={state.id} kind="original" text={state.submitted.original ?? ""} />
 
       <Collapsible open={expanded} onOpenChange={setExpanded} render={<section className="motion-reveal mt-7" style={{ "--i": 2 } as React.CSSProperties} />}>
         <h2 className="mb-2.5 flex items-baseline justify-between text-[15px] font-semibold">{tutorV2Enabled ? "先推进一个问题" : `先改这 ${issues.length} 处`}{!tutorV2Enabled && issues.length > 1 && <span className="text-xs font-normal text-faint">按影响排序</span>}</h2>

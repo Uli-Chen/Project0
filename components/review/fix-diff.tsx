@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { wordDiff, type DiffPart } from "@/lib/learning/word-diff";
+import { SelfTest } from "@/components/review/self-test";
 import { cn } from "@/lib/utils";
 
-export type FixDiffRow = { id: string; before: string; after: string | null; issueTitle: string; topic: string | null; topicKey?: string | null; progress: string; mastered: boolean; sessionId: string; source: string };
+export type FixDiffRow = { id: string; before: string; after: string | null; issueTitle: string; topic: string | null; topicKey?: string | null; progress: string; due?: boolean; mastered: boolean; sessionId: string; source: string };
 
 /** 错句本 as a diff: the flagged sentence as the removed line, the checked fix as the added line,
  * with the changed words marked. Without a checked fix the added line says so. */
@@ -26,7 +27,7 @@ export function FixDiffList({ rows }: { rows: FixDiffRow[] }) {
             <div className="font-mono text-[14px] leading-[1.75]">
               <Line sign="-" tone="removed" parts={diff?.removed ?? [{ text: row.before, changed: false }]} />
               {diff
-                ? <Line sign="+" tone="added" parts={diff.added} />
+                ? <SelfTest id={row.id} due={!!row.due} inset><Line sign="+" tone="added" parts={diff.added} /></SelfTest>
                 : <div className="grid grid-cols-[2.25rem_minmax(0,1fr)]"><span className="py-2 text-center text-muted-foreground select-none" aria-hidden>+</span><span className="py-2 pr-4 font-sans text-[14px] text-muted-foreground">尚未改对</span></div>}
             </div>
           </li>
