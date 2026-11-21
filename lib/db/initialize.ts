@@ -29,6 +29,14 @@ export function initializeSchema(sqlite: Database.Database) {
       PRIMARY KEY(user_id, id)
     );
     CREATE INDEX IF NOT EXISTS writing_sessions_user_updated_idx ON writing_sessions(user_id, updated_at);
+    CREATE TABLE IF NOT EXISTS execution_leases (
+      scope TEXT NOT NULL,
+      key TEXT NOT NULL,
+      token TEXT NOT NULL,
+      expires_at INTEGER NOT NULL,
+      PRIMARY KEY(scope, key)
+    );
+    CREATE INDEX IF NOT EXISTS execution_leases_scope_expiry_idx ON execution_leases(scope, expires_at);
     CREATE TABLE IF NOT EXISTS auth_attempts (
       key TEXT PRIMARY KEY NOT NULL,
       count INTEGER NOT NULL,

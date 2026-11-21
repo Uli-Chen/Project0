@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RotateCw } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
 import { useStartEssay } from "@/components/shell/new-essay";
 
@@ -62,7 +63,7 @@ export function CheckpointInvitation({ fallback = null, onDemand = false }: { fa
 
   if (load.phase === "loading") return null;
   if (load.phase === "failed") return (
-    <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-sunk px-6 py-4">
+    <section className="motion-reveal flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-sunk px-6 py-4">
       <p role="status" className="text-[15px]">模考信息暂时无法加载</p>
       <Button size="sm" variant="outline" onClick={() => { setLoad({ phase: "loading" }); void refresh(); }}><RotateCw />重试</Button>
     </section>
@@ -72,7 +73,7 @@ export function CheckpointInvitation({ fallback = null, onDemand = false }: { fa
   if (status.state === "deferred" && !onDemand) return <>{fallback}</>;
   const failure = error || mock.error;
   return (
-    <section className="rounded-2xl bg-sunk px-6 py-5">
+    <section className="motion-reveal rounded-2xl bg-sunk px-6 py-5">
       <CheckpointTitle />
       {status.state === "in_progress" ? (
         <Link href={`/essays/${status.attemptId}`} className={buttonVariants({ variant: "outline", size: "sm", className: "mt-3" })}>继续独立模考</Link>
@@ -82,13 +83,13 @@ export function CheckpointInvitation({ fallback = null, onDemand = false }: { fa
           <Button size="sm" variant="outline" disabled={mock.busy} onClick={() => void mock.start({ kind: "free", mode: "mock" })}>改做普通模考</Button>
         </div>
       ) : (
-        <div className="mt-4 border-l-2 pl-4">
+        <div className="mt-4 border-l-2 border-coach-line pl-4">
           <p className="font-serif text-[16px] leading-relaxed">{status.candidateText}</p>
           <label className="mt-3 flex flex-wrap items-center gap-2 text-[15px]">
             你在别处练过这道题吗？
-            <select className="h-8 rounded-md border border-input bg-sheet px-2 text-[15px]" value={declaration} onChange={e => setDeclaration(e.target.value)}>
-              <option value="">请选择</option><option value="no">没有</option><option value="yes">练过</option><option value="unsure">不确定</option>
-            </select>
+            <NativeSelect size="sm" value={declaration} onChange={e => setDeclaration(e.target.value)}>
+              <NativeSelectOption value="">请选择</NativeSelectOption><NativeSelectOption value="no">没有</NativeSelectOption><NativeSelectOption value="yes">练过</NativeSelectOption><NativeSelectOption value="unsure">不确定</NativeSelectOption>
+            </NativeSelect>
           </label>
           <div className="mt-3 flex gap-2.5">
             <Button size="sm" variant="outline" disabled={busy || !declaration} onClick={() => void act()}>开始独立模考</Button>
@@ -96,7 +97,7 @@ export function CheckpointInvitation({ fallback = null, onDemand = false }: { fa
           </div>
         </div>
       )}
-      {failure && <p role="alert" className="mt-2 text-[15px] text-destructive">{failure}</p>}
+      {failure && <p role="alert" className="motion-reveal mt-2 text-[15px] text-destructive">{failure}</p>}
     </section>
   );
 }

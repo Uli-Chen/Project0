@@ -14,7 +14,7 @@ export function CardReadonly({ content, title = "主题卡片", requirements, pl
     {groups.map((group, index) => {
       const parts = content.parts.filter(part => part.key.startsWith(`${group.key}.`));
       return <div key={group.key} className={cn("space-y-3", !plain && "border-t pt-3")} role="group" aria-label={`问题 ${index + 1}：${group.zh}`}>
-        {!(plain && single) && <div><h3 className="text-sm font-medium">{requirements ? `${index + 1}. ${group.zh}` : group.zh}</h3>{group.en && !plain && <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{group.en}</p>}</div>}
+        {!(plain && single) && <div><h3 className="text-sm font-medium">{requirements && <span className="mr-2 text-coach tabular-nums">{index + 1}.</span>}{group.zh}</h3>{group.en && !plain && <p className="mt-1 font-serif text-[14px] leading-relaxed text-muted-foreground italic">{group.en}</p>}</div>}
         <div className={cn(plain && "grid gap-x-10 gap-y-4 sm:grid-cols-2")}>
           {parts.map(part => <div key={part.key} className={cn(!plain && "mt-3 first:mt-0")}>
             <h4 className="mb-1 text-[14px] text-muted-foreground">{layoutFields[content.layout].find(f => part.key.endsWith(`.${f.key}`))?.label ?? "材料"}{!plain && <span className="ml-2 text-faint">{part.provenance.kind === "excerpt" ? "摘自你的回答" : "你的输入"}</span>}</h4>

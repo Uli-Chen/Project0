@@ -1,5 +1,6 @@
 "use client";
 
+import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import type { CoachMessage, Suggestion } from "@/lib/prototype/types";
 import { cn } from "@/lib/utils";
@@ -65,6 +66,9 @@ export function CoachThread({
 }) {
   const last = messages.at(-1);
   const announcement = useReplyAnnouncement(messages);
+  // 挂载时已在的消息直接呈现；只给之后才到的消息加进入动画
+  const [initialIds] = useState<ReadonlySet<string>>(() => new Set(messages.map((m) => m.id)));
+  const fresh = (m: CoachMessage) => !initialIds.has(m.id);
 
   return (
     <div className={cn("flex flex-col gap-5", className)}>
@@ -77,7 +81,7 @@ export function CoachThread({
         const startsRun = m.role === "coach" && (messages[i - 1]?.role !== "coach" || Boolean(divider));
         if (m.role === "user") {
           return [divider,
-            <div key={m.id} className="flex flex-col items-end gap-1.5">
+            <div key={m.id} className={cn("flex flex-col items-end gap-1.5", fresh(m) && "motion-reveal")}>
               {renderTag?.(m)}
               {m.quote && (
                 <p className="line-clamp-3 max-w-[90%] border-r-2 border-coach-line pr-3 text-right font-serif text-[14.5px] italic leading-relaxed text-muted-foreground">
@@ -88,7 +92,7 @@ export function CoachThread({
             </div>];
         }
         return [divider,
-          <div key={m.id} className="flex min-w-0 flex-col gap-2 text-sm leading-[1.7] animate-in fade-in-0 duration-300">
+          <div key={m.id} className={cn("flex min-w-0 flex-col gap-2 text-sm leading-[1.7]", fresh(m) && "motion-reveal")}>
             {(startsRun || renderTag) && (
               <div className="flex items-center gap-2">
                 {startsRun && <CoachMark />}
@@ -107,15 +111,28 @@ export function CoachThread({
           </div>];
       })}
       {busy && (
-        <div className="flex flex-col gap-2">
+        <div className="motion-reveal flex flex-col gap-2">
           {last?.role !== "coach" && <CoachMark />}
-          <span className="flex gap-1" role="status" aria-label="教练正在思考">
-            {[0, 1, 2].map((d) => (
-              <span key={d} className="size-1.5 animate-pulse rounded-full bg-coach/60" style={{ animationDelay: `${d * 160}ms` }} />
-            ))}
-          </span>
+          <ThinkingDots />
         </div>
       )}
     </div>
+  );
+}
+
+/** 低幅度的“正在想”呼吸点；减少动态时静止 */
+function ThinkingDots() {
+  const reduced = useReducedMotion();
+  return (
+    <span className="flex gap-1.5 px-1 py-1" role="status" aria-label="教练正在思考">
+      {[0, 1, 2].map((d) => (
+        <motion.span
+          key={d}
+          className="size-1.5 rounded-full bg-coach/60"
+          animate={reduced ? undefined : { opacity: [0.35, 1, 0.35], y: [0, -2, 0] }}
+          transition={{ duration: 1.4, repeat: Infinity, delay: d * 0.18, ease: "easeInOut" }}
+        />
+      ))}
+    </span>
   );
 }

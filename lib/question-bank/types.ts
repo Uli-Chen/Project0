@@ -9,13 +9,13 @@ export const questionSchema = z.object({
   questionType: z.enum(["agree_disagree", "discuss_both", "adv_disadv", "problem_solution", "two_part"]),
   pool: z.enum(["practice", "checkpoint_reserved"]),
   source: z.object({
-    kind: z.enum(["local_excerpt", "adapted_local", "synthetic"]),
+    kind: z.enum(["local_excerpt", "adapted_local", "synthetic", "exam_recall", "cambridge_ielts"]),
     path: nonempty.nullable(), locator: nonempty.nullable(),
     sha256: z.string().regex(/^[a-f0-9]{64}$/).nullable(), note: nonempty,
   }).strict(),
 }).strict();
 export const catalogSchema = z.object({
-  bankVersion: nonempty, status: z.literal("mock_not_production"), questions: z.array(questionSchema).min(1),
+  bankVersion: nonempty, status: z.enum(["mock_not_production", "task2_source_snapshot"]), questions: z.array(questionSchema).min(1),
 }).strict();
 export const requirementSchema = z.object({
   id: nonempty, version: z.number().int().positive(),

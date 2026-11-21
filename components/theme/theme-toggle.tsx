@@ -54,7 +54,7 @@ export function useTheme() {
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   return (
-    <ToggleGroup value={[theme]} onValueChange={(value) => { if (value[0]) setTheme(value[0] as Theme); }} variant="outline" size="sm" aria-label="外观">
+    <ToggleGroup value={[theme]} onValueChange={(value) => { if (value[0]) setTheme(value[0] as Theme); }} variant="outline" size="sm" spacing={0} aria-label="外观">
       {(Object.keys(THEME_LABEL) as Theme[]).map((value) => {
         const Icon = THEME_ICON[value];
         return <ToggleGroupItem key={value} value={value} aria-label={THEME_LABEL[value]} className="gap-1.5 px-2.5"><Icon />{THEME_LABEL[value]}</ToggleGroupItem>;

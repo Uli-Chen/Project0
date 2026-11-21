@@ -22,13 +22,13 @@ export async function POST(request: Request) {
     assertSameOrigin(request);
     const user = await requireApiUser();
     const input = inputSchema.parse(await readJson(request, 2_000));
-    const items = reviewItems(listSessions(user.id));
-    const item = items.find(candidate => candidate.id === input.id);
-    if (!item) throw new AuthError("这条复习内容已不存在。", 404);
     const sqlite = getDb().$client, receiptKey = input.key ? `review:${input.key}` : null, now = new Date();
     // Read, decide and write in one transaction, so a concurrent profile save is not overwritten and
     // two copies of the same request cannot both pass the receipt check.
     const outcome = sqlite.transaction(() => {
+      const items = reviewItems(listSessions(user.id));
+      const item = items.find(candidate => candidate.id === input.id);
+      if (!item) throw new AuthError("这条复习内容已不存在。", 404);
       const current = userById(user.id);
       if (!current) throw new AuthError();
       let raw: Partial<UserProfile> = {};

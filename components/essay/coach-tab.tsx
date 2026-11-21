@@ -96,14 +96,14 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
           </section>
         )}
         {nudge && (
-          <div className="mb-5 flex items-start gap-3 rounded-lg bg-coach-soft px-3.5 py-3 animate-in fade-in-0 slide-in-from-top-1">
+          <div className="motion-reveal mb-5 flex items-start gap-3 rounded-lg bg-coach-soft px-3.5 py-3">
             <p className="flex-1 text-[14.5px] leading-relaxed text-foreground">{nudge.message}</p>
             <button type="button" aria-label="关闭提醒" disabled={unavailable} onClick={() => { setNudgeOpen(false); void actions.dismissNudge(); }} className="text-coach/70 hover:text-coach"><X className="size-3.5" /></button>
           </div>
         )}
         {state.messages.length === 0 && !coachBusy ? (
           stage === "prewriting"
-            ? <div className="flex flex-col gap-2 text-sm leading-[1.7]"><CoachMark /><p>{prewriteOpening(state.prompt.questionType)}</p></div>
+            ? <div className="motion-reveal flex flex-col gap-2 text-sm leading-[1.7]"><CoachMark /><p>{prewriteOpening(state.prompt.questionType)}</p></div>
             : !state.focus && !nudge && <CoachEmpty />
         ) : (
           <CoachThread
@@ -152,8 +152,8 @@ export function CoachTab({ onAccept, onUndo, notices }: { onAccept: (s: Suggesti
             </div>}
           />}
           {!can.chat && can.issue && !issue && (
-            <div role="group" aria-label="选一个问题和教练讨论" className="flex flex-wrap gap-2">
-              {issues.map((item) => <button key={item.rank} type="button" onClick={() => ui.discussIssue(item.rank)} className="flex max-w-full items-center gap-2 rounded-full border border-input bg-sheet py-1.5 pr-3.5 pl-2 text-left text-sm leading-snug transition-colors duration-(--dur-fast) hover:border-coach-line hover:bg-coach-soft"><IssueBadge rank={item.rank} /><span className="truncate">{item.title}</span></button>)}
+            <div role="group" aria-label="选一个问题和教练讨论" className="motion-stagger flex flex-wrap gap-2">
+              {issues.map((item) => <button key={item.rank} type="button" onClick={() => ui.discussIssue(item.rank)} className="motion-press flex max-w-full items-center gap-2 rounded-full border border-input bg-sheet py-1.5 pr-3.5 pl-2 text-left text-sm leading-snug transition-colors duration-(--dur-fast) hover:border-coach-line hover:bg-coach-soft"><IssueBadge rank={item.rank} /><span className="truncate">{item.title}</span></button>)}
             </div>
           )}
         </div>

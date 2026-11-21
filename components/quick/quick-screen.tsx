@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Check, ChevronLeft, CornerDownLeft, LoaderCircle, MoreHorizontal, PanelRight } from "lucide-react";
-import type { SessionState } from "@/lib/pipeline/types";
+import type { SessionDetail } from "@/lib/pipeline/session-detail";
 import type { CardContent } from "@/lib/quick/schemas";
 import type { QuestionRequirements } from "@/lib/question-bank/types";
 import { cardSlots } from "@/lib/quick/layouts";
@@ -30,12 +30,12 @@ import { LeaveConfirmation } from "./leave-confirmation";
 export { QUICK_STARTERS } from "@/lib/quick/client-state";
 
 type QuickData = {
-  session: SessionState;
+  session: SessionDetail;
   card: { contentVersion: number; content: CardContent; state: string };
   operations: { id: string; kind: string; status: string }[];
   budget: { remaining: { followups: number; checks: number; retries: number }; nextSupplementalAt: string | null } | null;
   checkResults?: { cardVersion: number; results: { id: string; status: string; note: string | null }[] }[];
-  deepSession?: SessionState;
+  deepSession?: SessionDetail;
   defaultDeepId?: string | null;
 };
 type Reply<T> = { ok: true; value: T } | { ok: false; code: string | null; message: string; uncertain: boolean };
@@ -164,6 +164,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   const answerLatch = useRef(createIntentLatch());
   const explicitKey = useRef<string | null>(null);
   const dataRef = useRef(initial);
+  const seenMessages = useRef<Set<string> | null>(null);
   const epoch = useRef(0);
   const sequence = useRef(0);
   const appliedSequence = useRef(0);
@@ -435,7 +436,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
       const revision = editRevision.current;
       if (action !== "resume" && (!await save() || !unchangedDraft(editRevision.current, revision))) return;
       epoch.current++;
-      const reply = await fetchJson<{ session: SessionState }>(`${endpoint}/lifecycle`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
+      const reply = await fetchJson<{ session: SessionDetail }>(`${endpoint}/lifecycle`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
       if (!reply.ok) { setError(reply.message); return; }
       epoch.current++;
       accept({ ...dataRef.current, session: reply.value.session }, { epoch: epoch.current, sequence: ++sequence.current });
@@ -492,6 +493,8 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   const latest = verdictStale ? undefined : data.checkResults?.filter(r => r.cardVersion === data.card.contentVersion).at(-1);
   const staleResults = verdictStale ? data.checkResults?.filter(r => r.cardVersion === data.card.contentVersion).at(-1) : undefined;
   const quickMessages = quickOf(data);
+  // The thread already on screen at mount renders still; only messages arriving now animate.
+  if (!seenMessages.current) seenMessages.current = new Set(quickMessages.map(m => m.id));
   const gaps = latest?.results.filter(r => r.status !== "met").length ?? 0;
   const checksLeft = data.budget?.remaining.checks ?? null;
   const followupsLeft = data.budget?.remaining.followups ?? null;
@@ -566,7 +569,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   const statusText = coachBusy ? runningLabel : runningKind === "supplemental" ? runningLabel : saving ? "保存中" : saveFailed ? "保存失败" : conflicted ? "有冲突待选择" : overLimit ? `有一栏超过 ${MAX_CHARS} 字` : dirty ? "未保存" : notice || "已保存";
   const settled = !running && !saving && !saveFailed && !dirty && !overLimit;
   const failedRow = (o: { id: string; kind: string; status: string }, where: Where) => (
-    <div key={o.id} role="status" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-warn-soft px-3.5 py-2.5 text-sm">
+    <div key={o.id} role="status" className="motion-reveal flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-warn-soft px-3.5 py-2.5 text-sm">
       <p className="min-w-0 flex-1">{o.kind === "check" ? "检查" : "追问"}：{operationLabels[o.status] ?? o.status}{retryable(o.status) && retriesLeft === 0 && (o.kind === "check" ? "。重试次数已用完，改一改卡片再检查。" : "。重试次数已用完。")}</p>
       {retryable(o.status) && retriesLeft !== 0 && <Button variant="outline" size="xs" disabled={!active || transitioning || running} onClick={() => void model("quickRetry", { operationId: o.id }, where)}>重试这次操作</Button>}
     </div>
@@ -577,7 +580,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
   /** The ask box empties on send (the bubble shows the text); a refused send keeps it. */
   const changeAsk = (text: string) => { if (keepAsk.current && text === "") { keepAsk.current = false; return; } setAskDraft(text); };
   const coachAlert = (coachError || failedAsk) && (
-    <div role="alert" className="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg bg-destructive/10 px-3 py-2 text-sm">
+    <div role="alert" className="motion-reveal mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg bg-destructive/10 px-3 py-2 text-sm">
       <span className="min-w-0 flex-1">{coachError || "上一句还没有发出。"}</span>
       {failedAsk && bottom === "ask" && <Button size="xs" variant="outline" disabled={!active || transitioning || running} onClick={() => void ask(failedAsk.text, false)}>重新发送</Button>}
     </div>
@@ -592,7 +595,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
         <div className="flex flex-col gap-5">
           {quickMessages.map((m, i) => {
             if (m.role !== "user") return (
-              <div key={m.id} className="flex min-w-0 flex-col gap-2 text-sm leading-[1.7] animate-in fade-in-0 duration-300">
+              <div key={m.id} className={cn("flex min-w-0 flex-col gap-2 text-sm leading-[1.7]", !seenMessages.current!.has(m.id) && "motion-reveal")}>
                 {quickMessages[i - 1]?.role !== "coach" && <CoachMark />}
                 <p className="whitespace-pre-wrap">{m.content}</p>
               </div>
@@ -602,7 +605,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
             const partial = selection?.messageId === m.id;
             const canPlace = placeable(m);
             return (
-              <div key={m.id} className="flex flex-col items-end gap-1.5">
+              <div key={m.id} className={cn("flex flex-col items-end gap-1.5", !seenMessages.current!.has(m.id) && "motion-reveal")}>
                 <p data-answer={canPlace ? m.id : undefined} className={bubbleClass}>{m.content}</p>
                 {canPlace && <DropdownMenu>
                   <DropdownMenuTrigger data-keep-selection render={<Button size="xs" variant="ghost" className="text-coach hover:text-coach" disabled={!active || transitioning} />}>
@@ -624,9 +627,9 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
               </div>
             );
           })}
-          {echo && <div className="flex flex-col items-end"><p className={bubbleClass}>{echo}</p></div>}
+          {echo && <div className="motion-reveal flex flex-col items-end"><p className={bubbleClass}>{echo}</p></div>}
           {coachBusy && (
-            <div className="flex flex-col gap-2">
+            <div className="motion-reveal flex flex-col gap-2">
               {lastMessage?.role !== "coach" && <CoachMark />}
               <span className="flex gap-1" role="status" aria-label="教练正在追问">
                 {[0, 1, 2].map(d => <span key={d} className="size-1.5 animate-pulse rounded-full bg-coach/60" style={{ animationDelay: `${d * 160}ms` }} />)}
@@ -648,10 +651,10 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
             onSend={() => { keepAnswer.current = true; void sendAnswer(); }}
           />
         ) : bottom === "used_up" ? (
-          <p className="py-1 text-sm text-muted-foreground">这张卡的追问用完了，可以接着改卡片，或直接检查。</p>
+          <p className="motion-reveal py-1 text-sm text-muted-foreground">这张卡的追问用完了，可以接着改卡片，或直接检查。</p>
         ) : null}
         {leftovers.map(item => (
-          <div key={item.text} className="mt-2.5 flex items-start gap-2 rounded-lg border bg-sunk py-2 pr-2 pl-3 first:mt-0">
+          <div key={item.text} className="motion-reveal mt-2.5 flex items-start gap-2 rounded-lg border bg-sunk py-2 pr-2 pl-3 first:mt-0">
             <p className="min-w-0 flex-1 text-sm leading-relaxed whitespace-pre-wrap select-text">{item.text}</p>
             <Button size="xs" variant="ghost" onClick={item.clear}>清除</Button>
           </div>
@@ -681,10 +684,10 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
         <Link href="/practice" onNavigate={e => allowNavigation(e, "/practice")} className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"><ChevronLeft className="size-4" />练习</Link>
         <span className="text-input" aria-hidden>/</span>
         <h1 className="truncate px-2 text-[15px] font-semibold">速刷主题卡片</h1>
-        <Badge variant="outline" className="hidden shrink-0 sm:inline-flex">{badge}</Badge>
+        <Badge key={badge} variant="outline" className="motion-swap hidden shrink-0 sm:inline-flex">{badge}</Badge>
       </div>
       <div className="flex items-center justify-end gap-1.5">
-        <span aria-live="polite" className={cn("meta mr-1 inline-flex shrink-0 items-center gap-1 sm:mr-2", settled && "text-good", saveFailed && "text-destructive")}>{settled && <Check className="size-3.5" />}<span className={cn(settled && "sr-only sm:not-sr-only")}>{statusText}</span></span>
+        <span aria-live="polite" className={cn("meta mr-1 inline-flex shrink-0 items-center gap-1 sm:mr-2", settled && "text-good", saveFailed && "text-destructive")}>{settled && <Check className="motion-check size-3.5" />}<span key={statusText} className={cn("motion-swap", settled && "sr-only sm:not-sr-only")}>{statusText}</span></span>
         <Button variant="ghost" size={wide ? "icon-sm" : "sm"} aria-label="教练面板" aria-pressed={wide ? panelOpen : sheet} className={cn(wide && !panelOpen && "text-muted-foreground")} onClick={() => wide ? setPanelOpen(open => !open) : setSheet(open => !open)}>{wide ? <PanelRight /> : "教练"}</Button>
         <DropdownMenu>
           <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="更多" />}><MoreHorizontal /></DropdownMenuTrigger>
@@ -701,7 +704,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
         </Button>
       </div>
     </header>
-    {!active && <div role="status" className="flex shrink-0 flex-wrap items-center gap-3 border-b bg-warn-soft px-4 py-2.5 text-sm">
+    {!active && <div role="status" className="motion-reveal flex shrink-0 flex-wrap items-center gap-3 border-b bg-warn-soft px-4 py-2.5 text-sm">
       <p className="min-w-0 flex-1">这份练习已{data.session.lifecycle === "closed" ? "关闭" : "暂放"}，卡片内容都还在。</p>
       <Button size="sm" variant="outline" disabled={transitioning} onClick={() => void lifecycle("resume")}>恢复练习</Button>
     </div>}
@@ -709,32 +712,32 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
       <main id="main-content" className="min-w-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-[800px] flex-col gap-3 px-3 py-4 sm:px-6 sm:py-8">
           {leaveIntent && <LeaveConfirmation answerOnly={leaveIntent.kind === "deep"} disabled={transitioning || saving || answering || askInFlight} onCancel={() => setLeaveIntent(null)} onLeave={confirmLeave} />}
-          {(error || saveFailed) && <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg bg-destructive/10 px-4 py-3 text-sm">
+          {(error || saveFailed) && <div role="alert" className="motion-reveal flex flex-wrap items-center gap-3 rounded-lg bg-destructive/10 px-4 py-3 text-sm">
             <span className="min-w-0 flex-1">{error || "还有修改没有保存。"}</span>
             {saveFailed && <Button size="xs" disabled={saving || transitioning || conflicted} onClick={() => void save()}>重试保存</Button>}
             <Button size="xs" variant="outline" onClick={() => void refresh()}>刷新状态</Button>
           </div>}
           {passed ? <div role="status" className="motion-reveal flex flex-wrap items-center justify-between gap-3 rounded-xl bg-good-soft px-5 py-4">
-            <p className="flex items-center gap-1.5 font-semibold text-good"><Check className="size-4" />题目问的都答到了</p>
+            <p className="flex items-center gap-1.5 font-semibold text-good"><Check className="motion-check size-4" />题目问的都答到了</p>
             <Button disabled={!active || transitioning} onClick={() => void continueDeep()}>{deepLabel}</Button>
           </div> : latest && gaps > 0 && requirements.subquestions.length > 1 ? <p role="status" className="motion-reveal rounded-xl bg-warn-soft px-5 py-3.5 text-sm"><b className="font-semibold">还有 {gaps} 项没答完整</b>，已在下面标出。</p> : null}
           {failedChecks.map(o => failedRow(o, "main"))}
-          {data.budget && checksLeft === 0 && !passed && <div role="status" className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-sunk px-5 py-3.5 text-sm shadow-[inset_0_0_0_1px_var(--border)]">
+          {data.budget && checksLeft === 0 && !passed && <div role="status" className="motion-reveal flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-sunk px-5 py-3.5 text-sm shadow-[inset_0_0_0_1px_var(--border)]">
             <p className="min-w-0 flex-1"><b className="font-semibold">这张卡的检查次数已用完。</b>额度用完仍可编辑、保存或写成作文。{data.budget.nextSupplementalAt && <>补充检查最早可申请：{new Date(data.budget.nextSupplementalAt).toLocaleString("zh-CN", { timeZone: "Asia/Taipei" })}</>}</p>
             <Button size="sm" variant="outline" disabled={!active || transitioning || running || supplementalWaiting} onClick={() => void model("quickSupplemental")}>申请补充检查</Button>
           </div>}
-          <article className="paper px-6 pt-8 pb-10 sm:px-14 sm:pt-11 sm:pb-12">
+          <article className="paper motion-enter px-6 pt-8 pb-10 sm:px-14 sm:pt-11 sm:pb-12" style={{ "--i": 1 } as CSSProperties}>
             <p className="font-serif text-[21px] leading-[1.45] tracking-[-0.005em] text-pretty sm:text-[26px]">{data.session.question?.text ?? data.session.prompt.text}</p>
-            <section aria-label="我的卡片" className="mt-9 space-y-10 border-t pt-8">
+            <section aria-label="我的卡片" className="motion-stagger mt-9 space-y-10 border-t pt-8">
               {requirements.subquestions.map((q, index) => {
                 // While the draft differs from the checked version, only the gaps stay, as hints for the edit.
                 const result = latest?.results.find(r => r.id === q.key) ?? staleResults?.results.find(r => r.id === q.key && r.status !== "met");
                 return <fieldset key={q.key} className="space-y-4">
-                  <legend className="text-[17px] leading-relaxed font-semibold text-pretty">{requirements.subquestions.length > 1 && <span className="mr-2 text-coach tabular-nums">{index + 1}</span>}{q.zh}</legend>
+                  <legend className="text-[17px] leading-relaxed font-semibold text-pretty">{requirements.subquestions.length > 1 && <span className="mr-2 text-coach tabular-nums">{index + 1}.</span>}{q.zh}</legend>
                   <p className="font-serif text-[15.5px] leading-relaxed text-muted-foreground italic">{q.en}</p>
-                  {result && <p className={cn("flex items-start gap-2 rounded-lg px-3.5 py-2.5 text-sm", result.status === "met" ? "bg-good-soft text-good" : "bg-warn-soft")}>
+                  {result && <div className="motion-expand"><p className={cn("flex items-start gap-2 rounded-lg px-3.5 py-2.5 text-sm", result.status === "met" ? "bg-good-soft text-good" : "bg-warn-soft")}>
                     <span className="shrink-0 font-semibold">{result.status === "met" ? "已满足" : "还需展开"}</span>{result.note && <span>{result.note}</span>}
-                  </p>}
+                  </p></div>}
                   {slots.filter(s => s.requirementKey === q.key).map((s, slotIndex) => {
                     const text = draft[s.key] ?? "", length = [...text].length, conflict = conflicts[s.key];
                     return <div key={s.key}>
@@ -748,7 +751,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
                         aria-describedby={conflict ? `${s.key}-conflict` : undefined}
                         className={cn(fieldClass, result && result.status !== "met" && !text.trim() && "border-warn", conflict && "border-warn", length > MAX_CHARS && "border-destructive", flash === s.key && "border-coach bg-coach-soft shadow-[0_0_0_3px_var(--coach-soft)]")}
                         onChange={e => { editRevision.current++; setDraft({ ...draftRef.current, [s.key]: e.target.value }); }} />
-                      {conflict && <div id={`${s.key}-conflict`} className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
+                      {conflict && <div id={`${s.key}-conflict`} className="motion-reveal mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
                         <span className="line-clamp-2 min-w-0 flex-1">另一处把这一栏改成了：{conflict.theirs.trim() || "（空）"}</span>
                         <Button size="xs" variant="outline" disabled={!active || transitioning} onClick={() => keepMine(s.key)}>用我的</Button>
                         <Button size="xs" variant="outline" disabled={!active || transitioning} onClick={() => takeTheirs(s.key)}>用另一处的</Button>
@@ -761,7 +764,7 @@ export function QuickScreen({ initial, requirements }: { initial: QuickData; req
           </article>
         </div>
       </main>
-      {wide && panelOpen && <aside aria-label="教练" className="surface w-[400px] shrink-0 overflow-hidden">{coach}</aside>}
+      {wide && panelOpen && <aside aria-label="教练" className="surface motion-reveal w-[400px] shrink-0 overflow-hidden">{coach}</aside>}
     </div>
     {!wide && <Sheet open={sheet} onOpenChange={setSheet}>
       <SheetContent side="right" className="p-0 data-[side=right]:w-full data-[side=right]:max-w-[400px] data-[side=right]:sm:max-w-[400px]">

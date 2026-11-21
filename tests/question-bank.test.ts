@@ -74,6 +74,28 @@ test("v2 retains frozen v1, switches current version, and an old catalog replay 
   } finally { sqlite.close(); }
 });
 
+test("a Task 2 source import retires fixture questions atomically and fixture replay only seeds history", () => {
+  const sqlite = database();
+  try {
+    importQuestions(sqlite, catalog, requirements);
+    const before = snapshot(sqlite);
+    const question = { ...catalog.questions[0], id: "source-task2-test", exposureKey: "source-task2-test",
+      source: { ...catalog.questions[0].source, kind: "exam_recall" } };
+    const source = { status: "task2_source_snapshot", bankVersion: "task2-test", questions: [question] };
+    const sourceRequirements = [{ ...requirements[0], id: question.id }];
+    assert.throws(() => importQuestions(sqlite, source, []), /Missing requirements/);
+    assert.deepEqual(snapshot(sqlite), before);
+    importQuestions(sqlite, source, sourceRequirements);
+    assert.deepEqual(sqlite.prepare("SELECT id FROM questions WHERE is_current = 1").all(), [{ id: question.id }]);
+    const after = snapshot(sqlite);
+    assert.deepEqual(after.questions.filter(row => (row as { is_current: number }).is_current === 0),
+      before.questions.map(row => ({ ...(row as object), is_current: 0 })));
+    importQuestions(sqlite, source, sourceRequirements);
+    importQuestions(sqlite, catalog, requirements);
+    assert.deepEqual(snapshot(sqlite), after);
+  } finally { sqlite.close(); }
+});
+
 test("missing requirements rejects the entire import on empty and populated databases", () => {
   const sqlite = database();
   try {

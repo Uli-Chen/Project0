@@ -9,19 +9,25 @@ import { draftSchema } from "@/lib/pipeline/schemas";
 import { SessionError } from "@/lib/pipeline/engine";
 import { isReviewRunning } from "@/lib/pipeline/retry-review";
 import { isSessionBusy, withSessionLock } from "@/lib/pipeline/lock";
+import { getDb } from "@/lib/db/client";
+import { sessionDetail } from "@/lib/pipeline/session-detail";
 type Context = { params: Promise<{ id: string }> };
 export const runtime = "nodejs";
 export async function GET(_request: Request, { params }: Context) {
   try {
     const user = await requireApiUser(); const { id } = await params;
-    const session = getSession(user.id, id); if (!session) throw new SessionError("练习不存在。", 404);
-    const busy = isSessionBusy(`${user.id}:${id}`) || isReviewRunning(`${user.id}:${id}`);
+    const { session, busy } = getDb().$client.transaction(() => {
+      const session = getSession(user.id, id);
+      if (!session) throw new SessionError("练习不存在。", 404);
+      const key = `${user.id}:${id}`;
+      return { session, busy: isSessionBusy(key) || isReviewRunning(key) };
+    })();
     // An interrupted optional call is recoverable without scoring again. Read-only projection.
     if (isSupportedSession(session) && session.reviewStatus === "pending" && !busy) {
       session.reviewStatus = "failed";
       session.pendingAction = null;
     }
-    return Response.json({ session, busy }, { headers: { "Cache-Control": "no-store" } });
+    return Response.json({ session: sessionDetail(session), busy, ...(session.checkpointId ? { serverNow: new Date().toISOString() } : {}) }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return apiError(error); }
 }
 export async function PATCH(request: Request, { params }: Context) {
@@ -32,9 +38,9 @@ export async function PATCH(request: Request, { params }: Context) {
     return await withSessionLock(`${user.id}:${id}`, async () => {
       const session = getSession(user.id, id);
       assertSupportedSession(session);
-      if (input.requestId && session.lastWriteId === input.requestId) return Response.json({ session });
+      if (input.requestId && session.lastWriteId === input.requestId) return Response.json({ session: sessionDetail(session) });
       assertOpenSession(session);
-      if (session.version !== input.version) return Response.json({ error: "这份练习已在其他页面更新。请刷新后继续，你的当前文字仍保留在编辑器。", session }, { status: 409 });
+      if (session.version !== input.version) return Response.json({ error: "这份练习已在其他页面更新。请刷新后继续，你的当前文字仍保留在编辑器。", session: sessionDetail(session) }, { status: 409 });
       const before = structuredClone({ drafts: session.drafts, outline: session.outline });
       if (input.drafts) {
         if (["prewriting", "writing"].includes(session.stage)) session.drafts.original = input.drafts.original;
@@ -46,7 +52,7 @@ export async function PATCH(request: Request, { params }: Context) {
       if (isStudentAction({ kind: "draft", before, after: session })) session.lastStudentActionAt = new Date().toISOString();
       session.lastWriteId = input.requestId;
       session.version++; session.updatedAt = session.savedAt = new Date().toISOString(); saveSession(user.id, session);
-      return Response.json({ session });
+      return Response.json({ session: sessionDetail(session) });
     });
   } catch (error) { return apiError(error); }
 }

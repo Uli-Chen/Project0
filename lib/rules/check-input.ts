@@ -1,5 +1,7 @@
 import { countWords } from "./text";
 
+export const MIN_EVALUATION_WORDS = 50;
+
 /** 05_提交与检查 第 3 节：按顺序检查，返回第一个不通过的原因；通过返回 null。 */
 export function checkInput(text: string, prompt: string, essayKind: "original" | "revision", originalText?: string): string | null {
   if (!text.trim()) return "作文是空的。";
@@ -7,7 +9,7 @@ export function checkInput(text: string, prompt: string, essayKind: "original" |
   const letters = text.match(/\p{L}/gu) ?? [];
   const latin = letters.filter((ch) => /[A-Za-z]/.test(ch)).length;
   if (letters.length && latin / letters.length < 0.8) return "作文需要用英文写。中文想法可以在教练面板里先说。";
-  if (countWords(text) < 50) return "至少写 50 词才能评估。";
+  if (countWords(text) < MIN_EVALUATION_WORDS) return `至少写 ${MIN_EVALUATION_WORDS} 词才能评估。`;
   const words = (s: string) => s.toLowerCase().match(/[a-z]+(?:['’-][a-z]+)*/g) ?? [];
   const promptWords = new Set(words(prompt));
   const essayWords = words(text);

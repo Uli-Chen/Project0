@@ -6,6 +6,7 @@ import { DiffText } from "@/components/essay/diff-view";
 import { EssayEditor, type EditorSelection, type SelectionAction } from "@/components/essay/essay-editor";
 import { EssayReader, type Mark } from "@/components/essay/essay-reader";
 import { versionText } from "@/lib/learning/essay-view";
+import { MIN_EVALUATION_WORDS } from "@/lib/rules/check-input";
 import { draftMarks, remainingByIssue, type DraftMark } from "@/lib/learning/revision-marks";
 import { IssueBadge } from "@/components/feedback/issue-list";
 import { useSession } from "@/lib/prototype/session-store";
@@ -56,7 +57,7 @@ export function EssayBody({ prewrite }: { prewrite?: React.ReactNode } = {}) {
                 <ul className="flex flex-col gap-1.5 text-[15px] leading-relaxed text-muted-foreground">
                   <li>独立完成，写作过程中没有教练和提示。</li>
                   <li>至少写 250 词，提交后给出评分和反馈。</li>
-                  <li>点下面的按钮后开始倒计时。</li>
+                  <li>开始计时后，到时自动交卷。不足 {MIN_EVALUATION_WORDS} 词不批改、不计入练习。</li>
                 </ul>
                 <Button size="lg" className="mt-2" onClick={() => { ui.setMockStarted(true); setTimeout(() => editorRef.current?.focus(), 0); }}>开始计时</Button>
               </div>

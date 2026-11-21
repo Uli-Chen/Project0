@@ -1,6 +1,7 @@
 "use client";
 
 import { ChartNoAxesColumn, ChevronsUpDown, FileText, House, Layers, LogOut, PenLine, Plus, Settings, Timer } from "lucide-react";
+import { MotionConfig, motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -32,37 +33,41 @@ export function AppSidebar({ user, focus, bankEnabled=false, checkpointsEnabled=
     ? [{ href: "/", label: "主页", icon: House }, { href: "/practice", label: "练习", icon: PenLine }, { href: "/cards", label: "复习", icon: Layers }, ...(checkpointsEnabled ? [{ href: "/mock", label: "模考", icon: Timer }] : []), NAV[1]]
     : NAV;
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="h-16 flex-row items-center justify-between px-4 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+    <Sidebar collapsible="icon" variant="inset">
+      <SidebarHeader className="h-14 flex-row items-center justify-between px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
         <span className="group-data-[collapsible=icon]:hidden"><Wordmark /></span>
         <SidebarTrigger className="text-muted-foreground" />
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup className="px-3">
-          <SidebarMenu className="gap-1">
+        <SidebarGroup className="px-1.5">
+          <SidebarMenu className="gap-0.5">
             {!bankEnabled && (
               <SidebarMenuItem className="mb-3">
                 <NewEssayDialog focus={focus} trigger={
-                  <SidebarMenuButton tooltip="新建作文" className="h-10 justify-center rounded-full bg-foreground font-medium text-background hover:bg-foreground/85 hover:text-background group-data-[collapsible=icon]:justify-start">
+                  <SidebarMenuButton tooltip="新建作文" className="h-10 justify-center rounded-full bg-foreground font-medium text-background transition-colors hover:bg-foreground/85 hover:text-background group-data-[collapsible=icon]:justify-start motion-press">
                     <Plus />新建作文
                   </SidebarMenuButton>
                 } />
               </SidebarMenuItem>
             )}
-            {items.map((item) => {
-              const active = item.href === "/" ? pathname === "/" : item.href === "/practice" ? pathname.startsWith("/practice") || pathname.startsWith("/topics") : pathname.startsWith(item.href);
-              return (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton isActive={active} tooltip={item.label} className="h-10 gap-3 rounded-lg px-3 text-[15px] text-muted-foreground data-active:bg-sidebar-accent data-active:font-medium data-active:text-foreground [&_svg]:size-[18px]" render={<Link href={item.href} onNavigate={closeMobile} />}>
-                    <item.icon />{item.label}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
+            {/* 当前页的浮起指示块在所有项之间滑动（layoutId），展开、图标栏和移动端都是同一套 */}
+            <MotionConfig reducedMotion="user">
+              {items.map((item) => {
+                const active = item.href === "/" ? pathname === "/" : item.href === "/practice" ? pathname.startsWith("/practice") || pathname.startsWith("/topics") : pathname.startsWith(item.href);
+                return (
+                  <SidebarMenuItem key={item.href} className="relative">
+                    {active && <motion.span layoutId="sidebar-active" initial={false} transition={{ type: "tween", duration: 0.24, ease: [0.22, 1, 0.36, 1] }} className="absolute inset-0 z-0 rounded-lg bg-sheet shadow-raised" aria-hidden />}
+                    <SidebarMenuButton isActive={active} tooltip={item.label} className="relative z-10 h-9 gap-2.5 rounded-lg px-2.5 text-[14px] text-muted-foreground transition-colors duration-(--dur-standard) ease-(--ease-soft) data-active:bg-transparent data-active:font-medium data-active:text-foreground data-active:hover:bg-transparent [&_svg]:size-4" render={<Link href={item.href} onNavigate={closeMobile} />}>
+                      <item.icon />{item.label}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </MotionConfig>
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="px-3 pb-3">
+      <SidebarFooter className="px-1.5 pb-1.5">
         <AccountMenu user={user} onNavigate={closeMobile} />
       </SidebarFooter>
       <SidebarRail />
@@ -91,10 +96,10 @@ function AccountMenu({ user, onNavigate }: { user: { name: string; email: string
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<SidebarMenuButton size="lg" tooltip={user.name} className="data-popup-open:bg-sidebar-accent" />}>
+          <DropdownMenuTrigger render={<SidebarMenuButton size="lg" tooltip={user.name} className="transition-colors duration-(--dur-standard) ease-(--ease-soft) data-popup-open:bg-sidebar-accent" />}>
             <Avatar name={user.name} />
             <span className="min-w-0 flex-1 truncate text-left text-sm">{user.name}</span>
-            <ChevronsUpDown className="ml-auto text-muted-foreground" />
+            <ChevronsUpDown className="ml-auto size-4 text-faint" />
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="start" className="w-60">
             <DropdownMenuGroup>

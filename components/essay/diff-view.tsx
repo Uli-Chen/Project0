@@ -9,11 +9,11 @@ export function DiffText({ from, to, className, tone = "coach" }: { from: string
         part.kind === "same" ? (
           <span key={i}>{part.text}</span>
         ) : part.kind === "removed" ? (
-          <del key={i} className="text-muted-foreground/70 decoration-muted-foreground/50">
+          <del key={i} className="box-decoration-clone text-muted-foreground/70 decoration-muted-foreground/50">
             {part.text}
           </del>
         ) : (
-          <ins key={i} className={cn("rounded-[2px] no-underline", tone === "coach" ? "bg-coach-soft text-coach" : "bg-good/12 text-foreground")}>
+          <ins key={i} className={cn("box-decoration-clone rounded-[2px] px-0.5 -mx-0.5 no-underline", tone === "coach" ? "bg-coach-soft text-coach" : "bg-good/12 text-foreground")}>
             {part.text}
           </ins>
         ),

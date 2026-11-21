@@ -47,7 +47,7 @@ export function StartEssayButton({ kind, mode, children, variant = "default" }: 
   const { busy, error, start } = useStartEssay();
   return <div className="flex flex-col items-start gap-2">
     <Button variant={variant} disabled={busy} onClick={() => start({ kind, mode })}>{busy && <LoaderCircle className="animate-spin" />}{children}</Button>
-    {error && <p role="alert" className="text-[14px] text-destructive">{error}</p>}
+    {error && <p role="alert" className="motion-reveal text-[14px] text-destructive">{error}</p>}
   </div>;
 }
 
@@ -83,9 +83,9 @@ export function NewEssayDialog({ trigger, focus, pasteOnly = false }: { trigger:
         {pasteOnly && <p className="text-sm text-muted-foreground">使用你自己的题目，独立保存为自由练习，不计入题库主题进度。</p>}
 
         <div role="radiogroup" aria-label="类型" className="grid grid-cols-2 gap-2">
-          {([["practice", "练习", "有教练"], ["mock", "模考", "40 分钟 · 独立完成"]] as const).map(([value, label, meta]) => (
+          {([["practice", "练习", "有教练"], ["mock", "模考", "40 分钟，独立完成"]] as const).map(([value, label, meta]) => (
             <button key={value} type="button" role="radio" aria-checked={mode === value} onClick={() => setMode(value)}
-              className={cn("rounded-lg border px-3.5 py-3 text-left transition-colors", mode === value ? "border-primary bg-coach-soft" : "hover:bg-sunk")}>
+              className={cn("motion-press rounded-lg border px-3.5 py-3 text-left transition-colors duration-(--dur-standard) ease-(--ease-soft)", mode === value ? "border-primary bg-coach-soft" : "border-border hover:bg-sunk")}>
               <span className="block text-sm font-medium">{label}</span>
               <span className="meta mt-0.5 block">{meta}</span>
             </button>
@@ -98,16 +98,16 @@ export function NewEssayDialog({ trigger, focus, pasteOnly = false }: { trigger:
             <TabsTrigger value="topic">话题</TabsTrigger>
             <TabsTrigger value="paste">粘贴题目</TabsTrigger>
           </TabsList>
-          <TabsContent value="suggested" className="min-h-28 rounded-lg border border-dashed px-4 py-3.5">
+          <TabsContent value="suggested" className="motion-swap min-h-28 rounded-lg border border-dashed px-4 py-3.5">
             <p className="text-sm">从题库中随机一道题</p>
             {mode === "practice" && focus && <p className="mt-2 text-[14px] text-muted-foreground">本次重点 <span className="text-coach">{focus}</span></p>}
           </TabsContent>
-          <TabsContent value="topic" className="min-h-28">
+          <TabsContent value="topic" className="motion-swap min-h-28">
             <div role="radiogroup" aria-label="话题" className="flex flex-col divide-y rounded-lg border">
               {TOPICS.map((item, index) => (
                 <button key={item.name} type="button" role="radio" aria-checked={topic === index} onClick={() => setTopic(index)}
-                  className={cn("flex items-start gap-3 px-3.5 py-2.5 text-left first:rounded-t-lg last:rounded-b-lg", topic === index ? "bg-secondary/60" : "hover:bg-secondary/30")}>
-                  <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", topic === index ? "bg-primary" : "bg-border")} aria-hidden />
+                  className={cn("flex items-start gap-3 px-3.5 py-2.5 text-left transition-colors duration-(--dur-fast) first:rounded-t-lg last:rounded-b-lg", topic === index ? "bg-secondary/60" : "hover:bg-secondary/30")}>
+                  <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full transition-colors duration-(--dur-fast)", topic === index ? "bg-primary" : "bg-border")} aria-hidden />
                   <span className="min-w-0">
                     <span className="block text-[14px] font-medium">{item.name}</span>
                     <span className="mt-0.5 line-clamp-2 block font-serif text-[14px] leading-snug text-muted-foreground">{item.text}</span>
@@ -116,10 +116,10 @@ export function NewEssayDialog({ trigger, focus, pasteOnly = false }: { trigger:
               ))}
             </div>
           </TabsContent>
-          <TabsContent value="paste" className="min-h-28"><PastedPromptInput text={text} setText={setText} /><div className="mt-4"><TopicChoice value={pastedTopic} onChange={setPastedTopic} /></div></TabsContent>
+          <TabsContent value="paste" className="motion-swap min-h-28"><PastedPromptInput text={text} setText={setText} /><div className="mt-4"><TopicChoice value={pastedTopic} onChange={setPastedTopic} /></div></TabsContent>
         </Tabs>}
 
-        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        {error && <p role="alert" className="motion-reveal text-sm text-destructive">{error}</p>}
         <DialogFooter>
           <Button disabled={!ready || busy} onClick={submit}>{busy && <LoaderCircle className="animate-spin" />}开始写作</Button>
         </DialogFooter>
@@ -130,7 +130,7 @@ export function NewEssayDialog({ trigger, focus, pasteOnly = false }: { trigger:
 
 function PastedPromptInput({ text, setText }: { text: string; setText(text: string): void }) {
   const pasted = text.trim();
-  return <div className="min-h-28"><Textarea value={text} onChange={event => setText(event.target.value)} maxLength={3000} rows={5} placeholder="Some people think that…" aria-label="题目" className="font-serif text-[15px]" /><p className="meta mt-1.5 text-right">{pasted.length < 20 ? `至少 20 个字符 · ${pasted.length}` : `${pasted.length} / 3000`}</p></div>;
+  return <div className="min-h-28"><Textarea value={text} onChange={event => setText(event.target.value)} maxLength={3000} rows={5} placeholder="Some people think that…" aria-label="题目" className="font-serif text-[15px]" /><p className="meta mt-1.5 text-right">{pasted.length < 20 ? `至少 20 个字符，已输入 ${pasted.length}` : `${pasted.length} / 3000`}</p></div>;
 }
 
 const PASTE_TOPICS: [string, string][] = [["education", "教育"], ["technology", "科技"], ["environment", "环境"], ["society", "社会"], ["work", "工作"], ["health", "健康"], ["culture", "文化"], ["other", "其他"]];
@@ -140,7 +140,7 @@ function TopicChoice({ value, onChange }: { value: string | null; onChange: (top
     <div role="radiogroup" aria-label="话题" className="flex flex-wrap items-center gap-1">
       <span className="mr-2 text-[14px] text-muted-foreground">话题</span>
       {PASTE_TOPICS.map(([key, name]) => (
-        <button key={key} type="button" role="radio" aria-checked={value === key} onClick={() => onChange(key)} className={cn("rounded-full px-3 py-1 text-[14px] transition-colors", value === key ? "bg-foreground text-background" : "text-muted-foreground hover:bg-sunk hover:text-foreground")}>{name}</button>
+        <button key={key} type="button" role="radio" aria-checked={value === key} onClick={() => onChange(key)} className="chip">{name}</button>
       ))}
     </div>
   );

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { CSSProperties } from "react";
 import { readFeatures } from "@/lib/config/features";
 import { requireUser } from "@/lib/auth/server";
 import { checkpointHistory, getCheckpointState } from "@/lib/db/checkpoints";
@@ -9,11 +10,14 @@ import { formatDate } from "@/lib/learning/summary";
 import type { Dim } from "@/lib/prototype/types";
 import { MockScoreChart } from "@/components/pages/progress-charts";
 import { StartMock } from "@/components/checkpoints/start-mock";
+import { ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "模考" };
 // The score card module is a client component; a server page keeps its own copy of the band labels.
 const DIMS: Dim[] = ["TR", "CC", "LR", "GRA"];
+const PAST_SHOWN = 8;
 const DIM_LABEL: Record<Dim, string> = { TR: "任务回应", CC: "连贯与衔接", LR: "词汇", GRA: "语法" };
 
 /** 模考: one button into a 40-minute mock without the coach, and how the learner's unassisted writing is going. */
@@ -48,39 +52,56 @@ export default async function MockPage() {
     return map;
   }, new Map<string, { title: string; count: number }>()).values()].sort((a, b) => b.count - a.count).slice(0, 5);
 
+  const enter = (i: number) => ({ "--i": i }) as CSSProperties;
+  // Every mock so far, newest first; only the latest few are listed until asked for.
+  const past = [...counted.map(({ session, at }) => ({ session, at, note: null as string | null })), ...others.map((session) => ({ session, at: session.completedAt ?? session.createdAt, note: otherMockReason(history.find((c) => c.attemptId === session.id)?.reason) }))]
+              .sort((a, b) => b.at.localeCompare(a.at));
+  const pastRow = ({ session, at, note }: (typeof past)[number]) => (
+                <li key={session.id} className="border-b">
+                  <Link href={`/essays/${session.id}`} className="grid grid-cols-[5.5rem_minmax(0,1fr)_auto] items-baseline gap-4 py-3.5 transition-colors duration-(--dur-fast) hover:bg-sunk">
+                    <span className="text-[14px] text-muted-foreground tabular-nums">{formatDate(at)}</span>
+                    <span className="min-w-0">
+                      <span className="block truncate font-serif text-[16px]">{session.prompt.text}</span>
+                      {note && <span className="mt-1 inline-block rounded-md border border-border bg-sheet px-2 py-0.5 text-[13px] text-muted-foreground">不计入成绩：{note}</span>}
+                    </span>
+                    <span className="text-[15px] font-medium tabular-nums">{session.evaluation!.scores.overall.toFixed(1)}</span>
+                  </Link>
+                </li>
+  );
+
   return (
     <div className="flex flex-col">
-      <header className="flex items-end justify-between gap-4">
+      <header className="motion-enter flex items-end justify-between gap-4" style={enter(0)}>
         <h1 className="page-heading">模考</h1>
         {target !== null && <p className="text-[15px] text-muted-foreground">目标 <b className="font-semibold text-foreground tabular-nums">{target.toFixed(1)}</b></p>}
       </header>
 
-      <section aria-label="开始模考" className="mt-10">
-        <p className="mb-5 max-w-[34em] text-[17px] leading-relaxed">40 分钟写一道你没练过的题，没有教练。{points.length ? "分数会加入下面的趋势。" : "看看你现在的水平。"}</p>
+      <section aria-label="开始模考" className="motion-enter mt-6" style={enter(1)}>
+        <p className="mb-5 max-w-[34em] text-[16px] leading-relaxed text-muted-foreground">40 分钟写一道你没练过的题，没有教练。{points.length ? "分数会加入下面的趋势。" : "看看你现在的水平。"}</p>
         <StartMock state={state.state} attemptId={"attemptId" in state ? state.attemptId : undefined} />
       </section>
 
       {points.length > 0 && latest && (
         <>
-          <section aria-label="模考成绩" className="mt-14 grid grid-cols-2 border-y sm:grid-cols-4">
+          <section aria-label="模考成绩" className="motion-stagger mt-10 grid grid-cols-2 rounded-2xl bg-sunk px-6 sm:grid-cols-4">
             <Stat label="模考" value={String(points.length)} unit="次" />
             <Stat label="最近一次" value={latest.overall.toFixed(1)} />
             <Stat label="最高" value={best!.toFixed(1)} />
             <Stat label="比第一次" value={points.length > 1 ? signed(latest.overall - first.overall) : "—"} tone={points.length > 1 ? latest.overall - first.overall : 0} />
           </section>
 
-          <section className="mt-12 grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <section className="motion-enter mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]" style={enter(3)}>
             <div className="surface p-6">
               <h2 className="mb-4 text-[15px] font-semibold">分数趋势</h2>
               <MockScoreChart points={points} target={target ?? undefined} />
             </div>
             <div className="surface p-6">
               <h2 className="text-[15px] font-semibold">四项分</h2>
-              <ul className="mt-4 flex flex-col gap-3">
+              <ul className="motion-stagger mt-4 flex flex-col divide-y">
                 {DIMS.map((dim) => {
                   const change = previous ? latest.dims[dim] - previous.dims[dim] : 0;
                   return (
-                    <li key={dim} className="flex items-baseline justify-between gap-3">
+                    <li key={dim} className="flex items-baseline justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
                       <span className="text-[15px] text-muted-foreground">{DIM_LABEL[dim]}</span>
                       <span className="flex items-baseline gap-2">
                         <b className="text-[22px] font-semibold tabular-nums">{latest.dims[dim].toFixed(1)}</b>
@@ -94,12 +115,12 @@ export default async function MockPage() {
           </section>
 
           {recurring.length > 0 && (
-            <section className="mt-12">
+            <section className="motion-enter mt-12" style={enter(4)}>
               <h2 className="section-heading">模考里反复出现的问题</h2>
-              <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+              <ul className="motion-stagger mt-3 grid gap-x-10 border-t sm:grid-cols-2">
                 {recurring.map((issue) => (
-                  <li key={issue.title} className="surface flex items-baseline justify-between gap-4 px-5 py-4">
-                    <span className="text-[16px]">{issue.title}</span>
+                  <li key={issue.title} className="flex items-baseline justify-between gap-4 border-b py-3.5">
+                    <span className="text-[15px]">{issue.title}</span>
                     <span className="shrink-0 text-[14px] text-muted-foreground tabular-nums">{counted.length} 次模考里出现 <b className={cn("font-semibold", issue.count > 1 ? "text-warn" : "text-foreground")}>{issue.count}</b> 次</span>
                   </li>
                 ))}
@@ -110,24 +131,15 @@ export default async function MockPage() {
       )}
 
       {(counted.length > 0 || others.length > 0) && (
-        <section className="mt-12">
+        <section className="motion-enter mt-12" style={enter(5)}>
           <h2 className="section-heading">做过的模考</h2>
-          <ol className="mt-4 flex flex-col gap-3">
-            {[...counted.map(({ session, at }) => ({ session, at, note: null as string | null })), ...others.map((session) => ({ session, at: session.completedAt ?? session.createdAt, note: otherMockReason(history.find((c) => c.attemptId === session.id)?.reason) }))]
-              .sort((a, b) => b.at.localeCompare(a.at))
-              .map(({ session, at, note }) => (
-                <li key={session.id}>
-                  <Link href={`/essays/${session.id}`} className="surface grid grid-cols-[5.5rem_minmax(0,1fr)_auto] items-baseline gap-4 px-5 py-4 transition-shadow hover:shadow-[0_0_0_1px_var(--faint)]">
-                    <span className="text-[14px] text-muted-foreground tabular-nums">{formatDate(at)}</span>
-                    <span className="min-w-0">
-                      <span className="block truncate font-serif text-[16px]">{session.prompt.text}</span>
-                      {note && <span className="mt-1 inline-block rounded-md bg-sunk px-2 py-0.5 text-[14px] text-muted-foreground">不计入成绩 · {note}</span>}
-                    </span>
-                    <span className="text-[20px] font-semibold tabular-nums">{session.evaluation!.scores.overall.toFixed(1)}</span>
-                  </Link>
-                </li>
-              ))}
-          </ol>
+          <ol className="motion-stagger mt-3 border-t">{past.slice(0, PAST_SHOWN).map(pastRow)}</ol>
+          {past.length > PAST_SHOWN && (
+            <Collapsible>
+              <CollapsibleContent><ol>{past.slice(PAST_SHOWN).map(pastRow)}</ol></CollapsibleContent>
+              <CollapsibleTrigger className="group mt-3 -ml-3 inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[14px] text-muted-foreground transition-colors duration-(--dur-fast) hover:bg-sunk hover:text-foreground"><span className="group-data-panel-open:hidden">显示其余 {past.length - PAST_SHOWN} 次</span><span className="hidden group-data-panel-open:inline">收起</span><ChevronDown className="size-4 transition-transform duration-(--dur-layout) ease-(--ease-soft) group-data-panel-open:rotate-180" aria-hidden /></CollapsibleTrigger>
+            </Collapsible>
+          )}
         </section>
       )}
     </div>
@@ -138,9 +150,9 @@ const signed = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(1)}`;
 
 function Stat({ label, value, unit, tone = 0 }: { label: string; value: string; unit?: string; tone?: number }) {
   return (
-    <div className="py-5 pr-4 [&:nth-child(n+2)]:border-l [&:nth-child(n+2)]:pl-5 max-sm:[&:nth-child(3)]:border-l-0 max-sm:[&:nth-child(3)]:pl-0 max-sm:[&:nth-child(n+3)]:border-t">
+    <div className="py-5 pr-4 max-sm:even:border-l max-sm:even:pl-5 max-sm:[&:nth-child(n+3)]:border-t sm:[&:nth-child(n+2)]:border-l sm:[&:nth-child(n+2)]:pl-5">
       <p className="text-[14px] text-muted-foreground">{label}</p>
-      <p className={cn("mt-1.5 text-[32px] leading-none font-semibold tracking-[-0.03em] tabular-nums", tone > 0 && "text-good", tone < 0 && "text-warn")}>{value}{unit && <span className="ml-1.5 text-[15px] font-normal tracking-normal text-muted-foreground">{unit}</span>}</p>
+      <p className={cn("mt-1.5 text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums", tone > 0 && "text-good", tone < 0 && "text-warn")}>{value}{unit && <span className="ml-1.5 text-[15px] font-normal tracking-normal text-muted-foreground">{unit}</span>}</p>
     </div>
   );
 }

@@ -7,8 +7,9 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { getDb } from "../lib/db/client";
-import { authSessions, users, legacyScan, completionEvents } from "../lib/db/schema";
-import { getSession, listSessions, saveSession } from "../lib/db/queries/sessions";
+import { authSessions, users, legacyScan, completionEvents, checkpoints } from "../lib/db/schema";
+import { getSession, listSessions, listSessionSummaries, saveSession } from "../lib/db/queries/sessions";
+import { sessionCheckpoint } from "../lib/db/checkpoints";
 import { importQuestions } from "../lib/db/import-questions";
 import { markNewUserScanned } from "../lib/db/migrate-0.4";
 import { commitPracticeCheckpoint } from "../lib/db/practice-facts";
@@ -56,6 +57,55 @@ async function failedReview() {
   assert.equal(saved.pendingAction, null); assert.ok(saved.completedAt); assert.ok(saved.originalSubmittedAt);
   return saved;
 }
+
+test("deadline hand-in uses the saved draft: 0/49 expire without credit or grading, 50 is graded exactly once", async () => {
+  for (const words of [0, 49, 50]) {
+    const s = session(); s.mode = "mock"; s.drafts.original = "neighbourhood ".repeat(words).trim();
+    s.checkpointId = crypto.randomUUID();
+    if (words === 49) s.lifecycle = "set_aside";
+    saveSession("u", s);
+    const cp = { id: s.checkpointId, userId: "u", attemptId: s.id, exposureKey: s.id, questionId: "test", questionType: "two_part",
+      startedAt: time, deadlineAt: new Date(Date.now() + 60_000).toISOString(), status: "in_progress" as const, declaration: "no", startQualified: true };
+    db.insert(checkpoints).values(cp).run();
+    const action = { action: "evaluate", kind: "original", atDeadline: true, requestId: crypto.randomUUID() };
+    let calls = 0;
+    await mock(async () => { calls++; return modelResponse(evaluation); }, async () => {
+      assert.equal((await call(s.id, "POST", action)).status, 409, "cannot force an early timeout");
+      db.$client.prepare("UPDATE checkpoints SET deadline_at=? WHERE id=?").run(new Date(Date.now() - 1).toISOString(), cp.id);
+      assert.equal((await call(s.id, "POST", action)).status, 200);
+      const saved = (await (await call(s.id, "GET")).json()).session;
+      const again = (await (await call(s.id, "POST", { ...action, requestId: crypto.randomUUID() })).json()).session;
+      assert.equal(saved.version, again.version);
+      assert.equal(saved.drafts.original, s.drafts.original);
+      if (words < 50) {
+        assert.equal(saved.lifecycle, "expired"); assert.equal(saved.originalSubmittedAt, null); assert.equal(saved.evaluation, null);
+        assert.equal(sessionCheckpoint("u", s.id)?.status, "abandoned");
+        assert.equal(listSessions("u").some(row => row.id === s.id), false);
+        assert.equal(listSessionSummaries("u", 100).sessions.some(row => row.id === s.id), false);
+        assert.equal((await call(s.id, "PATCH", { version: saved.version, drafts: { original: "new", revision: "" } })).status, 409);
+        const request = new Request(`http://practice.test/api/sessions/${s.id}/lifecycle`, { method: "POST", headers: { origin: "http://practice.test", cookie: `wm_session=${token}`, "content-type": "application/json" }, body: JSON.stringify({ action: "resume" }) });
+        assert.equal((await inRequest(request, () => LIFECYCLE(request, { params: Promise.resolve({ id: s.id }) }))).status, 409);
+      } else {
+        assert.equal(saved.stage, "feedback"); assert.equal(saved.submitted.original, s.drafts.original);
+        assert.equal(sessionCheckpoint("u", s.id)?.status, "ineligible", "a late submission cannot claim an on-time score");
+      }
+    });
+    assert.equal(calls, Number(words === 50));
+    assert.equal(events().filter(e => e.attemptId === s.id).length, Number(words === 50));
+  }
+});
+
+test("ordinary mocks use elapsed writing time; elapsed time alone never expires a practice session", async () => {
+  const action = { action: "evaluate", kind: "original", atDeadline: true };
+  const s = session(); s.drafts.original = ""; s.elapsed.original = 2400;
+  saveSession("u", s);
+  assert.equal((await call(s.id, "POST", action)).status, 409);
+  s.mode = "mock"; s.elapsed.original--; saveSession("u", s);
+  assert.equal((await call(s.id, "POST", action)).status, 409);
+  assert.equal(getSession("u", s.id)?.lifecycle, "open");
+  s.elapsed.original++; saveSession("u", s);
+  assert.equal((await (await call(s.id, "POST", action)).json()).session.lifecycle, "expired");
+});
 
 test("Required feedback API commit is visible before optional call; projection overrides stale JSON and lost response replay calls no model", async () => {
   const s = session(true); saveSession("u", s);

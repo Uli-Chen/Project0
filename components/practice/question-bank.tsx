@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ClipboardPaste, Shuffle, Sparkles } from "lucide-react";
+import { ClipboardPaste, SearchX, Shuffle, Sparkles } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Empty, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
 import { NewEssayDialog } from "@/components/shell/new-essay";
 import { StartPractice } from "@/components/topics/start-practice";
 import { cn } from "@/lib/utils";
@@ -11,16 +13,19 @@ import { cn } from "@/lib/utils";
 export type BankQuestion = {
   id: string;
   text: string;
+  topic: string;
   tags: string[];
   status: "new" | "open" | "card" | "written";
   statusLabel: string;
+  best: string | null;
   openAttemptId: string | null;
 };
 
 type Spotlight = { question: BankQuestion; reason: string; random?: boolean };
 
 /** The bank tab: filters beside three ways to get a question, then every matching question as a card. */
-export function QuestionBank({ filters, questions, pick, quickEnabled }: { filters: React.ReactNode; questions: BankQuestion[]; pick: Spotlight | null; quickEnabled: boolean }) {
+/** `questions` is every match (随机一题 draws from all of them); `visible` is the page on screen. */
+export function QuestionBank({ filters, questions, visible, pager, pick, quickEnabled }: { filters: React.ReactNode; questions: BankQuestion[]; visible: BankQuestion[]; pager: React.ReactNode; pick: Spotlight | null; quickEnabled: boolean }) {
   const [spotlight, setSpotlight] = useState<Spotlight | null>(null);
   const drawable = questions.filter((q) => q.status !== "open");
   const random = (avoid?: string) => {
@@ -30,39 +35,44 @@ export function QuestionBank({ filters, questions, pick, quickEnabled }: { filte
 
   return (
     <>
-      <div className="mt-8 grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
-        <div className="surface px-5 py-4">{filters}</div>
-        <div className="surface flex flex-col p-2">
-          <ActionButton icon={<Sparkles />} title="推荐一题" detail="按你的练习情况挑一道" disabled={!pick} onClick={() => pick && setSpotlight(pick)} />
-          <ActionButton icon={<Shuffle />} title="随机一题" detail="从当前筛选里抽一道" disabled={!drawable.length} onClick={() => random()} />
-          <NewEssayDialog pasteOnly trigger={<button type="button" className={actionClass}><ActionBody icon={<ClipboardPaste />} title="用自己的题" detail="粘贴任意一道大作文题" /></button>} />
+      <div className="motion-enter mt-5 flex flex-wrap items-start justify-between gap-x-8 gap-y-4" style={{ "--i": 2 } as React.CSSProperties}>
+        <div className="min-w-0">{filters}</div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" title="按你的练习情况挑一道" className="bg-coach-soft text-primary shadow-[0_0_0_1px_var(--coach-line)] hover:bg-coach-soft hover:shadow-[0_0_0_1px_var(--primary)]" disabled={!pick} onClick={() => pick && setSpotlight(pick)}><Sparkles />推荐一题</Button>
+          <Button variant="outline" size="sm" title="从当前筛选里抽一道" disabled={!drawable.length} onClick={() => random()}><Shuffle className="text-primary" />随机一题</Button>
+          <NewEssayDialog pasteOnly trigger={<Button variant="outline" size="sm" title="粘贴任意一道大作文题"><ClipboardPaste className="text-primary" />用自己的题</Button>} />
         </div>
       </div>
 
-      {questions.length > 0 ? (
-        <ol aria-label="题目" className="mt-6 grid gap-4 lg:grid-cols-2">
-          {questions.map((q) => (
-            <li key={q.id} className="surface flex flex-col gap-4 p-5 transition-shadow hover:shadow-[0_0_0_1px_var(--faint)]">
-              <p className="line-clamp-4 font-serif text-[17px] leading-[1.55]">{q.text}</p>
-              <div className="mt-auto flex flex-wrap items-center justify-between gap-3">
+      {visible.length > 0 ? (
+        // Keyed by the visible ids so a new filter or page quietly replays the stagger.
+        <ol key={visible.map((q) => q.id).join("|")} aria-label="题目" className="motion-stagger mt-6 grid gap-3.5 lg:grid-cols-2">
+          {visible.map((q) => (
+            <li key={q.id} className="surface motion-press flex flex-col gap-4 p-5 transition-shadow duration-(--dur-standard) ease-(--ease-soft) hover:shadow-[0_0_0_1px_var(--coach-line),0_14px_28px_-14px_color-mix(in_srgb,var(--coach)_35%,transparent)] focus-within:shadow-[0_0_0_1px_var(--coach-line),0_14px_28px_-14px_color-mix(in_srgb,var(--coach)_35%,transparent)]">
+              <p className="line-clamp-4 font-serif text-[17px] leading-[1.55] text-pretty">{q.text}</p>
+              <div className="mt-auto flex flex-wrap items-end justify-between gap-3 sm:flex-nowrap">
                 <Tags question={q} />
-                <div className="flex gap-2"><Actions question={q} quickEnabled={quickEnabled} /></div>
+                <div className="flex shrink-0 gap-2"><Actions question={q} quickEnabled={quickEnabled} /></div>
               </div>
             </li>
           ))}
         </ol>
-      ) : <p className="py-16 text-center text-[15px] text-muted-foreground">没有符合筛选的题目</p>}
+      ) : <Empty className="mt-6"><EmptyMedia variant="icon"><SearchX /></EmptyMedia><EmptyDescription>没有符合筛选的题目</EmptyDescription></Empty>}
+      {pager}
 
       <Dialog open={spotlight !== null} onOpenChange={(open) => { if (!open) setSpotlight(null); }}>
         <DialogContent className="gap-0 p-7 sm:max-w-xl">
           {spotlight && (
             <>
-              <p className="flex items-center gap-2 pr-8 text-[15px] text-muted-foreground"><span className="size-1.5 shrink-0 rounded-full bg-primary" aria-hidden />{spotlight.reason}</p>
-              <DialogTitle className="mt-4 font-serif text-[23px] leading-[1.4] font-medium text-pretty">{spotlight.question.text}</DialogTitle>
-              <div className="mt-5"><Tags question={spotlight.question} /></div>
+              {/* Keyed cross-fade so 换一道 reads as a fresh draw. */}
+              <div key={spotlight.question.id} className="motion-swap">
+                <p className="flex items-center gap-2 pr-8 text-[15px] text-muted-foreground"><span className="size-1.5 shrink-0 rounded-full bg-primary" aria-hidden />{spotlight.reason}</p>
+                <DialogTitle className="mt-4 font-serif text-[23px] leading-[1.4] font-medium text-pretty">{spotlight.question.text}</DialogTitle>
+                <div className="mt-5"><Tags question={spotlight.question} /></div>
+              </div>
               <div className="mt-7 flex flex-wrap items-center gap-2">
                 <Actions question={spotlight.question} quickEnabled={quickEnabled} size="lg" />
-                {spotlight.random && drawable.length > 1 && <button type="button" onClick={() => random(spotlight.question.id)} className="inline-flex h-12 items-center rounded-full px-5 text-base text-muted-foreground transition-colors hover:bg-sunk hover:text-foreground">换一道</button>}
+                {spotlight.random && drawable.length > 1 && <button type="button" onClick={() => random(spotlight.question.id)} className="inline-flex h-11 items-center rounded-full px-4 text-[15px] text-muted-foreground transition-colors hover:bg-sunk hover:text-foreground">换一道</button>}
               </div>
             </>
           )}
@@ -72,42 +82,30 @@ export function QuestionBank({ filters, questions, pick, quickEnabled }: { filte
   );
 }
 
-const actionClass = "flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-sunk disabled:pointer-events-none disabled:opacity-50";
-
-function ActionButton({ icon, title, detail, disabled, onClick }: { icon: React.ReactNode; title: string; detail: string; disabled?: boolean; onClick: () => void }) {
-  return <button type="button" disabled={disabled} onClick={onClick} className={actionClass}><ActionBody icon={icon} title={title} detail={detail} /></button>;
-}
-
-function ActionBody({ icon, title, detail }: { icon: React.ReactNode; title: string; detail: string }) {
-  return (
-    <>
-      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-sunk text-foreground [&_svg]:size-4" aria-hidden>{icon}</span>
-      <span className="min-w-0">
-        <span className="block text-[15px] font-medium">{title}</span>
-        <span className="block text-[14px] text-muted-foreground">{detail}</span>
-      </span>
-    </>
-  );
-}
-
 const STATUS_TONE: Record<BankQuestion["status"], string> = {
-  new: "bg-sunk text-muted-foreground",
-  open: "bg-warn-soft text-warn",
-  card: "bg-primary/10 text-primary",
-  written: "bg-good-soft text-good",
+  new: "text-faint",
+  open: "text-warn",
+  card: "text-primary",
+  written: "text-good",
 };
 
+/** The topic on its own hue, the type as quiet text, and the practice status with a dot once there is something to show. */
 function Tags({ question }: { question: BankQuestion }) {
+  const [topic, ...rest] = question.tags;
   return (
-    <ul className="flex flex-wrap gap-1.5" aria-label="标签">
-      {question.tags.map((tag) => <li key={tag} className="rounded-md bg-sunk px-2 py-0.5 text-[14px] text-muted-foreground">{tag}</li>)}
-      <li className={cn("rounded-md px-2 py-0.5 text-[14px]", STATUS_TONE[question.status])}>{question.statusLabel}</li>
+    <ul className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[14px] text-muted-foreground" aria-label="标签">
+      <li className="topic-tag" data-topic={question.topic}>{topic}</li>
+      {rest.map((tag) => <li key={tag}>{tag}</li>)}
+      <li className={cn("flex items-center gap-2 whitespace-nowrap", question.status !== "new" && "font-medium before:size-1.5 before:rounded-full before:bg-current before:content-['']", STATUS_TONE[question.status])}>
+        {question.statusLabel}
+        {question.best && <span className="rounded-md bg-good-soft px-1.5 text-[13px] tabular-nums"><span className="sr-only">最高 </span>{question.best}</span>}
+      </li>
     </ul>
   );
 }
 
 function Actions({ question, quickEnabled, size }: { question: BankQuestion; quickEnabled: boolean; size?: "lg" }) {
-  if (question.openAttemptId) return <Link href={`/essays/${question.openAttemptId}`} className={cn("inline-flex items-center rounded-full bg-foreground font-medium text-background transition-colors hover:bg-foreground/85", size === "lg" ? "h-12 px-7 text-base" : "h-9 px-4 text-[15px]")}>继续</Link>;
+  if (question.openAttemptId) return <Link href={`/essays/${question.openAttemptId}`} className={buttonVariants({ size: size ?? "sm" })}>继续</Link>;
   return (
     <>
       {quickEnabled && <StartPractice size={size ?? "sm"} variant={size === "lg" ? "default" : "outline"} questionId={question.id} activity="quick">卡片</StartPractice>}

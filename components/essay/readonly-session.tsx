@@ -1,9 +1,9 @@
 import { CardReadonly } from "@/components/quick/card-readonly";
 import type { CardContent } from "@/lib/quick/schemas";
 import Link from "next/link";
-import type { SessionState } from "@/lib/pipeline/types";
+import type { SessionDetail } from "@/lib/pipeline/session-detail";
 
-export function ReadonlySession({ session, cardContent }: { session: SessionState; cardContent?: CardContent | null }) {
+export function ReadonlySession({ session, cardContent }: { session: SessionDetail; cardContent?: CardContent | null }) {
   const outline = session.outline;
   const slots = [outline?.stance, ...(outline?.reasons ?? []).flatMap(r => [r.claim, r.why, r.example]), outline?.counter?.view, outline?.counter?.response];
   return (

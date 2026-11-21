@@ -54,8 +54,8 @@ export function OutlineBoard({
         </div>
       )}
       <div className={cn("mt-5", layout === "grid" ? "grid gap-x-10 gap-y-8 sm:grid-cols-2" : "flex flex-col", layout === "stack" && (density === "compact" ? "gap-4" : "gap-6"))}>
-        {groups.map((group) => (
-          <section key={group.title}>
+        {groups.map((group, i) => (
+          <section key={group.title} className="motion-reveal" style={{ "--i": i } as React.CSSProperties}>
             <h3 className="text-sm font-semibold">{group.title}</h3>
             <div className={cn("mt-1.5 flex flex-col", group.slots.length > 1 && "border-l border-border pl-3.5")}>
               {group.slots.map((slot) => (
@@ -162,7 +162,7 @@ function CoverageMark({ status }: { status: "written" | "partly" | "missing" }) 
     <span
       title={COVERAGE_LABEL[status]}
       className={cn(
-        "mt-0.5 flex shrink-0 items-center gap-1 text-xs",
+        "motion-pop mt-0.5 flex shrink-0 items-center gap-1 text-xs",
         status === "written" ? "text-good" : status === "partly" ? "text-warn" : "text-muted-foreground",
       )}
     >

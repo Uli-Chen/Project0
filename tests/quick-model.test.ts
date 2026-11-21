@@ -217,7 +217,8 @@ test("T1 quickFollowup with text stores the student message, then one coach ques
   assert.equal(calls, before + 1);
   const [said, question, ...rest] = quickMessages(p);
   assert.equal(rest.length, 0);
-  assert.deepEqual({ role: said.role, action: said.action, userId: said.userId, afterFollowUp: said.afterFollowUp, content: said.content, reply: said.replyToMessageId }, { role: "user", action: "quickAsk", userId: "u", afterFollowUp: 0, content: text, reply: undefined });
+  assert.deepEqual({ role: said.role, action: said.action, userId: said.userId, afterFollowUp: said.afterFollowUp, content: said.content, reply: said.replyToMessageId }, { role: "user", action: "quickAsk", userId: undefined, afterFollowUp: 0, content: text, reply: undefined });
+  assert.equal(getSession("u", id)!.messages.find(message => message.id === said.id)?.userId, "u");
   assert.deepEqual({ role: question.role, action: question.action, content: question.content }, { role: "coach", action: "quickFollowup", content: "你能想到一个身边的具体场景吗？" });
   assert.equal(sent.length, 1); assert.ok(sent[0].system.includes(askPrompt)); assert.ok(!sent[0].system.includes(followupPrompt));
   assert.deepEqual(sent[0].context.messages?.at(-1), { role: "user", content: text });

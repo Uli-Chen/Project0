@@ -41,7 +41,7 @@ async function call(endpoint: "create" | "list" | "action" | "lifecycle" | "sess
     headers: { origin, cookie: `wm_session=${digest(user)}`, "content-type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
   const response = await inRequest(request, () => {
     if (endpoint === "create") return CREATE(request);
-    if (endpoint === "list") return LIST();
+    if (endpoint === "list") return LIST(request);
     if (endpoint === "account") return ACCOUNT(request);
     const handler = endpoint === "action" ? ACTION : endpoint === "lifecycle" ? LIFECYCLE : method === "GET" ? GET : method === "PATCH" ? PATCH : DELETE;
     return handler(request, { params: Promise.resolve({ id }) });

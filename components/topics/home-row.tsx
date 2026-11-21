@@ -2,32 +2,33 @@ import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export const rowGrid = 'grid grid-cols-[2.25rem_minmax(0,1fr)_1.25rem] items-center gap-x-3 py-5 sm:grid-cols-[2.5rem_6.5rem_minmax(0,1fr)_1.25rem] sm:gap-x-4';
+const tile = 'surface flex h-full min-h-[7rem] flex-col p-5';
 
-/** One numbered line on the home page: number, label, what it says, and an arrow when it leads somewhere. */
-export function Row({ n, label, href, children }: { n: number; label: string; href?: string; children: React.ReactNode }) {
-  const body = <RowBody n={n} label={label} end={href ? <ArrowUpRight className="size-4 text-muted-foreground transition-colors group-hover:text-foreground" aria-hidden /> : null}>{children}</RowBody>;
-  return href ? <Link href={href} className={cn(rowGrid, 'group')}>{body}</Link> : <div className={rowGrid}>{body}</div>;
-}
-
-/** The cells of a row; on phones the label sits above the content in the middle column. */
-export function RowBody({ n, label, end, children }: { n: number; label: string; end: React.ReactNode; children: React.ReactNode }) {
-  return (
+/** One tile under the home page's recommendation: a label, what it says, and an arrow when it leads somewhere. */
+export function Tile({ label, href, children }: { label: string; href?: string; children: React.ReactNode }) {
+  const body = (
     <>
-      <span className="self-start pt-0.5 text-[14px] text-muted-foreground tabular-nums sm:self-center sm:pt-0">{String(n).padStart(2, '0')}</span>
-      <span className="text-[15px] text-muted-foreground max-sm:col-start-2 max-sm:row-start-1">{label}</span>
-      <span className="min-w-0 max-sm:col-start-2 max-sm:row-start-2 max-sm:mt-1">{children}</span>
-      <span className="justify-self-end max-sm:col-start-3 max-sm:row-span-2 max-sm:row-start-1">{end}</span>
+      <span className="flex items-center justify-between gap-3 text-[14px] text-muted-foreground">
+        {label}
+        {href && <ArrowUpRight className="size-4 text-faint transition-[color,translate] duration-(--dur-fast) ease-(--ease-soft) group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary" aria-hidden />}
+      </span>
+      <span className="mt-auto block min-w-0 pt-4">{children}</span>
     </>
   );
+  return href
+    ? <Link href={href} className={cn(tile, 'group motion-press hover:shadow-[0_0_0_1px_var(--coach-line),0_14px_28px_-14px_color-mix(in_srgb,var(--coach)_35%,transparent)]')}>{body}</Link>
+    : <div className={tile}>{body}</div>;
 }
 
-export function Big({ value, unit, note }: { value: string | number; unit: string; note?: string }) {
+/** A count with its unit, and an optional line under it. */
+export function Big({ value, unit, note, tone }: { value: string | number; unit: string; note?: string; tone?: 'good' }) {
   return (
-    <span className="flex min-w-0 items-baseline gap-2">
-      <span className="text-[34px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{value}</span>
-      <span className="text-[15px] whitespace-nowrap text-muted-foreground">{unit}</span>
-      {note && <span className="truncate text-[15px] text-muted-foreground"><span className="mx-1 text-faint">·</span>{note}</span>}
+    <span className="block min-w-0">
+      <span className="flex min-w-0 items-baseline gap-2">
+        <span className={cn('text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums', tone === 'good' && 'text-good')}>{value}</span>
+        <span className="truncate text-[14px] text-muted-foreground">{unit}</span>
+      </span>
+      {note && <span className="mt-1.5 block truncate text-[14px] text-muted-foreground">{note}</span>}
     </span>
   );
 }

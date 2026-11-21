@@ -41,12 +41,12 @@ export function CompareTab() {
 
       <section>
         <p className="text-[14px] text-muted-foreground">原稿到改写稿</p>
-        <p className="mt-1.5 flex items-center gap-2.5 font-serif text-[48px] leading-none font-medium tracking-tight tabular-nums">
+        <p className="motion-reveal mt-1.5 flex items-center gap-2.5 font-serif text-[48px] leading-none font-medium tracking-tight tabular-nums" style={{ "--i": 1 } as React.CSSProperties}>
           <span className="text-muted-foreground">{before.overall.toFixed(1)}</span>
           <ArrowRight className="size-5 text-muted-foreground/60" />
           {after.overall.toFixed(1)}
         </p>
-        <dl className="mt-5 flex flex-col divide-y border-y text-[14px]">
+        <dl className="motion-stagger mt-5 flex flex-col divide-y border-y text-[14px]">
           {DIMS.map((d) => (
             <div key={d} className="flex items-center justify-between py-2 tabular-nums">
               <dt className="text-muted-foreground">{DIM_LABEL[d]}</dt>
@@ -68,14 +68,14 @@ export function CompareTab() {
             <ToggleGroupItem value="marks" className="h-7 px-2 text-sm">问题句</ToggleGroupItem>
           </ToggleGroup>
         </div>
-        <ol className="flex flex-col divide-y border-y">
+        <ol className="motion-stagger flex flex-col divide-y border-y">
           {comparison.issues.map((result) => {
             const issue = issues.find((item) => item.rank === result.rank);
             const active = ui.compareMode === "marks" && state.activeIssue === result.rank;
             return (
               <li key={result.rank}>
                 <button type="button" aria-pressed={active} onClick={() => { actions.setActiveIssue(result.rank); ui.setCompareMode("marks"); ui.setVersion("revision"); if (result.revisionSentenceIds[0]) ui.jumpToSentence(result.revisionSentenceIds[0]); }}
-                  className={cn("flex w-full items-start gap-2.5 py-3 text-left", active && "bg-secondary/40")}>
+                  className={cn("-mx-2 flex w-[calc(100%+1rem)] items-start gap-2.5 rounded-lg px-2 py-3 text-left transition-colors duration-(--dur-fast)", active ? "bg-secondary/40" : "hover:bg-sunk/70")}>
                   <IssueBadge rank={result.rank} active={active} className="mt-px" />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-3">

@@ -23,7 +23,7 @@ test('stored private content cannot appear in session reads, lists, success/erro
  const check=(text:string)=>{assert.ok(!text.includes(sentinel));assert.ok(!text.includes(privateText));assert.ok(!text.includes('request_json'));assert.ok(!text.includes('response_text'));};
  const req=new Request(`http://quick.test/api/sessions/${state.id}`,{headers:{cookie:`wm_session=${'a'.repeat(64)}`}});
  const read=await inRequest(req,()=>READ(req,{params:Promise.resolve({id:state.id})}));assert.equal(read.status,200);check(await read.text());
- const list=await inRequest(req,()=>LIST());assert.equal(list.status,200);check(await list.text());
+ const list=await inRequest(req,()=>LIST(req));assert.equal(list.status,200);check(await list.text());
  t.mock.method(globalThis,'fetch',async()=>new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content:JSON.stringify({reply:'Why?',updates:[]})}}]})));
  const success=await fixture.call('action',state.id,{action:'prewrite',text:'My reason',requestId:crypto.randomUUID()});assert.equal(success.status,200);check(await success.text());
  t.mock.method(globalThis,'fetch',async()=>new Response(JSON.stringify({error:{message:sentinel+' '+privateText}}),{status:503}));
@@ -39,6 +39,9 @@ test('Deep API links the successful retry, while malformed private output remain
  t.mock.method(globalThis,'fetch',async()=>new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content:++n===1?sentinel:JSON.stringify({reply:'Why?',updates:[]})}}]})));
  const response=await fixture.call('action',state.id,{action:'prewrite',text:'Own reason',requestId});assert.equal(response.status,200);const text=await response.text();assert.ok(!text.includes(sentinel));
  const output=JSON.parse(text),rows=fixture.db.$client.prepare('SELECT id,outcome FROM llm_calls WHERE operation_id=? ORDER BY rowid').all(requestId) as {id:string;outcome:string}[];
- assert.equal(rows.length,2);assert.equal(rows[0].outcome,'invalid_output');assert.equal(rows[1].outcome,'ok');assert.equal(output.session.messages.at(-1).callId,rows[1].id);
+ assert.equal(rows.length,2);assert.equal(rows[0].outcome,'invalid_output');assert.equal(rows[1].outcome,'ok');
+ assert.equal(output.session.messages.at(-1).callId,undefined);
+ const stored=fixture.db.$client.prepare("SELECT state_json FROM writing_sessions WHERE user_id='u' AND id=?").get(state.id) as {state_json:string};
+ assert.equal(JSON.parse(stored.state_json).messages.at(-1).callId,rows[1].id);
  assert.equal((fixture.db.$client.prepare('SELECT response_text FROM llm_call_payloads WHERE call_id=?').get(rows[0].id) as {response_text:string}).response_text,sentinel);
 });

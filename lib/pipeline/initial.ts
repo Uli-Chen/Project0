@@ -13,10 +13,10 @@ function questionType(text: string): Prompt["questionType"] {
   if (/positive or negative|why.*happen/i.test(text) || (text.match(/\?/g)?.length ?? 0) > 1) return "two_part";
   return "agree_disagree";
 }
-export function createSession(input: { kind: SessionKind; mode: Mode; prompt?: string; topic?: string }): SessionState {
+export function createSession(input: { kind: SessionKind; mode: Mode; prompt?: string; topic?: string }, bankPrompt?: Prompt): SessionState {
   const mode = input.kind === "assessment" ? "mock" : input.mode;
   const now = new Date().toISOString();
-  const prompt: Prompt = input.prompt ? { id: crypto.randomUUID(), text: input.prompt, topicTags: input.topic && input.topic !== "other" ? [input.topic] : [], questionType: questionType(input.prompt) } : questions[input.kind === "assessment" ? 2 : Math.floor(Math.random() * questions.length)];
+  const prompt: Prompt = bankPrompt ?? (input.prompt ? { id: crypto.randomUUID(), text: input.prompt, topicTags: input.topic && input.topic !== "other" ? [input.topic] : [], questionType: questionType(input.prompt) } : questions[input.kind === "assessment" ? 2 : Math.floor(Math.random() * questions.length)]);
   return { schemaVersion: 2, activity: "deep", question: null, lifecycle: "open", lastStudentActionAt: null,
     continuedFromQuickId: null, cardSnapshot: null, rewriteOfDeepId: null, originalSubmittedAt: null,
     completedAt: null, originalFreshness: null, reviewStatus: "none", feedbackUpdatedAt: null, checkpointId: null,

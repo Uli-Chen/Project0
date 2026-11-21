@@ -6,10 +6,13 @@ import { Check, ChevronRight, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Avatar } from "@/components/shell/app-sidebar";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { StatusButton, type AsyncStatus } from "@/components/ui/status-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Switch } from "@/components/ui/switch";
 import type { CurrentUser } from "@/lib/auth/types";
 import { examTime } from "@/lib/learning/summary";
 
@@ -70,8 +73,8 @@ export function AccountSettings({ user, tutorV2Enabled = false, privacyVisible =
   }
 
   return <div className="max-w-3xl">
-    <div className="flex items-center gap-3"><Avatar name={user.name} size={36} /><div className="min-w-0"><h1 className="page-heading truncate">{user.name}</h1><p className="meta truncate">{user.email}</p></div></div>
-    <div className="mt-8 border-t">
+    <div className="motion-enter flex items-center gap-3" style={{ "--i": 0 } as React.CSSProperties}><Avatar name={user.name} size={36} /><div className="min-w-0"><h1 className="page-heading truncate">{user.name}</h1><p className="meta truncate">{user.email}</p></div></div>
+    <div className="motion-stagger mt-7 border-t">
       <Row title="名字">
         <form onSubmit={saveProfile} className="flex flex-wrap items-start gap-2">
           <Input id="account-name" aria-label="名字" name="name" disabled={profileBusy} autoComplete="nickname" value={name} onChange={(event) => { setName(event.target.value); setProfileMessage(""); }} required maxLength={40} className="max-w-xs" />
@@ -81,7 +84,7 @@ export function AccountSettings({ user, tutorV2Enabled = false, privacyVisible =
       </Row>
       <Row title="目标与节奏">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">{user.profile.onboardingCompleted ? <span className="font-medium text-foreground tabular-nums">{user.profile.target} 分 · 每周 {user.profile.perWeek} 次 · {examTime(user.profile).timeLeft}</span> : "未设置"}</p>
+          <p className="text-sm text-muted-foreground">{user.profile.onboardingCompleted ? <span className="flex flex-wrap gap-x-5 gap-y-1 font-medium text-foreground tabular-nums"><span>{user.profile.target} 分</span><span>每周 {user.profile.perWeek} 次</span><span>{examTime(user.profile).timeLeft}</span></span> : "未设置"}</p>
           <Link href="/onboarding" className={buttonVariants({ variant: "outline" })}>{user.profile.onboardingCompleted ? "修改" : "设置"}<ChevronRight /></Link>
         </div>
       </Row>
@@ -99,21 +102,27 @@ export function AccountSettings({ user, tutorV2Enabled = false, privacyVisible =
       </Row>
       <Row title="删除账户">
         <p className="text-sm text-muted-foreground">永久删除账户、作文、对话、练习记录和记忆，无法恢复。</p>
-        {!deleteOpen ? <Button variant="destructive" className="mt-3" onClick={() => setDeleteOpen(true)}><Trash2 />删除账户</Button> : (
-          <form onSubmit={deleteAccount} className="mt-4 flex max-w-sm flex-col gap-3">
-            <Field label="密码" htmlFor="delete-password"><Input id="delete-password" name="password" disabled={deleteBusy} type="password" autoComplete="current-password" required maxLength={128} /></Field>
-            <Field label="输入「删除我的账户」确认" htmlFor="delete-confirmation"><Input id="delete-confirmation" name="confirmation" disabled={deleteBusy} required pattern="删除我的账户" autoComplete="off" /></Field>
-            <Status error={deleteError} />
-            <div className="flex flex-wrap gap-2"><StatusButton variant="destructive" type="submit" status={deleteBusy ? "pending" : "idle"} pendingLabel="正在删除">永久删除</StatusButton><Button variant="ghost" disabled={deleteBusy} onClick={() => { setDeleteOpen(false); setDeleteError(""); }}>取消</Button></div>
-          </form>
-        )}
+        <AlertDialog open={deleteOpen} onOpenChange={(open) => { if (deleteBusy) return; setDeleteOpen(open); if (!open) setDeleteError(""); }}>
+          <AlertDialogTrigger render={<Button variant="destructive" className="mt-3" />}><Trash2 />删除账户</AlertDialogTrigger>
+          <AlertDialogContent>
+            <form onSubmit={deleteAccount} className="flex flex-col gap-4">
+              <AlertDialogHeader><AlertDialogTitle>永久删除账户？</AlertDialogTitle><AlertDialogDescription>账户、作文、对话、练习记录和记忆都会删除，无法恢复。</AlertDialogDescription></AlertDialogHeader>
+              <div className="flex flex-col gap-3">
+                <Field label="密码" htmlFor="delete-password"><Input id="delete-password" name="password" disabled={deleteBusy} type="password" autoComplete="current-password" required maxLength={128} /></Field>
+                <Field label="输入「删除我的账户」确认" htmlFor="delete-confirmation"><Input id="delete-confirmation" name="confirmation" disabled={deleteBusy} required pattern="删除我的账户" autoComplete="off" /></Field>
+                <Status error={deleteError} />
+              </div>
+              <AlertDialogFooter><AlertDialogCancel disabled={deleteBusy}>取消</AlertDialogCancel><StatusButton variant="destructive" type="submit" status={deleteBusy ? "pending" : "idle"} pendingLabel="正在删除">永久删除</StatusButton></AlertDialogFooter>
+            </form>
+          </AlertDialogContent>
+        </AlertDialog>
       </Row>
     </div>
   </div>;
 }
 
 function Row({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="grid gap-3 border-b py-7 md:grid-cols-[180px_minmax(0,1fr)] md:gap-8"><h2 className="pt-1.5 text-sm font-medium">{title}</h2><div className="min-w-0">{children}</div></section>;
+  return <section className="grid gap-3 border-b py-6 md:grid-cols-[180px_minmax(0,1fr)] md:gap-8"><h2 className="pt-1.5 text-sm font-medium">{title}</h2><div className="min-w-0">{children}</div></section>;
 }
 
 function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: React.ReactNode }) {
@@ -125,8 +134,8 @@ function statusOf(busy: boolean, message: string, error: string): AsyncStatus {
 }
 
 function Status({ error, message }: { error?: string; message?: string }) {
-  if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
-  if (message) return <p role="status" className="flex items-center gap-1.5 text-sm text-good"><Check className="size-4" />{message}</p>;
+  if (error) return <p role="alert" className="motion-reveal text-sm text-destructive">{error}</p>;
+  if (message) return <p role="status" className="motion-reveal flex items-center gap-1.5 text-sm text-good"><Check className="motion-check size-4" />{message}</p>;
   return null;
 }
 
@@ -138,5 +147,5 @@ function LearningPreferences({ user }: { user: CurrentUser }) {
     try { await send("/api/profile", { explainLanguage: data.get("explainLanguage"), nudgesDefault: data.get("nudgesDefault") === "on" }, "PATCH"); setMessage("已保存，下次新请求生效。段落提醒偏好仅影响新建练习。"); }
     catch (e) { setError(e instanceof Error ? e.message : "保存失败"); } finally { setBusy(false); }
   }
-  return <form onSubmit={save} onChange={() => setMessage("")} className="flex max-w-sm flex-col gap-4"><label className="text-sm">讲解语言<select name="explainLanguage" defaultValue={user.profile.explainLanguage === "en" ? "en" : "zh"} disabled={busy} className="ml-3 rounded border bg-background p-2"><option value="zh">中文</option><option value="en">English</option></select></label><label className="text-sm"><input type="checkbox" name="nudgesDefault" defaultChecked={user.profile.nudgesDefault !== false} disabled={busy} className="mr-2" />新建练习开启段落提醒</label><Status error={error} message={message} /><StatusButton type="submit" variant="outline" className="self-start" status={statusOf(busy, message, error)} successLabel="已保存" errorLabel="重试">保存偏好</StatusButton></form>;
+  return <form onSubmit={save} onChange={() => setMessage("")} className="flex max-w-sm flex-col gap-4"><label className="flex items-center justify-between gap-4 text-sm">讲解语言<NativeSelect name="explainLanguage" defaultValue={user.profile.explainLanguage === "en" ? "en" : "zh"} disabled={busy}><NativeSelectOption value="zh">中文</NativeSelectOption><NativeSelectOption value="en">English</NativeSelectOption></NativeSelect></label><label className="flex items-center justify-between gap-4 text-sm">新建练习开启段落提醒<Switch name="nudgesDefault" defaultChecked={user.profile.nudgesDefault !== false} disabled={busy} /></label><Status error={error} message={message} /><StatusButton type="submit" variant="outline" className="self-start" status={statusOf(busy, message, error)} successLabel="已保存" errorLabel="重试">保存偏好</StatusButton></form>;
 }

@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { GET, PATCH } from "../app/api/sessions/[id]/route";
+import { GET as LIST } from "../app/api/sessions/route";
 import { POST } from "../app/api/sessions/[id]/actions/route";
 import { getDb } from "../lib/db/client";
 import { authSessions, users, writingSessions } from "../lib/db/schema";
@@ -45,6 +46,32 @@ async function call(id: string, method: "GET" | "PATCH" | "POST", body?: unknown
   });
   return inRequest(request, () => (method === "GET" ? GET : method === "PATCH" ? PATCH : POST)(request, { params: Promise.resolve({ id }) }));
 }
+
+test("session summaries paginate by update time and ID without returning editor content or other users' records", async () => {
+  const state = createSession({ kind: "free", mode: "practice" });
+  state.drafts.original = "Private draft";
+  for (const id of ["summary-a", "summary-b", "summary-c"]) insert({ ...state, id });
+  db.$client.prepare("UPDATE writing_sessions SET updated_at = ? WHERE user_id = 'owner' AND id = 'summary-c'").run("2025-12-01T00:00:00.000Z");
+  saveSession("other", { ...state, id: "other-summary" });
+  async function list(query: string) {
+    const request = new Request(`http://session.test/api/sessions?${query}`, { headers: { cookie: `wm_session=${token}` } });
+    return inRequest(request, () => LIST(request));
+  }
+  const response = await list("limit=2");
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  const first = await response.json();
+  assert.deepEqual(first.sessions.map((session: { id: string }) => session.id), ["summary-b", "summary-a"]);
+  assert.ok(first.nextCursor);
+  assert.equal(first.sessions[0].title, state.prompt.text);
+  assert.equal(first.sessions[0].drafts, undefined);
+  assert.equal(first.sessions[0].messages, undefined);
+  const second = await (await list(`limit=2&cursor=${first.nextCursor}`)).json();
+  assert.deepEqual(second.sessions.map((session: { id: string }) => session.id), ["summary-c"]);
+  assert.equal(second.nextCursor, null);
+  assert.equal((await list("limit=101")).status, 400);
+  assert.equal((await list("cursor=invalid")).status, 400);
+});
 
 test("legacy get/list are read-only; real save upgrades to v2 and round-trips nested unknown fields", () => {
   const legacy = legacySession();
@@ -126,20 +153,26 @@ test("legacy and Deep GET, editing, actions and idempotency retain existing beha
     const response = await call(id, "PATCH", patch);
     assert.equal(response.status, 200);
     const saved = (await response.json()).session;
-    assert.equal(saved.schemaVersion, 2);
+    assert.equal(saved.schemaVersion, undefined);
+    const stored = JSON.parse(raw(id));
+    assert.equal(stored.schemaVersion, 2);
     assert.equal(saved.version, 1);
     assert.equal(saved.drafts.original, patch.drafts.original);
     assert.equal(saved.outline.stance.text, "Updated stance");
     if (!("schemaVersion" in state)) {
       const legacy = state as ReturnType<typeof legacySession>;
-      assert.deepEqual(saved.futureData, legacy.futureData);
-      assert.deepEqual(saved.prompt, legacy.prompt);
-      assert.deepEqual(saved.outline.futureOutline, [1, { keep: true }]);
-      assert.deepEqual(saved.outline.stance.futureSlot, { keep: 7 });
-      assert.equal(saved.outline.counter.futureCounter, true);
-      assert.equal(saved.outline.reasons[0].futureReason, "keep");
-      assert.deepEqual(saved.drafts.futureDraft, { text: "保留草稿" });
-      assert.equal(saved.elapsed.futureElapsed, 17);
+      assert.equal(saved.futureData, undefined);
+      assert.equal(saved.outline.futureOutline, undefined);
+      assert.equal(saved.outline.stance.futureSlot, undefined);
+      assert.equal(saved.drafts.futureDraft, undefined);
+      assert.deepEqual(stored.futureData, legacy.futureData);
+      assert.deepEqual(stored.prompt, legacy.prompt);
+      assert.deepEqual(stored.outline.futureOutline, [1, { keep: true }]);
+      assert.deepEqual(stored.outline.stance.futureSlot, { keep: 7 });
+      assert.equal(stored.outline.counter.futureCounter, true);
+      assert.equal(stored.outline.reasons[0].futureReason, "keep");
+      assert.deepEqual(stored.drafts.futureDraft, { text: "保留草稿" });
+      assert.equal(stored.elapsed.futureElapsed, 17);
     }
     const afterPatch = rows();
     assert.equal((await call(id, "PATCH", patch)).status, 200);

@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { createElement, type ReactNode } from "react";
+import { createElement } from "react";
 import { jsx } from "react/jsx-runtime";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
-import { CheckpointClock } from "../../components/checkpoints/clock";
+import type { CheckpointTiming } from "../../components/checkpoints/clock";
 import { CoachThread, replyAnnouncement } from "../../components/coach/coach-thread";
 import { EssayEditor } from "../../components/essay/essay-editor";
 import { EssayReader, issueMarkStyle } from "../../components/essay/essay-reader";
@@ -20,7 +20,7 @@ import { DRAFT_MAX_CHARS, applyOutlineEdit, draftBackupText, failedSendState, pe
 import type { CoachMessage, Issue } from "../../lib/prototype/types";
 
 const router = { bfcacheId: "test", back() {}, forward() {}, refresh() {}, push() {}, replace() {}, prefetch: async () => {} };
-const renderScreen = (session: SessionState, banner?: ReactNode) => renderToStaticMarkup(createElement(AppRouterContext.Provider, { value: router }, SessionView({ session, banner })));
+const renderScreen = (session: SessionState, timing?: CheckpointTiming) => renderToStaticMarkup(createElement(AppRouterContext.Provider, { value: router }, SessionView({ session, timing })));
 const practice = () => createSession({ kind: "free", mode: "practice", prompt: "Some people think technology makes learning easier. Discuss." });
 const issue: Issue = { rank: 2, code: "TR", title: "例子不够具体", why: "理由停在断言。", sentenceIds: [1], hintL1: "补一个具体场景。", recurring: false };
 
@@ -90,9 +90,22 @@ test("the conflict backup carries the outline, both drafts and unsent coach text
 test("the independent-mock clock sits inside the one-viewport workspace column", () => {
   const s = createSession({ kind: "free", mode: "mock", prompt: "Some people think technology makes learning easier. Discuss." });
   s.stage = "writing";
-  const html = renderScreen(s, jsx(CheckpointClock, { deadlineAt: "2026-11-01T00:40:00Z", serverNow: "2026-11-01T00:20:00Z" }));
+  s.checkpointId = "checkpoint";
+  const html = renderScreen(s, { deadlineAt: "2026-11-01T00:40:00Z", serverNow: "2026-11-01T00:20:00Z" });
   const column = html.indexOf("h-dvh");
   assert.ok(column >= 0 && html.indexOf('role="timer"') > column);
+});
+
+test("reopening a timed-out mock never shows an editable 0:00 paper; expiry keeps the student's words", () => {
+  const s = createSession({ kind: "free", mode: "mock" });
+  s.checkpointId = "checkpoint";
+  s.drafts.original = "A short original.";
+  const due = renderScreen(s, { deadlineAt: "2026-11-01T00:40:00Z", serverNow: "2026-11-02T00:00:00Z" });
+  assert.match(due, /正在交卷/); assert.doesNotMatch(due, /textarea|role="timer"/);
+  s.lifecycle = "expired";
+  const expired = renderScreen(s);
+  assert.match(expired, /3 词/); assert.match(expired, /不计入模考成绩或练习次数/);
+  assert.match(expired, /A short original/); assert.doesNotMatch(expired, /textarea|恢复练习|提交评估|role="timer"/);
 });
 
 test("narrow screens keep the version toggle and the writing status in a compact row", () => {

@@ -26,5 +26,6 @@ export function assertQuickSession(session: SessionState | null): asserts sessio
 
 /** Entry guard for new student mutations. Background commits and replay stay valid. */
 export function assertOpenSession(session: SessionState) {
+  if (session.lifecycle === "expired") throw new SessionError("模考已到时结束，原稿仅供查看。", 409, "mock_expired");
   if (session.lifecycle !== "open") throw new SessionError("练习已暂放或关闭，请先恢复后再继续。", 409, "lifecycle_conflict");
 }

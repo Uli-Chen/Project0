@@ -1,7 +1,8 @@
 import { sessionApiError as apiError } from "@/lib/pipeline/http";
 import { requireApiUser } from "@/lib/auth/server";
 import { assertSameOrigin, readJson } from "@/lib/auth/http";
-import { listSessions } from "@/lib/db/queries/sessions";
+import { listSessionSummaries, listSessions } from "@/lib/db/queries/sessions";
+import { sessionDetail } from "@/lib/pipeline/session-detail";
 import { createSessionSchema } from "@/lib/pipeline/schemas";
 import { createFreePractice, createQuestionPractice } from "@/lib/db/create-practice";
 import { readFeatures } from "@/lib/config/features";
@@ -18,8 +19,27 @@ function splitIntentKey(body: unknown): { payload: unknown; idempotencyKey?: unk
   const { idempotencyKey, ...payload } = body as Record<string, unknown>;
   return { payload, idempotencyKey };
 }
-export async function GET() {
-  try { const user = await requireApiUser(); return Response.json({ sessions: listSessions(user.id) }, { headers: { "Cache-Control": "no-store" } }); } catch (error) { return apiError(error); }
+const pageSize = z.coerce.number().int().min(1).max(100);
+const cursorSchema = z.object({ updatedAt: z.string().min(1).max(80), id: z.string().min(1).max(200) }).strict();
+
+function decodeCursor(value: string | null) {
+  if (value === null) return undefined;
+  try {
+    if (!/^[\w-]{1,1024}$/.test(value)) throw new Error("Invalid cursor encoding");
+    return cursorSchema.parse(JSON.parse(Buffer.from(value, "base64url").toString("utf8")));
+  } catch {
+    throw new SessionError("练习列表分页参数无效。", 400, "invalid_cursor");
+  }
+}
+
+export async function GET(request: Request) {
+  try {
+    const user = await requireApiUser();
+    const { searchParams } = new URL(request.url);
+    const { sessions, next } = listSessionSummaries(user.id, pageSize.parse(searchParams.get("limit") ?? 20), decodeCursor(searchParams.get("cursor")));
+    const nextCursor = next && Buffer.from(JSON.stringify(next)).toString("base64url");
+    return Response.json({ sessions, nextCursor }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) { return apiError(error); }
 }
 export async function POST(request: Request) {
   try {
@@ -31,7 +51,7 @@ export async function POST(request: Request) {
     if ("questionId" in input) {
       if (!enabled) throw new SessionError("题库功能尚未开放。", 403, "feature_disabled");
       const { session, status } = createQuestionPractice(user.id, input);
-      return Response.json({ session }, { status });
+      return Response.json({ session: sessionDetail(session) }, { status });
     }
     const { session, status } = createFreePractice(user.id, input, idempotencyKeySchema.parse(idempotencyKey), session => {
       session.lastStudentActionAt = session.createdAt;
@@ -40,6 +60,6 @@ export async function POST(request: Request) {
         if (issue) session.focus = { code: issue.code, name: issue.title, instruction: issue.hintL1, reason: "来自你最近一次作文的反馈。" };
       }
     });
-    return Response.json({ session }, { status });
+    return Response.json({ session: sessionDetail(session) }, { status });
   } catch (error) { return apiError(error); }
 }

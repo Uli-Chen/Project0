@@ -31,7 +31,7 @@ __pycache__/
 !data/coach-cases/
 !data/coach-cases/**
 
-# Reference snapshot of third-party exam questions. No licence: never commit or import.
+# Third-party question snapshots and private import inputs stay out of Git.
 bank/
 
 # Separate site repository (its own .git); not part of this project.

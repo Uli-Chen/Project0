@@ -14,6 +14,7 @@ export const llmCalls = sqliteTable("llm_calls", {
 }, t => [
   index("llm_calls_user_started").on(t.userId, t.startedAt), index("llm_calls_package").on(t.userId, t.packageId),
   index("llm_calls_operation").on(t.userId, t.operationId),
+  index("llm_calls_unsettled").on(t.id).where(sql`${t.outcome} = 'reserved'`),
   check("llm_calls_outcome", sql`${t.outcome} IN ('reserved','ok','timeout','invalid_output','provider_error','indeterminate')`),
   check("llm_calls_nonnegative", sql`${t.attempt} > 0 AND ${t.reservedInput} >= 0 AND ${t.reservedOutput} >= 0 AND ${t.reservedMs} >= 0 AND (${t.inputTokens} IS NULL OR ${t.inputTokens} >= 0) AND (${t.outputTokens} IS NULL OR ${t.outputTokens} >= 0) AND (${t.latencyMs} IS NULL OR ${t.latencyMs} >= 0)`),
 ]);
@@ -41,6 +42,13 @@ export const writingSessions = sqliteTable("writing_sessions", {
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 }, (table) => [primaryKey({ columns: [table.userId, table.id] }), index("writing_sessions_user_updated_idx").on(table.userId, table.updatedAt)]);
+
+export const executionLeases = sqliteTable("execution_leases", {
+  scope: text("scope").notNull(),
+  key: text("key").notNull(),
+  token: text("token").notNull(),
+  expiresAt: integer("expires_at").notNull(),
+}, table => [primaryKey({ columns: [table.scope, table.key] }), index("execution_leases_scope_expiry_idx").on(table.scope, table.expiresAt)]);
 
 export const authAttempts = sqliteTable("auth_attempts", {
   key: text("key").primaryKey(),
@@ -178,6 +186,7 @@ export const quickOperations = sqliteTable("quick_operations", {
   status: text("status", { enum: ["running", "ok", "needs_development", "invalid_output", "timeout", "quota_exhausted", "stale", "indeterminate"] }).notNull(),
   startedAt: text("started_at").notNull(), finishedAt: text("finished_at"),
 }, t => [uniqueIndex("quick_operations_slot").on(t.userId, t.attemptId, t.kind, t.slot),
+  index("quick_operations_running").on(t.userId, t.attemptId).where(sql`${t.status} = 'running'`),
   check("quick_operations_kind", sql`${t.kind} IN ('followup','check')`),
   check("quick_operations_status", sql`${t.status} IN ('running','ok','needs_development','invalid_output','timeout','quota_exhausted','stale','indeterminate')`),
 ]);

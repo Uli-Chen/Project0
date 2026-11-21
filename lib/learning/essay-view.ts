@@ -1,10 +1,10 @@
-import type { SessionState } from "@/lib/pipeline/types";
+import type { SessionDetail } from "@/lib/pipeline/session-detail";
 import type { EssayKind } from "@/lib/prototype/types";
 
 export type Panel = "coach" | "feedback" | "compare";
 
 /** 哪些检查面板标签可用；顺序即显示顺序 */
-export function availablePanels(state: SessionState): Panel[] {
+export function availablePanels(state: SessionDetail): Panel[] {
   const panels: Panel[] = [];
   const coachable = state.mode === "practice" ? state.stage !== "evaluating" : Boolean(state.evaluation);
   if (coachable) panels.push("coach");
@@ -13,7 +13,7 @@ export function availablePanels(state: SessionState): Panel[] {
   return panels;
 }
 
-export function defaultPanel(state: SessionState): Panel | null {
+export function defaultPanel(state: SessionDetail): Panel | null {
   const panels = availablePanels(state);
   const preferred: Panel = ["feedback", "re_evaluating"].includes(state.stage) ? "feedback"
     : ["compared", "finished"].includes(state.stage) ? (state.comparison ? "compare" : "feedback")
@@ -22,16 +22,16 @@ export function defaultPanel(state: SessionState): Panel | null {
 }
 
 /** 有改写稿（正在改或已提交）时才出现版本切换 */
-export function hasRevision(state: SessionState) {
+export function hasRevision(state: SessionDetail) {
   return state.stage === "revising" || state.stage === "re_evaluating" || Boolean(state.submitted.revision);
 }
 
-export function defaultVersion(state: SessionState): EssayKind {
+export function defaultVersion(state: SessionDetail): EssayKind {
   return hasRevision(state) ? "revision" : "original";
 }
 
 /** 教练在当前阶段能接受哪些输入 */
-export function coachCapabilities(state: SessionState) {
+export function coachCapabilities(state: SessionDetail) {
   const { stage, mode } = state;
   const open = state.lifecycle === "open";
   return {
@@ -41,6 +41,6 @@ export function coachCapabilities(state: SessionState) {
   };
 }
 
-export function versionText(state: SessionState, kind: EssayKind) {
+export function versionText(state: SessionDetail, kind: EssayKind) {
   return state.submitted[kind] ?? state.drafts[kind];
 }

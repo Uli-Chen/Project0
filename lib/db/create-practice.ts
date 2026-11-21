@@ -3,7 +3,7 @@ import { publicUser, userById } from "./queries/users";
 import { readFeatures } from "../config/features";
 import { requirementSchema } from "../question-bank/types";
 import { createHash } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, notExists, sql } from "drizzle-orm";
 import type { z } from "zod";
 import { getDb } from "./client";
 import { attemptMarkers, questions, topicCards, checkpoints } from "./schema";
@@ -15,6 +15,10 @@ import { createSession } from "../pipeline/initial";
 import { SessionError } from "../pipeline/engine";
 import type { questionCreateSessionSchema } from "../pipeline/schemas";
 import type { SessionState } from "../pipeline/types";
+
+function bankPrompt(row: typeof questions.$inferSelect): SessionState["prompt"] {
+  return { id: row.id, text: row.text, questionType: row.questionType as SessionState["prompt"]["questionType"], topicTags: [row.primaryTopic] };
+}
 
 export function saveNewPractice(userId: string, session: SessionState) {
   const sqlite = getDb().$client;
@@ -37,7 +41,7 @@ export function saveNewPractice(userId: string, session: SessionState) {
  * is recorded as a receipt in the same transaction, so a retry after a lost response returns the
  * essay that was already created instead of starting another one. */
 export function createFreePractice(userId: string, input: Parameters<typeof createSession>[0], idempotencyKey: string | undefined, prepare: (session: SessionState) => void = () => {}) {
-  const sqlite = getDb().$client;
+  const db = getDb(), sqlite = db.$client;
   const paramsHash = createHash("sha256").update(JSON.stringify({ kind: input.kind, mode: input.mode, prompt: input.prompt ?? null })).digest("hex");
   return sqlite.transaction(() => {
     if (idempotencyKey) {
@@ -49,7 +53,14 @@ export function createFreePractice(userId: string, input: Parameters<typeof crea
         return { session, status: 200 };
       }
     }
-    const session = createSession(input);
+    const activeMock = db.select({ id: checkpoints.id }).from(checkpoints).where(and(eq(checkpoints.userId, userId),
+      eq(checkpoints.exposureKey, questions.exposureKey), eq(checkpoints.status, "in_progress")));
+    const question = !input.prompt && readFeatures().QUESTION_BANK_ENABLED
+      ? db.select().from(questions).where(and(eq(questions.isCurrent, true), eq(questions.pool, "practice"),
+        input.topic && input.topic !== "other" ? eq(questions.primaryTopic, input.topic) : undefined,
+        notExists(activeMock))).orderBy(sql`random()`).limit(1).get()
+      : undefined;
+    const session = createSession(input, question && bankPrompt(question));
     prepare(session);
     saveNewPractice(userId, session);
     if (idempotencyKey) writeRequestReceipt(sqlite, { userId, idempotencyKey, attemptId: session.id,
@@ -84,12 +95,10 @@ export function createQuestionPractice(userId: string, input: z.infer<typeof que
       const family = source ? resolveAttempt(source, context).exposureKey : marker!.exposureKey;
       if (activity !== "deep" || family !== row.exposureKey) throw new SessionError("只能关联同一题目家族的精练。", 409, "invalid_rewrite");
     }
-    const session = createSession({ kind: "free", mode: "practice", prompt: row.text });
+    const session = createSession({ kind: "free", mode: "practice" }, bankPrompt(row));
     session.question = { id: row.id, version: row.version, exposureKey: row.exposureKey, bankVersion: row.bankVersion,
       primaryTopic: row.primaryTopic as NonNullable<SessionState["question"]>["primaryTopic"],
       questionType: row.questionType as SessionState["prompt"]["questionType"], text: row.text };
-    session.prompt = { id: session.question.id, text: session.question.text,
-      questionType: session.question.questionType, topicTags: [session.question.primaryTopic] };
     session.rewriteOfDeepId = input.rewriteOfDeepId ?? null;
     session.lastStudentActionAt = session.createdAt;
     if (input.activity === "quick") { session.activity = "quick"; session.stage = "quick"; session.messages = []; }

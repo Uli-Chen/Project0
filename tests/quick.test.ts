@@ -83,7 +83,8 @@ test("Directly typed card; selected user excerpt：来源真实；编辑摘取�
   const requestId = crypto.randomUUID();
   result = await action(id, { action: "quickAnswer", text: "因😀果需要解释", requestId });
   const message = result.session.messages.at(-1);
-  assert.equal(message.userId, "u"); assert.equal(message.afterFollowUp, 1); assert.equal(message.replyToMessageId, coach.id);
+  assert.equal(message.userId, undefined); assert.equal(message.afterFollowUp, 1); assert.equal(message.replyToMessageId, coach.id);
+  assert.equal(getSession("u", id)!.messages.find(stored => stored.id === message.id)?.userId, "u");
   assert.equal((await action(id, { action: "quickAnswer", text: message.content, requestId })).session.messages.at(-1).id, message.id);
   result = await action(id, { action: "cardExcerpt", cardVersion: 1, key: "reasons.why", messageId: message.id, start: 1, end: 4 });
   assert.deepEqual(result.card.content.parts[1], { key: "reasons.why", text: "😀果", afterFollowUp: 1,

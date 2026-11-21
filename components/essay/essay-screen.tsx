@@ -1,18 +1,22 @@
 "use client";
 
 import type { QuestionRequirements } from "@/lib/question-bank/types";
+import Link from "next/link";
+import { CheckpointClock, useCheckpointRemaining, type CheckpointTiming } from "@/components/checkpoints/clock";
+import { MOCK_DURATION_SECONDS } from "@/lib/rules/checkpoint";
+import { MIN_EVALUATION_WORDS } from "@/lib/rules/check-input";
 import { CardSnapshotView } from "@/components/quick/card-readonly";
 import { DeepLeaveGuard } from "./deep-leave-guard";
 import { DeepLifecycleBar } from "./deep-lifecycle-bar";
 import { X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { OutlineBoard, outlineProgress } from "@/components/outline/outline-board";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Panel } from "@/lib/learning/essay-view";
-import { checkInput } from "@/lib/rules";
+import { checkInput, countWords } from "@/lib/rules";
 import { useSession } from "@/lib/prototype/session-store";
 import type { Suggestion } from "@/lib/prototype/types";
 import { CoachTab } from "./coach-tab";
@@ -26,18 +30,51 @@ import { cn } from "@/lib/utils";
 
 const PANEL_LABEL: Record<Panel, string> = { coach: "教练", feedback: "反馈", compare: "对比" };
 
-export function EssayScreen({ cardRequirements, banner }: { cardRequirements?: QuestionRequirements; banner?: ReactNode } = {}) {
-  return <EssayUiProvider><Screen cardRequirements={cardRequirements} banner={banner} /></EssayUiProvider>;
+type ScreenProps = { cardRequirements?: QuestionRequirements; timing?: CheckpointTiming };
+export function EssayScreen(props: ScreenProps = {}) {
+  return <EssayUiProvider><Screen {...props} /></EssayUiProvider>;
 }
 
-function Screen({ cardRequirements, banner }: { cardRequirements?: QuestionRequirements; banner?: ReactNode }) {
-  const { state, actions, essayKind, error, coachBusy, lifecycleBusy, failedInput, leftover } = useSession();
+function Screen({ cardRequirements, timing }: ScreenProps) {
+  const { state, actions, essayKind, error, coachBusy, lifecycleBusy, failedInput, leftover, questionBankEnabled, checkpointServerNow } = useSession();
   const ui = useEssayUi();
   const { centerRef, editorRef } = useEssayRefs();
   const [notices, setNotices] = useState<Record<string, string>>({});
   const { stage } = state;
   const practice = state.mode === "practice";
-  useTimerAndAutosave(ui.mockStarted);
+  const [abandoned, setAbandoned] = useState(state.lifecycle === "closed");
+  if (!abandoned && state.checkpointId && state.lifecycle === "closed") setAbandoned(true);
+  const clock = !abandoned && timing ? { ...timing, serverNow: checkpointServerNow ?? timing.serverNow } : undefined;
+  const remaining = useCheckpointRemaining(clock, !state.originalSubmittedAt && state.lifecycle !== "expired");
+  const due = state.mode === "mock" && stage === "writing" && !state.originalSubmittedAt &&
+    (state.lifecycle === "open" || (Boolean(clock) && state.lifecycle === "set_aside")) &&
+    (state.checkpointId ? Boolean(clock) && remaining === 0 : state.elapsed.original >= MOCK_DURATION_SECONDS);
+  const attempted = useRef(false);
+  const { submitAtDeadline } = actions;
+  useEffect(() => {
+    if (!due || coachBusy || lifecycleBusy || attempted.current) return;
+    attempted.current = true;
+    void submitAtDeadline();
+  }, [due, coachBusy, lifecycleBusy, submitAtDeadline]);
+  useTimerAndAutosave(ui.mockStarted && !due);
+
+  if (due || state.lifecycle === "expired") {
+    const expired = state.lifecycle === "expired", words = countWords(state.drafts.original);
+    const reason = words < MIN_EVALUATION_WORDS ? `原稿 ${words} 词，未达到 ${MIN_EVALUATION_WORDS} 词的批改门槛。` : "原稿未通过提交检查。";
+    return <main id="main-content" className="desk min-h-dvh px-4 py-8 sm:px-8">
+      <section className="paper mx-auto max-w-[760px] px-6 py-10 sm:px-12">
+        <h1 className="page-heading">{expired ? "模考已过期" : "模考时间到"}</h1>
+        <p role="status" className="mt-3 text-muted-foreground">{expired ? `${reason}本次不批改，不计入模考成绩或练习次数。` : "正在交卷，原稿不能再修改。"}</p>
+        {!expired && error && <div role="alert" className="mt-4 space-y-2"><p>{error}</p><Button disabled={coachBusy || lifecycleBusy} onClick={() => void actions.retry()}>重试交卷</Button> <Button variant="outline" onClick={actions.downloadDraft}>备份当前内容</Button></div>}
+        {expired && <div className="mt-4 flex items-center gap-4">
+          <Link className="underline underline-offset-4" href={state.checkpointId ? "/mock" : questionBankEnabled ? "/practice" : "/essays"}>{state.checkpointId ? "返回模考" : "返回练习"}</Link>
+          {words > 0 && <Button variant="outline" size="sm" onClick={actions.downloadDraft}>下载原稿</Button>}
+        </div>}
+        <p className="prose-prompt mt-8 border-t pt-6">{state.prompt.text}</p>
+        <p className="prose-essay mt-5 whitespace-pre-wrap break-words">{state.drafts.original || "未作答"}</p>
+      </section>
+    </main>;
+  }
 
   // 提纲：练习才有；评估后若从未填写（跳过写前）就不占位置
   // 写前：提纲是主角，放在中间的纸上；开始写作后退到左栏当参考
@@ -163,7 +200,7 @@ function Screen({ cardRequirements, banner }: { cardRequirements?: QuestionRequi
   return (
     <div className="desk flex h-dvh flex-col overflow-hidden">
       <EssayTopbar onSubmit={submit} hasLeft={hasLeft} />
-      {banner}
+      {clock && remaining !== null && <CheckpointClock deadlineAt={clock.deadlineAt} remaining={remaining} sessionId={state.id} originalSubmittedAt={state.originalSubmittedAt} />}
       <DeepLeaveGuard />
       <DeepLifecycleBar lifecycle={state.lifecycle} checkpoint={Boolean(state.checkpointId)} busy={coachBusy || lifecycleBusy} onResume={() => void actions.changeLifecycle("resume")} />
       {leftoverNotice}

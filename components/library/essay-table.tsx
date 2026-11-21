@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Empty, EmptyDescription } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 import type { EssayStatus } from "@/lib/learning/summary";
 
@@ -47,8 +48,8 @@ export function EssayTable({ rows }: { rows: EssayRow[] }) {
             aria-pressed={filter === value}
             onClick={() => setFilter(value)}
             className={cn(
-              "relative inline-flex items-center gap-1.5 rounded-sm text-sm font-medium whitespace-nowrap outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50",
-              "after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-foreground after:transition-opacity",
+              "relative inline-flex items-center gap-1.5 rounded-sm text-sm font-medium whitespace-nowrap outline-none transition-colors duration-(--dur-fast) hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50",
+              "after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-foreground after:transition-opacity after:duration-(--dur-standard)",
               filter === value ? "text-foreground after:opacity-100" : "text-foreground/60 after:opacity-0 dark:text-muted-foreground",
             )}
           >
@@ -57,10 +58,10 @@ export function EssayTable({ rows }: { rows: EssayRow[] }) {
         ))}
       </div>
       {visible.length === 0 ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">没有{filter === "done" ? "已完成" : "进行中"}的作文</p>
+        <Empty><EmptyDescription>没有{filter === "done" ? "已完成" : "进行中"}的作文</EmptyDescription></Empty>
       ) : (<>
         {/* Phones: the title gets the whole first line; status, score and date share the second. */}
-        <ul className="divide-y sm:hidden">
+        <ul className="motion-stagger divide-y sm:hidden">
           {visible.map((row) => (
             <li key={row.id}>
               <Link href={`/essays/${row.id}`} className="block px-5 py-3.5 outline-none hover:bg-[color-mix(in_oklch,var(--sheet),var(--primary)_4%)] focus-visible:bg-[color-mix(in_oklch,var(--sheet),var(--primary)_6%)]">
@@ -85,9 +86,9 @@ export function EssayTable({ rows }: { rows: EssayRow[] }) {
               <TableHead className="w-10 pr-5" aria-hidden />
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="motion-stagger">
             {visible.map((row) => (
-              <TableRow key={row.id} onClick={() => router.push(`/essays/${row.id}`)} className="group h-15 cursor-pointer hover:bg-[color-mix(in_oklch,var(--sheet),var(--primary)_4%)]">
+              <TableRow key={row.id} onClick={() => router.push(`/essays/${row.id}`)} className="group h-15 cursor-pointer transition-colors duration-(--dur-fast) hover:bg-[color-mix(in_oklch,var(--sheet),var(--primary)_4%)]">
                 <TableCell className="pl-5">
                   <Link href={`/essays/${row.id}`} onClick={(event) => event.stopPropagation()} className="block truncate font-serif text-[16px] text-foreground outline-none focus-visible:underline">{row.prompt}</Link>
                 </TableCell>
@@ -97,7 +98,7 @@ export function EssayTable({ rows }: { rows: EssayRow[] }) {
                   {row.original === null ? <span className="text-muted-foreground">—</span> : <Score row={row} />}
                 </TableCell>
                 <TableCell className="meta hidden text-right md:table-cell">{row.date}</TableCell>
-                <TableCell className="pr-5 text-right"><ArrowRight className="ml-auto size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" /></TableCell>
+                <TableCell className="pr-5 text-right"><ArrowRight className="ml-auto size-3.5 text-muted-foreground opacity-0 transition-opacity duration-(--dur-fast) group-focus-within:opacity-100 group-hover:opacity-100" /></TableCell>
               </TableRow>
             ))}
           </TableBody>

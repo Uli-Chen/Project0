@@ -3,6 +3,7 @@ import { getTopicData } from "@/lib/db/queries/topics";
 import { readFeatures } from "@/lib/config/features";
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { EssayTable, type EssayRow } from "@/components/library/essay-table";
 import { NewEssayButton, NewEssayDialog, StartEssayButton } from "@/components/shell/new-essay";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -28,7 +29,7 @@ export default async function LibraryPage() {
   return (
     <div className={user.profile.onboardingCompleted ? "grid gap-8 xl:grid-cols-[minmax(0,1fr)_256px]" : undefined}>
       <div className="min-w-0">
-        <header className="flex items-end justify-between gap-4">
+        <header className="motion-enter flex items-end justify-between gap-4" style={{ "--i": 0 } as CSSProperties}>
           <h1 className="page-heading">作文</h1>
           <div className="flex flex-wrap justify-end gap-2">{bankEnabled && <NewEssayDialog pasteOnly trigger={<Button variant="outline">粘贴题目</Button>} />}<NewEssayButton bankEnabled={bankEnabled} focus={summary.focus?.title} /></div>
         </header>
@@ -36,10 +37,10 @@ export default async function LibraryPage() {
         {!user.profile.onboardingCompleted ? (
           <Banner title="设置目标与节奏" action={<Link href="/onboarding" className={buttonVariants()}>去设置</Link>} />
         ) : !readFeatures().QUESTION_BANK_ENABLED && !summary.evaluated.length && (
-          <Banner title="入门测试" meta="40 分钟 · 独立完成" action={<StartEssayButton kind="assessment" mode="mock">开始</StartEssayButton>} />
+          <Banner title="入门测试" meta="40 分钟，独立完成" action={<StartEssayButton kind="assessment" mode="mock">开始</StartEssayButton>} />
         )}
 
-        <div className="mt-8">
+        <div className="motion-enter mt-8" style={{ "--i": 1 } as CSSProperties}>
           {rows.length ? <EssayTable rows={rows} /> : (
             <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-input bg-sunk py-20">
               <p className="text-[19px] font-semibold">写第一篇</p>
@@ -51,7 +52,7 @@ export default async function LibraryPage() {
       </div>
 
       {user.profile.onboardingCompleted && (
-        <aside className="surface flex h-fit flex-col divide-y self-start xl:mt-[60px]">
+        <aside className="motion-enter surface flex h-fit flex-col divide-y self-start xl:mt-[60px]" style={{ "--i": 1 } as CSSProperties}>
           <section className="px-5 py-4">
             <div className="flex items-baseline justify-between"><h2 className="text-[14px] text-muted-foreground">本周已练</h2><span className="text-[15px] font-semibold tabular-nums">{summary.weekCompleted}<span className="font-normal text-muted-foreground"> / {perWeek} 次</span></span></div>
             <Progress value={perWeek ? Math.min(100, (summary.weekCompleted / perWeek) * 100) : 0} className="mt-2.5" aria-label="本周完成进度" />

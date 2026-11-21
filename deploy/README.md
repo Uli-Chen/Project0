@@ -16,7 +16,14 @@ if ($project0_entry_redirect) {
 proxy_redirect ~^https://project0\.auglearn\.org/coming-soon$ https://project0.auglearn.org/coming-soon$is_args$args;
 ```
 
-## 当前发布（2026-11-20，AugWrite 与新域名）
+## 当前题库（2026-11-20，IELTS Task 2）
+
+`write.auglearn.org` 当前使用 `ielts-task2-20261120-v1`。182 道去重后的题目来自 `bank/zhan/zhan_writing_all.json`，包含 55 道剑桥雅思题目和 127 道考场回忆题。练习和速刷共用 172 道题，另有 10 道供独立模考优先抽取。普通模考和入门测试从练习池抽题。Task 1 图表题留在来源目录中。
+
+- 本地导入文件位于 `bank/augwrite/20261120/`。服务端导入文件位于持久目录 `/home/squareofchen/opc-data/question-bank/20261120.tIN9np4L/`。指定这两个 JSON 文件可再次执行 `db:import-questions`。
+- 生产备份为 `/home/squareofchen/opc-data/backups/task2-before-20261120T143415Z.db`。上一个程序版本在 `/home/squareofchen/opc-before-task2-20261120T143415Z`。38 道占位题及引用记录保留在历史版本中，生产切换时核对了账号、作文、卡片和模考记录。
+
+## 2026-11-20 发布（AugWrite 与新域名）
 
 已发布 `b06a7b4`（`walkthrough` 分支）：产品改名 AugWrite，未登录访问 `/` 307 到公开宣传页 `/welcome`，coming soon 与开发者密码入口已删除，注册保持关闭（`REGISTRATION_ENABLED=false`）。
 
@@ -103,28 +110,29 @@ systemctl list-timers certbot.timer
 
 ## 后续更新
 
+构建后可运行 `npm run test:http`，用临时数据库验证生产构建。分阶段发布通过 `release-staged.sh` 切换新目录。新服务启动后，脚本会用一次性账号检查会话接口和已开启功能。冒烟成功后保留新版本，失败则启动上一个代码版本并保留迁移后的数据。
+
+首次从进程内锁的版本升级时，先停止所有旧进程，再执行迁移并启动新版本。同机运行多个新进程时使用同一个绝对 `DATABASE_PATH` 和本地磁盘。当前 `opc.service` 仍定义一个实例。
+
 上传前排除 `.git/`、`node_modules/`、`.next/`、`.env*`、`data/`、`backups/`、`artifacts/` 和本地数据库；不要覆盖服务器环境变量或持久数据目录。上传当前工作区会包含未提交的代码。
 
-当前采用原地部署，在维护窗口停服务后上传，避免构建过程中旧进程读取变化的 `.next` 文件。先在服务器备份数据库：
+把发布内容上传到独立目录，在该目录构建并验收。将 `RELEASE_VERSION` 写为本次发布的 Git 提交号。在维护窗口从独立目录运行切换脚本：
 
 ```sh
 export PATH=/home/squareofchen/.local/node/bin:$PATH
-cd /home/squareofchen/opc
-NODE_ENV=production npm run db:backup
-sudo systemctl stop opc
-# 从本机上传当前代码到 /home/squareofchen/opc，再执行以下命令。
+cd /home/squareofchen/opc-release-YYYYMMDD
 npm ci --no-audit --no-fund
-NODE_ENV=production npm run db:migrate
-npm run build
-sudo systemctl start opc
+npm run check
+npm run test:http
+bash deploy/release-staged.sh "$PWD"
 ```
 
-只有安装、迁移、构建全部成功后才启动服务。备份在 `/home/squareofchen/opc-data/backups`；需另行安排异机备份。
+切换脚本停止旧服务并备份，再执行迁移和启动验收。备份在 `/home/squareofchen/opc-data/backups`，异机备份需在部署环境单独配置。
 
 注册开放时，从项目目录执行认证回归（自动清理测试账户；不要为测试临时开放生产注册）：
 
 ```sh
-TEST_BASE_URL=https://project0.auglearn.org npm run test:auth
+TEST_BASE_URL=https://write.auglearn.org npm run test:auth
 ```
 
 首次部署初始化了服务器数据库，没有复制本机测试账户或学习记录。需要迁移本机数据时，应使用 SQLite Backup API 创建一致快照，再安排停机恢复。

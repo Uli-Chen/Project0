@@ -105,10 +105,11 @@ artifacts/private/  本地测试账户与检查点，忽略整个目录
 | `npm run check` | ESLint、类型检查、业务回归、数据库回归与生产构建 |
 | `npm test` | 模型异常、会话恢复与完整学习流程的确定性回归；不调用真实模型 |
 | `npm run test:ui` | 教练 Markdown 渲染、中文粗体兼容及不可信内容过滤的静态渲染回归 |
+| `npm run test:http` | 用生产构建、临时数据库和固定题库跑认证及发布冒烟，覆盖题库、速刷和独立模考 |
 | `npm run db:init` | 创建数据库并初始化当前基线业务表 |
 | `npm run db:generate` | 根据 Drizzle Schema 生成新的迁移 |
 | `npm run db:migrate` | 初始化文件并应用未执行迁移 |
-| `npm run db:import-questions` | 向 `DATABASE_PATH` 指定的已迁移数据库导入 mock 目录、每题要求与首版别名 |
+| `npm run db:import-questions -- <题库 JSON> <答题要求 JSON>` | 向 `DATABASE_PATH` 指定的已迁移数据库导入题库 |
 | `npm run db:studio` | 本地查看数据库 |
 | `npm run db:backup` | 使用 SQLite Backup API 创建一致快照 |
 | `npm run llm:ping` | 向已配置模型发出普通请求和 JSON 请求 |
@@ -118,7 +119,13 @@ artifacts/private/  本地测试账户与检查点，忽略整个目录
 
 HTTP 回归测试使用真实本地接口。认证测试不调用模型；学习测试和 `llm:ping` 会消耗模型服务额度。学习测试的检查点在 `artifacts/private/round1/`，不要提交其中的账户凭据或学习内容。更换服务器或重新从零测试时，应先归档该目录，避免混用旧检查点。
 
-GitHub Actions 当前执行依赖安装、基础检查、确定性业务／数据库回归、迁移和备份验证；不会自动执行需要运行中服务器或模型密钥的 HTTP 测试。
+GitHub Actions 执行依赖安装、基础检查、确定性业务和数据库回归、迁移、备份验证，再启动生产构建跑本地 HTTP 冒烟。CI 冒烟使用临时数据，无需模型密钥。
+
+## 会话接口
+
+`GET /api/sessions` 返回 `{ sessions, nextCursor }`。每项包括练习 ID、题目摘要（最多 240 字符）、类型、进度状态和时间。按最后更新时间及 ID 降序排列，默认每页 20 条，可通过 `limit` 指定 1–100 条。下一页原样传入 `nextCursor` 作为 `cursor`。编辑中的练习可能在分页期间移到列表前面，刷新时从第一页开始。
+
+`GET /api/sessions/{id}` 返回编辑器需要的详情和忙碌状态。初次打开页面、保存草稿和执行操作使用同一个详情投影。内部会话结构、模型调用 ID、教练执行配置和未识别的顶层存储字段留在服务端。
 
 ## 数据库迁移
 
@@ -135,13 +142,13 @@ SQLite 启用 WAL、外键检查与 5 秒锁等待。事务保持短小，模型
 
 已经应用的迁移不要重写；追加迁移表达后续变更。不在有数据的环境用 `drizzle-kit push` 代替迁移历史。基线初始化只负责第一版 Schema；未来增加表或列时，不应把升级逻辑重复写进该初始化函数。
 
-题库导入先执行 `db:migrate`，再执行 `db:import-questions`，两条命令使用同一个 `DATABASE_PATH`。导入默认读取冻结的 `data/question-bank/question_bank.mock.json` 与新增的 `requirements.mock.json`；也可用 `npm run db:import-questions -- <目录路径> <要求路径>` 指定待验证文件。每次导入的校验、题目版本切换与别名写入在一个事务内，失败整体回滚。同一题目版本的内容（包含每题要求）不可覆盖；内容修改必须增加题目版本。负责人逐题审阅要求文件后才可导入非测试数据库。
+题库导入先执行 `db:migrate`，再执行 `db:import-questions`，两条命令使用同一个 `DATABASE_PATH`。真题导入指定经审阅的题库和答题要求文件，例如 `npm run db:import-questions -- bank/augwrite/20261120/catalog.json bank/augwrite/20261120/requirements.json`。负责人逐题审阅答题要求后导入非测试数据库。`task2_source_snapshot` 题库在同一个事务内启用真题并下架占位题。历史题目版本、别名及已有会话继续可读。默认命令仍读取冻结的测试题与首版别名；真题启用后，重跑默认命令只补充历史数据。同一题目版本的内容（含每题要求）不可覆盖，修改内容时增加题目版本。
 
 本地自测可用 `mktemp -d` 创建目录，把 `DATABASE_PATH` 指向该目录下的 `questions.db`；不要用真实数据验证失败或升级案例。导入脚本不自动执行迁移，也不会修改题库来源文件。`test:db` 自动使用临时库，覆盖空库全量迁移与保留旧用户、认证和会话数据的升级。
 
 ## 部署与备份
 
-当前支持单个常驻 Node 进程和持久本地磁盘。会话操作锁位于进程内，不能直接部署为多个 Node 副本或临时文件系统上的无状态函数；扩容前需要共享事务锁或队列及相应数据库迁移。
+部署使用持久本地磁盘。同一台主机上的 Node 进程可以通过同一个 SQLite 文件协调会话写入、回顾任务和模型并发。工作进程每 15 秒续期，90 秒失联后可回收租约。模型调用记录在单次调用超时和短暂结算窗口后才能回收。启动及每 30 秒检查一次过期任务，过期调用进入结果不确定状态并保留已预留额度。跨主机部署需要迁移到支持远程访问的共享数据库，并在该存储上实现相同的协调语义。
 
 对外部署需要 HTTPS。反向代理应保留外部 Host，`APP_ORIGIN` 填实际访问源；代理和平台的请求超时需要覆盖模型请求时间，长评估路由允许最长 300 秒。设置绝对 `DATABASE_PATH` 指向持久磁盘，重部署必须保留该目录。使用 Node.js 24 安装和构建，在停机升级期间执行：
 

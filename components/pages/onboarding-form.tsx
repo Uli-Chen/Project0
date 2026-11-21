@@ -60,9 +60,9 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
 
   return (
     <div className="max-w-[680px]">
-      <h1 className="page-heading">{initial.onboardingCompleted ? "目标与节奏" : "设置目标"}</h1>
+      <h1 className="motion-enter page-heading" style={{ "--i": 0 } as React.CSSProperties}>{initial.onboardingCompleted ? "目标与节奏" : "设置目标"}</h1>
 
-      <form aria-busy={busy} noValidate className="surface mt-8 flex flex-col p-6 sm:p-8" onSubmit={(event) => { event.preventDefault(); void save(); }}>
+      <form aria-busy={busy} noValidate className="motion-enter surface mt-8 flex flex-col p-6 sm:p-8" style={{ "--i": 1 } as React.CSSProperties} onSubmit={(event) => { event.preventDefault(); void save(); }}>
         <fieldset disabled={busy} className="flex min-w-0 flex-col gap-8">
           <Field label="目标分">
             <BandSlider value={target} onChange={setTarget} />
@@ -78,7 +78,7 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
                 { value: "weeks", label: "按准备周数" },
               ]}
             />
-            <div className="mt-3">
+            <div className="motion-swap mt-3" key={timeBy}>
               {timeBy === "date" ? (
                 <input aria-label="考试日期" aria-invalid={flagged("exam")} type="date" min={examDate && examDate === initial.examDate ? undefined : new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" })} value={examDate} onChange={(e) => setExamDate(e.target.value)} className={cn(inputClass, flagged("exam") && invalidClass)} />
               ) : (
@@ -114,7 +114,7 @@ export function OnboardingForm({ initial }: { initial: UserProfile }) {
           </Field>
         </fieldset>
 
-        {error && <p role="alert" className="mt-6 rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
+        {error && <p role="alert" className="motion-reveal mt-6 rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
         <div className="mt-8 flex flex-wrap items-center gap-3 border-t pt-6">
           <StatusButton type="submit" variant="default" size="lg" status={busy ? "pending" : "idle"} pendingLabel="正在保存">
             保存
@@ -165,7 +165,7 @@ function Field({ label, problem, children, ref }: { label: string; problem?: str
     <div role="group" aria-label={label} ref={ref}>
       <p className="mb-2.5 text-sm text-foreground/80">{label}</p>
       {children}
-      {problem && <p role="alert" className="mt-2 text-sm text-warn">{problem}</p>}
+      {problem && <p role="alert" className="motion-reveal mt-2 text-sm text-warn">{problem}</p>}
     </div>
   );
 }

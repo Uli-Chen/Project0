@@ -10,7 +10,8 @@ import { getDb } from "../lib/db/client";
 import { markNewUserScanned } from "../lib/db/migrate-0.4";
 import { POST as CREATE } from "../app/api/sessions/route";
 import { DELETE } from "../app/api/sessions/[id]/route";
-import { time, table } from "./helpers/practice-db";
+import { catalog, requirements, time, table } from "./helpers/practice-db";
+import { importQuestions } from "../lib/db/import-questions";
 
 // Free practice (pasted prompt, topic, suggested) and plain mocks get the same creation receipt as
 // question-bank practice: a retried request with the same intent key returns the essay already made.
@@ -77,4 +78,23 @@ test("已删除的练习不会因为重试被重新创建；没有创建意图�
   const legacy = [await create({ kind: "free", mode: "practice", prompt: pasted }), await create({ kind: "free", mode: "practice", prompt: pasted })];
   assert.deepEqual(legacy.map(r => r.status), [201, 201]);
   assert.equal((await create({ ...body, idempotencyKey: "" })).status, 400);
+});
+
+test("有题库时，普通模考和入门测试从当前练习池抽题，粘贴题仍保留原文", async () => {
+  const previous = process.env.QUESTION_BANK_ENABLED;
+  process.env.QUESTION_BANK_ENABLED = "true";
+  try {
+    importQuestions(db.$client, catalog, requirements);
+    const covered = new Set(catalog.questions.filter((q: { pool: string }) => q.pool === "practice").map((q: { id: string }) => q.id));
+    for (const kind of ["free", "assessment"]) {
+      const response = await create({ kind, mode: "mock", idempotencyKey: crypto.randomUUID() });
+      assert.equal(response.status, 201);
+      assert.ok(covered.has(response.body.session.prompt.id));
+    }
+    const explicit = await create({ kind: "free", mode: "practice", prompt: pasted });
+    assert.equal(explicit.body.session.prompt.text, pasted);
+  } finally {
+    if (previous === undefined) delete process.env.QUESTION_BANK_ENABLED;
+    else process.env.QUESTION_BANK_ENABLED = previous;
+  }
 });

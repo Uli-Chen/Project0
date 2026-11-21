@@ -5,6 +5,7 @@ import { getCheckpointState, startCheckpoint } from "@/lib/db/checkpoints";
 import { readFeatures } from "@/lib/config/features";
 import { SessionError } from "@/lib/pipeline/engine";
 import { z } from "zod";
+import { sessionDetail } from "@/lib/pipeline/session-detail";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
  try { assertSameOrigin(request); const user=await requireApiUser();
@@ -14,6 +15,6 @@ export async function POST(request: Request) {
  const input=z.object({questionId:z.string().min(1).optional(),declaration:z.enum(["no","yes","unsure"]).default("no"),idempotencyKey:z.string().min(1).max(200)}).strict().parse(await readJson(request));
  const questionId=input.questionId ?? getCheckpointState(user.id).candidateQuestionId;
  if(!questionId) throw new SessionError("暂时没有你没练过的题，可以改做普通模考。",409,"checkpoint_unavailable");
- return Response.json({session:startCheckpoint(user.id,{...input,questionId})});
+ return Response.json({session:sessionDetail(startCheckpoint(user.id,{...input,questionId}))});
  }catch(error){return sessionApiError(error);}
 }

@@ -9,7 +9,7 @@ export type SessionState = {
   tutor?: TutorState | null;
   schemaVersion: number; activity: "deep" | "quick";
   question: (Pick<CatalogQuestion, "id" | "version" | "exposureKey" | "primaryTopic" | "questionType" | "text"> & { bankVersion: string }) | null;
-  lifecycle: "open" | "set_aside" | "closed"; lastStudentActionAt: string | null;
+  lifecycle: "open" | "set_aside" | "closed" | "expired"; lastStudentActionAt: string | null;
   continuedFromQuickId: string | null;
   cardSnapshot: CardSnapshot | null;
   rewriteOfDeepId: string | null; originalSubmittedAt: string | null; completedAt: string | null;

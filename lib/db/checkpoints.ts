@@ -10,10 +10,13 @@ import { saveNewPractice } from "./create-practice";
 import { deleteSession, getSession } from "./queries/sessions";
 import { getRequestReceipt, writeRequestReceipt, ReceiptConflict } from "./request-receipts";
 import { SessionError } from "../pipeline/engine";
-import { checkpointState } from "../rules/checkpoint";
+import { checkpointState, MOCK_DURATION_SECONDS } from "../rules/checkpoint";
 import type { SessionState } from "../pipeline/types";
 import { readFeatures } from "../config/features";
 export function checkpointHistory(userId: string) { return getDb().select().from(checkpoints).where(eq(checkpoints.userId, userId)).all(); }
+export function sessionCheckpoint(userId: string, attemptId: string) {
+  return getDb().select().from(checkpoints).where(and(eq(checkpoints.userId, userId), eq(checkpoints.attemptId, attemptId))).get();
+}
 function eligible(userId: string, key: string) {
   const db = getDb();
   return !isExposureUnknown(db.$client, userId, key) && !db.select().from(familiarity).where(and(eq(familiarity.userId, userId), eq(familiarity.exposureKey, key))).get();
@@ -46,7 +49,7 @@ export function startCheckpoint(userId: string, input: {questionId: string; decl
     session.question = {id:q.id,version:q.version,exposureKey:q.exposureKey,bankVersion:q.bankVersion,primaryTopic:q.primaryTopic as NonNullable<SessionState["question"]>["primaryTopic"],questionType:q.questionType as SessionState["prompt"]["questionType"],text:q.text};
     session.prompt = {id:q.id,text:q.text,questionType:session.question.questionType,topicTags:[q.primaryTopic]};
     session.checkpointId = crypto.randomUUID(); session.createdAt = session.updatedAt = session.savedAt = now;
-    db.insert(checkpoints).values({id:session.checkpointId,userId,attemptId:session.id,exposureKey:q.exposureKey,questionId:q.id,questionType:q.questionType,startedAt:now,deadlineAt:new Date(Date.parse(now)+40*60000).toISOString(),status:"in_progress",declaration:input.declaration,startQualified:true,startEvidenceJson:JSON.stringify({questionVersion:q.version,bankVersion:q.bankVersion,aliasVersion,exposureKey:q.exposureKey,legacyExposure:"known",priorAppAttempt:false,externalPractice:input.declaration,qualifiedAt:now})}).run();
+    db.insert(checkpoints).values({id:session.checkpointId,userId,attemptId:session.id,exposureKey:q.exposureKey,questionId:q.id,questionType:q.questionType,startedAt:now,deadlineAt:new Date(Date.parse(now)+MOCK_DURATION_SECONDS*1000).toISOString(),status:"in_progress",declaration:input.declaration,startQualified:true,startEvidenceJson:JSON.stringify({questionVersion:q.version,bankVersion:q.bankVersion,aliasVersion,exposureKey:q.exposureKey,legacyExposure:"known",priorAppAttempt:false,externalPractice:input.declaration,qualifiedAt:now})}).run();
     saveNewPractice(userId,session);
     writeRequestReceipt(sqlite,{userId,idempotencyKey:input.idempotencyKey,action:"checkpoint",paramsHash:hash,attemptId:session.id,resultRef:session.id,createdAt:now});
     return {session};
@@ -71,9 +74,9 @@ export function swapCheckpoint(userId: string, attemptId: string, idempotencyKey
     if (!session) throw new SessionError("换的那次模考已删除。",409,"practice_deleted");
     return session;
   };
-  const done = replay(idempotencyKey,"checkpoint_swap") ?? replay(startKey,"checkpoint");
-  if (done) return done;
-  sqlite.transaction(() => {
+  const result = sqlite.transaction(() => {
+    const done = replay(idempotencyKey, "checkpoint_swap") ?? replay(startKey, "checkpoint");
+    if (done) return done;
     const row = db.select().from(checkpoints).where(and(eq(checkpoints.userId,userId),eq(checkpoints.attemptId,attemptId),eq(checkpoints.status,"in_progress"))).get();
     if (!row) throw new SessionError("这次模考已经结束，不能换题。",409,"checkpoint_closed");
     const session = getSession(userId,attemptId);
@@ -81,14 +84,16 @@ export function swapCheckpoint(userId: string, attemptId: string, idempotencyKey
     if (session.drafts.original.trim() || session.originalSubmittedAt) throw new SessionError("你已经开始写了，不能再换题。",409,"checkpoint_started");
     if (Date.parse(now) - Date.parse(row.startedAt) > SWAP_WINDOW_MS) throw new SessionError("开考已超过 5 分钟，不能再换题。",409,"checkpoint_started");
     db.insert(familiarity).values({userId,exposureKey:row.exposureKey,firstAttemptId:"external-declaration",externalPractice:"yes"}).onConflictDoUpdate({target:[familiarity.userId,familiarity.exposureKey],set:{externalPractice:"yes"}}).run();
+    // Keep the declared exposure and abandon the untouched attempt even if the bank has no replacement.
+    deleteSession(userId, attemptId);
+    const candidate = getCheckpointState(userId, now).candidateQuestionId;
+    if (!candidate) return null;
+    const next = startCheckpoint(userId, { questionId: candidate, declaration: "no", idempotencyKey: startKey }, now);
+    writeRequestReceipt(sqlite, { userId, idempotencyKey, action: "checkpoint_swap", paramsHash: attemptId, attemptId: next.id, resultRef: next.id, createdAt: now });
+    return next;
   }).immediate();
-  // The untouched attempt goes; it was never written, so it is not kept as a practice.
-  deleteSession(userId,attemptId);
-  const candidate = getCheckpointState(userId,now).candidateQuestionId;
-  if (!candidate) throw new SessionError("暂时没有你没练过的题，可以回到模考页改做普通模考。",409,"checkpoint_unavailable");
-  const session = startCheckpoint(userId,{questionId:candidate,declaration:"no",idempotencyKey:startKey},now);
-  writeRequestReceipt(sqlite,{userId,idempotencyKey,action:"checkpoint_swap",paramsHash:attemptId,attemptId:session.id,resultRef:session.id,createdAt:now});
-  return session;
+  if (!result) throw new SessionError("暂时没有你没练过的题，可以回到模考页改做普通模考。", 409, "checkpoint_unavailable");
+  return result;
 }
 
 export function deferCheckpoint(userId: string, now = new Date().toISOString()) {

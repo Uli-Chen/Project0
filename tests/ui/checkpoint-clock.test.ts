@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { jsx } from "react/jsx-runtime";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CheckpointClock } from "../../components/checkpoints/clock";
-const timing = { sessionId: "owned-session", deadlineAt: "2026-11-01T00:40:00Z", serverNow: "2026-11-01T00:20:00Z" };
+const timing = { sessionId: "owned-session", deadlineAt: "2026-11-01T00:40:00Z", remaining: 20 * 60_000 };
 test("checkpoint waits for server acceptance, then replaces countdown with submitted status", () => {
   const writing = renderToStaticMarkup(jsx(CheckpointClock, timing));
   assert.match(writing, /role="timer"/); assert.match(writing, /20:00/);

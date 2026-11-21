@@ -38,6 +38,7 @@
   --color-paper: var(--paper);
   --color-sunk: var(--sunk);
   --color-desk: var(--desk);
+  --color-canvas: var(--canvas);
   --color-ink-panel: var(--ink-panel);
   --color-faint: var(--faint);
   --color-coach-line: var(--coach-line);
@@ -59,25 +60,31 @@
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.5);
+  --shadow-raised: var(--elev-1);
+  --shadow-lift: var(--elev-2);
+  --shadow-sheet: var(--elev-sheet);
+  --shadow-frame: var(--elev-frame);
 }
 
 /*
- * 白纸、墨、一道蓝。
- * 页面是敞开的白色，靠留白和细线分区，不靠一层层的卡片。只有两样东西有分量：
- * 墨色（标题、主按钮、首页的“今天”）和钴蓝（教练、进度、焦点）。
+ * 画布、纸面、墨、一道蓝。
+ * 三层高度：canvas（画布：侧栏和页面底色，退在后面）→ background（纸面：白色内容区，抬起一层）
+ * → raised（浮起：卡片、按钮、当前导航项）。sunk 是往里收的输入与次要块，和画布同色。
+ * 投影只表达高度：elev-1 贴着纸面的控件与卡片，elev-2 悬停或被拿起，elev-sheet 是内容区本身，float 是浮层。
+ * 只有两样东西有分量：墨色（标题、主按钮）和钴蓝（教练、进度、焦点）；选中状态用浅底，不用墨色块。
  * 写作时页面换成带点阵的书桌（desk），上面只放一张纸（paper）。
- * 层次：background（页面）= sheet（面板）；sunk 是往里收的输入与次要块；desk 只在写作页出现。
  */
 :root {
   color-scheme: light;
   --radius: 0.625rem;
   --background: #ffffff;
-  --desk: #f3f4f6;
+  --canvas: #f4f5f7;
+  --desk: #f4f5f7;
   --desk-dot: rgb(16 18 22 / 0.09);
   --foreground: #101216;
   --sheet: #ffffff;
   --paper: #ffffff;
-  --sunk: #f4f5f7;
+  --sunk: #f5f6f8;
   --ink: #101216;
   --ink-panel: #101216;
   --card: var(--sheet);
@@ -89,19 +96,19 @@
   --secondary: var(--sunk);
   --secondary-foreground: var(--foreground);
   --muted: var(--sunk);
-  --muted-foreground: #4a5160;
+  --muted-foreground: #565d6b;
   --faint: #6c7381;
   --accent: #eef0f3;
   --accent-foreground: var(--foreground);
   --destructive: #c2291c;
-  --border: #e6e8ec;
-  --input: #cdd1d8;
+  --border: #eaecef;
+  --input: #d9dce2;
   --ring: #2f5bff;
-  --sidebar: #fafafb;
+  --sidebar: var(--canvas);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgb(16 18 22 / 0.055);
+  --sidebar-accent: rgb(16 18 22 / 0.05);
   --sidebar-accent-foreground: var(--foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
@@ -116,6 +123,11 @@
   --hl-1: rgb(47 91 255 / 0.07);
   --hl-2: rgb(47 91 255 / 0.17);
   --hl-3: rgb(47 91 255 / 0.55);
+  --elev-1: 0 0 0 1px rgb(16 18 22 / 0.07), 0 1px 2px rgb(16 18 22 / 0.05);
+  --elev-2: 0 0 0 1px rgb(16 18 22 / 0.08), 0 2px 4px rgb(16 18 22 / 0.04), 0 14px 28px -12px rgb(16 18 22 / 0.16);
+  --elev-sheet: 0 0 0 1px rgb(16 18 22 / 0.06), 0 1px 2px rgb(16 18 22 / 0.03), 0 16px 40px -24px rgb(16 18 22 / 0.12);
+  /* 内容区的边框：一圈细线和贴边的投影，外面用画布色盖住滚到边框外的内容 */
+  --elev-frame: 0 0 0 1px rgb(16 18 22 / 0.07), 0 1px 3px rgb(16 18 22 / 0.06), 0 0 0 0.5rem var(--canvas);
   --shadow-panel: 0 1px 1px rgb(16 18 22 / 0.03);
   --shadow-paper: 0 0 0 1px rgb(16 18 22 / 0.05), 0 2px 4px rgb(16 18 22 / 0.04), 0 28px 56px -20px rgb(16 18 22 / 0.18);
   --shadow-float: 0 0 0 1px rgb(16 18 22 / 0.06), 0 12px 32px -12px rgb(16 18 22 / 0.22);
@@ -130,13 +142,14 @@
 
 .dark {
   color-scheme: dark;
-  --background: #0c0d10;
-  --desk: #08090b;
+  --background: #121317;
+  --canvas: #0a0b0d;
+  --desk: #0a0b0d;
   --desk-dot: rgb(255 255 255 / 0.07);
   --foreground: #eef0f4;
-  --sheet: #131519;
-  --paper: #181b21;
-  --sunk: #16181d;
+  --sheet: #16181d;
+  --paper: #1a1d23;
+  --sunk: #1b1e24;
   --ink: #eef0f4;
   --ink-panel: #16181e;
   --popover: #1a1d24;
@@ -144,12 +157,11 @@
   --primary-foreground: #0b1030;
   --muted-foreground: #b3b9c5;
   --faint: #8a919e;
-  --accent: #1f232b;
+  --accent: #23272f;
   --destructive: #ff7a70;
-  --border: #23262e;
+  --border: #24272f;
   --input: #383d48;
   --ring: #8aa2ff;
-  --sidebar: #0f1013;
   --sidebar-primary-foreground: #0b1030;
   --sidebar-accent: rgb(255 255 255 / 0.065);
   --coach: #8aa2ff;
@@ -162,6 +174,10 @@
   --hl-1: rgb(138 162 255 / 0.10);
   --hl-2: rgb(138 162 255 / 0.24);
   --hl-3: rgb(138 162 255 / 0.65);
+  --elev-1: 0 0 0 1px rgb(255 255 255 / 0.07), 0 1px 2px rgb(0 0 0 / 0.4);
+  --elev-2: 0 0 0 1px rgb(255 255 255 / 0.1), 0 14px 28px -12px rgb(0 0 0 / 0.7);
+  --elev-sheet: 0 0 0 1px rgb(255 255 255 / 0.06), 0 16px 40px -24px rgb(0 0 0 / 0.8);
+  --elev-frame: 0 0 0 1px rgb(255 255 255 / 0.07), 0 0 0 0.5rem var(--canvas);
   --shadow-panel: 0 0 0 1px rgb(0 0 0 / 0.25);
   --shadow-paper: 0 0 0 1px rgb(255 255 255 / 0.06), 0 24px 56px -16px rgb(0 0 0 / 0.75);
   --shadow-float: 0 0 0 1px rgb(255 255 255 / 0.07), 0 16px 36px -12px rgb(0 0 0 / 0.8);
@@ -174,12 +190,15 @@
 
   html {
     font-size: 16px;
+    /* 滚动回弹时露出的是画布，不是一条白边 */
+    background-color: var(--canvas);
   }
 
   body {
     @apply bg-background font-sans text-base leading-relaxed text-foreground antialiased;
     font-feature-settings: "kern", "ss01";
     min-width: 320px;
+    min-height: 100dvh;
   }
 
   ::selection {
@@ -189,6 +208,17 @@
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
+  }
+
+  /* 面板里的原生滚动条退到最薄、低对比，不抢内容；整页的滚动条保持系统默认，方便看见和拖动 */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--foreground) 24%, transparent) transparent;
+  }
+
+  html {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
   }
 }
 
@@ -271,17 +301,17 @@
   .coach-markdown th { background: var(--secondary); font-weight: 600; }
 
   .page-heading {
-    font-size: clamp(2rem, 1.4rem + 2vw, 2.75rem);
+    font-size: 1.75rem;
     font-weight: 600;
-    letter-spacing: -0.035em;
-    line-height: 1.08;
+    letter-spacing: -0.022em;
+    line-height: 1.2;
   }
 
   .section-heading {
-    font-size: 1.3125rem;
+    font-size: 1.0625rem;
     font-weight: 600;
-    letter-spacing: -0.015em;
-    line-height: 1.3;
+    letter-spacing: -0.01em;
+    line-height: 1.4;
   }
 
   /* 分数滑动条：原生 range，已选部分用正文色填充。--p 是 0～1 的位置，由组件设置 */
@@ -325,12 +355,67 @@
   .band-slider:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 35%, transparent); }
   .band-slider:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 35%, transparent); }
 
-  /* 面板：需要框起来的一组内容。白底、一条细线，没有投影 */
+  /* 面板：需要框起来的一组内容。白底，贴着纸面浮起一层 */
   .surface {
-    border-radius: 1rem;
+    border-radius: 0.875rem;
     background: var(--sheet);
-    box-shadow: 0 0 0 1px var(--border);
+    box-shadow: var(--elev-1);
+    transition: box-shadow var(--dur-standard) var(--ease-soft), transform var(--dur-fast) var(--ease-soft);
   }
+
+  /* 选项胶囊：筛选、分页这类“选中其一”的小控件；选中用浅蓝底和蓝字，不用墨色块 */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--muted-foreground);
+    user-select: none;
+    transition: background-color var(--dur-fast) var(--ease-soft), color var(--dur-fast) var(--ease-soft), transform var(--dur-fast) var(--ease-soft);
+  }
+  .chip:hover { background: var(--sunk); color: var(--foreground); }
+  .chip:active { transform: scale(0.96); }
+  .chip:is([aria-current], [aria-pressed="true"], [aria-checked="true"]) {
+    background: var(--coach-soft);
+    color: var(--primary);
+    font-weight: 500;
+  }
+
+  /* 话题标签：每个话题一个固定色相，只落在一个小圆点和很浅的底上，方便在题目列表里一眼分开 */
+  .topic-tag {
+    --h: 255;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 999px;
+    padding: 0.0625rem 0.5625rem 0.0625rem 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: nowrap;
+    color: oklch(0.42 0.09 var(--h));
+    background: oklch(0.965 0.022 var(--h));
+  }
+  .topic-tag::before {
+    content: "";
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 50%;
+    background: oklch(0.66 0.15 var(--h));
+  }
+  .dark .topic-tag { color: oklch(0.86 0.07 var(--h)); background: oklch(0.34 0.05 var(--h) / 0.5); }
+  .dark .topic-tag::before { background: oklch(0.76 0.13 var(--h)); }
+  /* 灰底面板上，标签换成白底才分得开 */
+  .lead .topic-tag { background: var(--sheet); }
+  .topic-tag[data-topic="education"] { --h: 255; }
+  .topic-tag[data-topic="technology"] { --h: 300; }
+  .topic-tag[data-topic="environment"] { --h: 150; }
+  .topic-tag[data-topic="society"] { --h: 30; }
+  .topic-tag[data-topic="work"] { --h: 75; }
+  .topic-tag[data-topic="health"] { --h: 195; }
+  .topic-tag[data-topic="culture"] { --h: 350; }
 
   /* 试卷：只给用户正在写或读的正文 */
   .paper {
@@ -408,7 +493,18 @@
     background: var(--sunk);
     padding: 0.65rem 0.8rem;
     font-size: 1rem;
+    transition: border-color var(--dur-fast) var(--ease-soft), box-shadow var(--dur-fast) var(--ease-soft), background-color var(--dur-fast) var(--ease-soft);
   }
+  .field-input::placeholder { color: var(--faint); }
+  .field-input:hover:not(:focus-visible):not(:disabled) {
+    border-color: color-mix(in srgb, var(--foreground) 25%, var(--input));
+  }
+  .field-input:focus-visible {
+    outline: none;
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 35%, transparent);
+  }
+  .field-input:disabled { opacity: 0.5; }
 
   .prose-essay {
     font-family: var(--font-serif);
@@ -427,15 +523,20 @@
 }
 
 @layer components {
+  /*
+   * 入场类动效（reveal / swap / enter / stagger / pop）只在开始前占位，结束后把样式还给元素本身：
+   * 关键帧不写终点，填充用 backwards。这样动画放完以后，悬停位移、按压缩放、禁用变淡仍然生效。
+   */
+
   /* 新出现的内容：淡入并上移 4px，只用于新增内容；--i 控制错峰，最多 5 级 */
   .motion-reveal {
-    animation: motion-reveal var(--dur-standard) var(--ease-soft) both;
+    animation: motion-reveal var(--dur-standard) var(--ease-soft) backwards;
     animation-delay: calc(min(var(--i, 0), 5) * 35ms);
   }
 
   /* 原地换状态：只淡入，不位移 */
   .motion-swap {
-    animation: motion-fade var(--dur-standard) var(--ease-soft) both;
+    animation: motion-fade var(--dur-standard) var(--ease-soft) backwards;
   }
 
   /* 展开：高度从 0 到内容高度；内层需要 min-h-0 overflow-hidden */
@@ -461,16 +562,52 @@
     animation: motion-fill var(--dur-reveal) var(--ease-soft) both;
     animation-delay: calc(240ms + min(var(--i, 0), 5) * 90ms);
   }
+
+  /* 页面进入：一页最上层的几块内容依次淡入并上移 8px；--i 错峰，最多 6 级。只用在页面的大块上 */
+  .motion-enter {
+    animation: motion-enter var(--dur-reveal) var(--ease-soft) backwards;
+    animation-delay: calc(min(var(--i, 0), 6) * 45ms);
+  }
+
+  /* 列表与卡片网格：直接子元素依次出现，不用逐个写 --i；前 8 个错峰，其余一起 */
+  .motion-stagger > * {
+    animation: motion-reveal var(--dur-layout) var(--ease-soft) backwards;
+    animation-delay: 245ms;
+  }
+  .motion-stagger > :nth-child(1) { animation-delay: 0ms; }
+  .motion-stagger > :nth-child(2) { animation-delay: 35ms; }
+  .motion-stagger > :nth-child(3) { animation-delay: 70ms; }
+  .motion-stagger > :nth-child(4) { animation-delay: 105ms; }
+  .motion-stagger > :nth-child(5) { animation-delay: 140ms; }
+  .motion-stagger > :nth-child(6) { animation-delay: 175ms; }
+  .motion-stagger > :nth-child(7) { animation-delay: 210ms; }
+
+  /* 冒出：圆点、角标这类小东西从 0.85 放大到位；--i 错峰，--delay 整体推后 */
+  .motion-pop {
+    animation: motion-pop var(--dur-layout) var(--ease-soft) backwards;
+    animation-delay: calc(var(--delay, 0ms) + min(var(--i, 0), 8) * 35ms);
+  }
+
+  /* 画线：SVG 折线从左到右画出；path 需要 pathLength="1"，--delay 推后 */
+  .motion-line {
+    stroke-dasharray: 1;
+    animation: motion-line 700ms var(--ease-soft) both;
+    animation-delay: var(--delay, 120ms);
+  }
+
+  /* 按压：可点的卡片和行按下时轻轻收一点 */
+  .motion-press {
+    transition: transform var(--dur-fast) var(--ease-soft), box-shadow var(--dur-standard) var(--ease-soft);
+  }
+  .motion-press:active { transform: scale(0.985); }
 }
 
 @keyframes motion-reveal {
   from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
 }
 
 @keyframes motion-fade {
   from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 @keyframes motion-expand {
@@ -488,12 +625,44 @@
   to { transform: scaleX(1); }
 }
 
+@keyframes motion-enter {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@keyframes motion-pop {
+  from { opacity: 0; transform: scale(0.85); }
+}
+
+@keyframes motion-line {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* 骨架屏：一道很轻的高光扫过，比整块闪白安静 */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--foreground) 7%, transparent), transparent);
+  animation: skeleton-shimmer 1.8s var(--ease-soft) infinite;
+}
+
+@keyframes skeleton-shimmer {
+  to { transform: translateX(100%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }

@@ -57,6 +57,13 @@
       "when": 1793719394798,
       "tag": "0007_keen_sentinels",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1795245121834,
+      "tag": "0008_execution_leases",
+      "breakpoints": true
     }
   ]
 }

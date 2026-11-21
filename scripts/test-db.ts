@@ -29,7 +29,7 @@ try {
   empty.pragma("foreign_keys = ON");
   migrate(drizzle(empty), { migrationsFolder: resolve("drizzle") });
   migrate(drizzle(empty), { migrationsFolder: resolve("drizzle") });
-  for (const table of ["users", "auth_sessions", "writing_sessions", "auth_attempts", "questions", "question_aliases", "question_alias_candidates", ...retainedTables, ...quickContentTables]) {
+  for (const table of ["users", "auth_sessions", "writing_sessions", "auth_attempts", "execution_leases", "questions", "question_aliases", "question_alias_candidates", ...retainedTables, ...quickContentTables]) {
     assert.ok(empty.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(table), table);
   }
   assert.equal(empty.pragma("integrity_check", { simple: true }), "ok");

@@ -1,10 +1,24 @@
 import "server-only";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { acquireExecution, isExecutionActive, type ExecutionLease } from "../db/execution-leases";
 import { SessionError } from "./engine";
-const globalLocks = globalThis as typeof globalThis & { sessionLocks?: Set<string> };
-const locks = globalLocks.sessionLocks ??= new Set();
-export const isSessionBusy = (key: string) => locks.has(key);
-export async function withSessionLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
-  if (locks.has(key)) throw new SessionError("这个练习正在处理另一个请求，请稍后重试。", 409);
-  locks.add(key);
-  try { return await fn(); } finally { locks.delete(key); }
+
+const heldSession = new AsyncLocalStorage<{ key: string; lease: ExecutionLease }>();
+
+export const isSessionBusy = (key: string) => isExecutionActive("session", key);
+
+/** Check under the same SQLite write transaction that will persist the result. */
+export function assertSessionLease(key: string) {
+  const held = heldSession.getStore();
+  if (held?.key === key && !held.lease.current()) {
+    throw new SessionError("练习的处理已中断，请刷新后重试。", 409, "session_lease_expired");
+  }
+}
+
+export async function withSessionLock<T>(key: string, fn: () => T | Promise<T>): Promise<T> {
+  const lease = acquireExecution("session", key);
+  if (!lease) throw new SessionError("这个练习正在处理另一个请求，请稍后重试。", 409);
+  lease.keepAlive();
+  try { return await heldSession.run({ key, lease }, fn); }
+  finally { lease.release(); }
 }

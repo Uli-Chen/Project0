@@ -1,6 +1,6 @@
 import { practiceCounts } from "../rules/practice";
 import type { CompletionView } from "../rules/recommend";
-import type { SessionState } from "@/lib/prototype/session-store";
+import type { SessionState } from "@/lib/pipeline/types";
 import type { MemoryItem } from "@/lib/prototype/types";
 import type { UserProfile } from "@/lib/auth/types";
 

@@ -3,7 +3,7 @@
 import { Check, ChevronLeft, Download, LoaderCircle, MoreHorizontal, PanelLeft, PanelRight, PenLine, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { hasRevision } from "@/lib/learning/essay-view";
 import { essayKindLabel } from "@/lib/learning/summary";
 import { countWords } from "@/lib/rules";
+import { MOCK_DURATION_SECONDS } from "@/lib/rules/checkpoint";
 import { useSession } from "@/lib/prototype/session-store";
 import type { EssayKind } from "@/lib/prototype/types";
 import { cn } from "@/lib/utils";
@@ -34,14 +35,8 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
   const [mockLeave, setMockLeave] = useState(false);
   const { stage } = state;
   const editing = stage === "writing" || stage === "revising";
-  const [checkpointSeconds, setCheckpointSeconds] = useState(state.elapsed.original);
-  useEffect(() => {
-    if (!state.checkpointId || state.originalSubmittedAt) return;
-    const update = () => setCheckpointSeconds(Math.max(0, Math.floor((Date.now() - Date.parse(state.createdAt)) / 1000)));
-    update(); const timer = setInterval(update, 1000); return () => clearInterval(timer);
-  }, [state.checkpointId, state.createdAt, state.originalSubmittedAt]);
-  const elapsed = state.checkpointId && essayKind === "original" && !state.originalSubmittedAt ? checkpointSeconds : state.elapsed[essayKind];
-  const overtime = essayKind === "original" && elapsed > 2400;
+  const elapsed = state.elapsed[essayKind];
+  const overtime = essayKind === "original" && elapsed > MOCK_DURATION_SECONDS;
   // 模考按 40 分钟倒数；练习只显示已用时间
   const countdown = state.mode === "mock" && essayKind === "original" && !state.checkpointId;
   const words = countWords(state.drafts[essayKind]);
@@ -77,7 +72,7 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
       ))}
     </ToggleGroup>
   ) : null;
-  const status = editing ? <WritingStatus countdown={countdown} overtime={overtime} elapsed={elapsed} essayKind={essayKind} words={words} short={short} saveStatus={saveStatus} /> : null;
+  const status = editing ? <WritingStatus hideTime={Boolean(state.checkpointId) && essayKind === "original"} countdown={countdown} overtime={overtime} elapsed={elapsed} essayKind={essayKind} words={words} short={short} saveStatus={saveStatus} /> : null;
 
   return (
     <>
@@ -125,13 +120,13 @@ export function EssayTopbar({ onSubmit, hasLeft }: { onSubmit: () => void; hasLe
 }
 
 /** 用时或倒计时、字数、保存状态；顶栏和窄屏状态行共用 */
-function WritingStatus({ countdown, overtime, elapsed, essayKind, words, short, saveStatus }: {
-  countdown: boolean; overtime: boolean; elapsed: number; essayKind: EssayKind; words: number; short: boolean; saveStatus: "saved" | "saving" | "unsaved" | "error";
+function WritingStatus({ hideTime, countdown, overtime, elapsed, essayKind, words, short, saveStatus }: {
+  hideTime: boolean; countdown: boolean; overtime: boolean; elapsed: number; essayKind: EssayKind; words: number; short: boolean; saveStatus: "saved" | "saving" | "unsaved" | "error";
 }) {
   return (
     <>
-      {countdown
-        ? <span className={cn("tabular-nums", overtime ? "font-medium text-warn" : elapsed > 2100 && "text-warn")} title="模考限时 40 分钟">{overtime ? `已超时 ${formatClock(elapsed - 2400)}` : `剩余 ${formatClock(2400 - elapsed)}`}</span>
+      {hideTime ? null : countdown
+        ? <span className={cn("tabular-nums", elapsed > 2100 && "text-warn")} title="模考限时 40 分钟">剩余 {formatClock(Math.max(0, MOCK_DURATION_SECONDS - elapsed))}</span>
         : <span className={cn("tabular-nums", overtime && "text-warn")} title={essayKind === "revision" ? "改写用时" : "考场建议 40 分钟"}>{overtime ? "超过 40 分钟，" : ""}{formatClock(elapsed)}</span>}
       <span className={cn("tabular-nums", short && "text-warn")} title={`题目要求至少 ${MIN_WORDS} 词`}>{words}{short ? ` / ${MIN_WORDS}` : ""} 词</span>
       <span role={saveStatus === "error" ? "alert" : undefined} className={cn("inline-flex items-center gap-1", saveStatus === "error" ? "font-medium text-destructive" : saveStatus === "saved" && "text-good")}>{saveStatus === "saved" && <Check className="size-3.5" />}{saveStatus === "saving" ? "保存中" : saveStatus === "unsaved" ? "未保存" : saveStatus === "error" ? "保存失败" : "已保存"}</span>

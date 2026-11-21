@@ -1,3 +1,5 @@
+export const MOCK_DURATION_SECONDS = 40 * 60;
+
 export type CheckpointInput = {
   firstDeepCompletedAt: string | null; lastEligibleCompletedAt: string | null; deferredUntil?: string | null;
   activeAttemptId?: string; candidates: { id: string; pool: string; bankOrder: number; eligible: boolean; eligibleTypeCount: number }[];

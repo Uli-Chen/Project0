@@ -3,16 +3,15 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { addOrphan, coachDraftKey, differingFields, dropLeftover, editableFields, joinDraft, LEFTOVER_EVENT, putLeftover, readLeftovers, readLocalDraft, takeOrphan, writeLocalDraft, type EssayLeftover, type EssaySnapshot } from "../drafts/local-draft";
 import type { EssayKind } from "./types";
-import type { SessionState } from "@/lib/pipeline/types";
+import type { SessionDetail } from "@/lib/pipeline/session-detail";
 import type { AgentAction } from "@/lib/pipeline/schemas";
 import { getSlot, setSlot } from "@/lib/pipeline/outline";
 import { outlineGroups } from "@/lib/learning/prewrite-guidance";
 import { mergeSessionState, type EditGenerations } from "@/lib/pipeline/client-state";
-export type { SessionState } from "@/lib/pipeline/types";
 export { getSlot, setSlot } from "@/lib/pipeline/outline";
 
 type SaveStatus = "saved" | "saving" | "unsaved" | "error";
-type ApiResult = { session?: SessionState; busy?: boolean; error?: string };
+type ApiResult = { session?: SessionDetail; busy?: boolean; error?: string; serverNow?: string };
 class RequestError extends Error { constructor(message: string, public status = 0, public data: ApiResult = {}) { super(message); } }
 async function requestJson(url: string, options?: RequestInit, timeout = 15000): Promise<ApiResult> {
   try {
@@ -39,11 +38,11 @@ export function pendingWriteAfterFailure(status: number, conflictSession: boolea
   return "keep";
 }
 /** The textarea pushes every keystroke here, so outline text is dirty, autosaved and leave-protected while it is typed. */
-export function applyOutlineEdit(state: SessionState, path: string, text: string): SessionState {
+export function applyOutlineEdit<T extends SessionDetail>(state: T, path: string, text: string): T {
   return { ...state, outline: { ...setSlot(state.outline, path, text, "用户编辑"), userEdited: true } };
 }
 /** Plain-text backup of everything that may exist only in this tab: essay, outline and unsent coach text. */
-export function draftBackupText(s: Pick<SessionState, "prompt" | "outline" | "drafts">, unsent: { composer?: string; failed?: string | null } = {}): string {
+export function draftBackupText(s: Pick<SessionDetail, "prompt" | "outline" | "drafts">, unsent: { composer?: string; failed?: string | null } = {}): string {
   const outline = outlineGroups(s.prompt.questionType).flatMap(group => group.slots.flatMap(slot => {
     const text = getSlot(s.outline, slot.path)?.text;
     return text ? [`${group.title}${slot.label ? ` · ${slot.label}` : ""}：${text}`] : [];
@@ -53,7 +52,7 @@ export function draftBackupText(s: Pick<SessionState, "prompt" | "outline" | "dr
     ...(coach.length ? [`未发送给教练的文字\n${coach.join("\n\n")}`] : [])].join("\n\n");
 }
 /** Whether the server has recorded this request (pending, failed with a stored error, or done). */
-export function serverHasRequest(session: SessionState | undefined | null, requestId: string): boolean {
+export function serverHasRequest(session: SessionDetail | undefined | null, requestId: string): boolean {
   return Boolean(session && (session.pendingAction?.requestId === requestId || session.completedRequests?.includes(requestId)));
 }
 /** Where a failed coach message lives after the failure.
@@ -75,9 +74,10 @@ export function recoverComposerDraft(currentDraft: string, input: AgentAction): 
   return input.text;
 }
 
-function useSessionController(initialState: SessionState) {
+function useSessionController(initialState: SessionDetail) {
   const initialPending = initialState.pendingAction;
   const [state, setState] = useState(initialState);
+  const [checkpointServerNow, setCheckpointServerNow] = useState<string>();
   const [coachBusy, setCoachBusy] = useState(Boolean(initialPending && !initialPending.error));
   const [pendingActionName, setPendingActionName] = useState<AgentAction["action"] | null>(initialPending?.input.action ?? null);
   const [error, setError] = useState<string | null>(initialPending?.error ?? null);
@@ -105,7 +105,7 @@ function useSessionController(initialState: SessionState) {
   const unconfirmed = useRef<{ requestId: string; text: string } | null>(null);
   const [unconfirmedInput, setUnconfirmedInputState] = useState<string | null>(null);
   const setUnconfirmed = useCallback((next: { requestId: string; text: string } | null) => { unconfirmed.current = next; setUnconfirmedInputState(next?.text ?? null); }, []);
-  const confirmDelivered = useCallback((session: SessionState | undefined | null) => {
+  const confirmDelivered = useCallback((session: SessionDetail | undefined | null) => {
     if (unconfirmed.current && serverHasRequest(session, unconfirmed.current.requestId)) setUnconfirmed(null);
   }, [setUnconfirmed]);
   const [lifecycleBusy, setLifecycleBusy] = useState(false);
@@ -132,11 +132,11 @@ function useSessionController(initialState: SessionState) {
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const update = useCallback((fn: (s: SessionState) => SessionState) => { const next = fn(ref.current); ref.current = next; setState(next); }, []);
+  const update = useCallback((fn: (s: SessionDetail) => SessionDetail) => { const next = fn(ref.current); ref.current = next; setState(next); }, []);
   const enqueue = useCallback(<T,>(work: () => Promise<T>): Promise<T> => { const result = queue.current.then(work); queue.current = result.catch(() => undefined); return result; }, []);
   // Every merge brings a state the server sent: it advances the confirmed state (never backwards), and
   // the open page re-checks its leftover offer against it. A page that is gone leaves offers alone.
-  const merge = useCallback((incoming: SessionState, generation: number) => {
+  const merge = useCallback((incoming: SessionDetail, generation: number) => {
     update(local => mergeSessionState(local, incoming, changed.current, generation));
     if (!confirmed.current || incoming.version >= confirmed.current.version) confirmed.current = incoming;
     if (mounted.current) offerRef.current();
@@ -182,7 +182,7 @@ function useSessionController(initialState: SessionState) {
     try { await enqueue(saveNow); if (edits.current !== savedEdits.current) { setError("还有未保存的修改，请稍候重试或备份当前内容。"); return false; } if (!lastAction.current) setError(null); return true; }
     catch (err) { setError(err instanceof Error ? err.message : "保存失败，请检查网络后重试。"); return false; }
   }, [enqueue, saveNow]);
-  const edit = useCallback((field: keyof EditGenerations, fn: (s: SessionState) => SessionState) => {
+  const edit = useCallback((field: keyof EditGenerations, fn: (s: SessionDetail) => SessionDetail) => {
     if (lifecycleChanging.current || ref.current.lifecycle !== "open" || (busy.current && lastAction.current?.action === "evaluate")) return;
     edits.current++; changed.current[field] = edits.current; update(fn); setSaveStatus("unsaved");
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -191,7 +191,8 @@ function useSessionController(initialState: SessionState) {
 
   const perform = useCallback(async (input: AgentAction, requestId = crypto.randomUUID()) => {
     if (busy.current || lifecycleChanging.current) return;
-    if (ref.current.lifecycle !== "open") { setError("请先恢复练习，再继续操作。"); return; }
+    const deadline = input.action === "evaluate" && input.atDeadline;
+    if (ref.current.lifecycle !== "open" && !(deadline && ref.current.lifecycle === "set_aside")) { setError("请先恢复练习，再继续操作。"); return; }
     const recovering = lastRequestId.current === requestId;
     busy.current = true; setCoachBusy(true); setPendingActionName(input.action); setError(null);
     sendStarted.current = Date.now();
@@ -213,7 +214,9 @@ function useSessionController(initialState: SessionState) {
             if (latest.busy) throw new RequestError("上次请求仍在处理中，结果会自动同步。请稍候。");
           }
         }
-        await saveNow();
+        // At the deadline flush the final keystroke (or the ordinary mock's elapsed clock).
+        // A clean independent mock can submit the server copy directly, even from a second tab.
+        if (!deadline || edits.current !== savedEdits.current || pendingWrite.current || !ref.current.checkpointId) await saveNow();
         const generation = savedEdits.current;
         const messageStage = ref.current.stage === "prewriting" ? "prewriting" as const : ref.current.stage === "revising" ? "revision" as const : "writing" as const;
         update(s => ({ ...s, pendingAction: { requestId, input, startedAt: new Date().toISOString() } }));
@@ -221,7 +224,7 @@ function useSessionController(initialState: SessionState) {
           const content = "intent" in input && input.intent === "more" ? "（请求提示）" : "text" in input ? input.text ?? "再给点提示" : ({ clarify: "理清这段", polish: "润色这句", check: "检查这段" } as Record<string, string>)[input.action];
           update(s => ({ ...s, messages: [...s.messages.filter(m => !m.id.startsWith("pending-")), { id: `pending-${requestId}`, role: "user", stage: input.action === "issue" ? "issue" : messageStage, content, ...("selection" in input ? { quote: input.selection } : {}), ...(input.action === "chat" ? { quote: input.quote } : {}), ...(input.action === "issue" ? { issueRank: input.rank } : {}) }] }));
         }
-        if (input.action === "evaluate") update(s => ({ ...s, stage: input.kind === "revision" ? "re_evaluating" : "evaluating", submitted: { ...s.submitted, [input.kind]: s.submitted[input.kind] ?? s.drafts[input.kind] }, evalStep: "scoring", evalError: null }));
+        if (input.action === "evaluate" && !deadline) update(s => ({ ...s, stage: input.kind === "revision" ? "re_evaluating" : "evaluating", submitted: { ...s.submitted, [input.kind]: s.submitted[input.kind] ?? s.drafts[input.kind] }, evalStep: "scoring", evalError: null }));
         const controller = new AbortController(); actionController.current = controller;
         progress.sent = true;
         try {
@@ -313,6 +316,8 @@ function useSessionController(initialState: SessionState) {
     void requestJson(`/api/sessions/${ref.current.id}`, { cache: "no-store" })
       .then(data => {
         if (!alive || !data.session) return;
+        // The router can restore a cached page with an old countdown origin.
+        if (data.serverNow) setCheckpointServerNow(data.serverNow);
         if (data.session.version > ref.current.version) merge(data.session, generation);
         else if (!confirmed.current || data.session.version >= confirmed.current.version) confirmed.current = data.session;
       })
@@ -395,9 +400,10 @@ function useSessionController(initialState: SessionState) {
 
   const essayKind: EssayKind = state.stage === "revising" || state.stage === "re_evaluating" ? "revision" : "original";
   const setDraft = useCallback((kind: EssayKind, text: string) => edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: text } })), [edit]);
+  const submitAtDeadline = useCallback(() => perform({ action: "evaluate", kind: "original", atDeadline: true }), [perform]);
   const tick = useCallback((kind: EssayKind) => update(s => ({ ...s, elapsed: { ...s.elapsed, [kind]: s.elapsed[kind] + 1 } })), [update]);
   const failedText = () => unconfirmed.current?.text || (lastAction.current ? recoverComposerDraft("", lastAction.current) : "");
-  return { state, coachBusy, lifecycleBusy, leftover, composerDraft, unconfirmedInput, pendingActionName, essayKind, error, saveStatus, failedInput,
+  return { state, checkpointServerNow, coachBusy, lifecycleBusy, leftover, composerDraft, unconfirmedInput, pendingActionName, essayKind, error, saveStatus, failedInput,
     actions: {
       changeLifecycle, setComposerDraft,
       hasUnsentComposer: () => Boolean(composerDraftRef.current.trim() || unconfirmed.current),
@@ -412,7 +418,7 @@ function useSessionController(initialState: SessionState) {
       requestNudge: (kind: EssayKind, paragraphIndex: number) => { if (!busy.current && ref.current.nudgesEnabled && !ref.current.nudgedParagraphs[`${kind}:${paragraphIndex}`]) void perform({ action: "nudge", kind, paragraphIndex }); },
       dismissNudge: () => perform({ action: "dismissNudge" }),
       setNudgesEnabled: (on: boolean) => edit("nudgesEnabled", s => ({ ...s, nudgesEnabled: on })),
-      submit: (kind: EssayKind) => perform({ action: "evaluate", kind }),
+      submit: (kind: EssayKind) => perform({ action: "evaluate", kind }), submitAtDeadline,
       retryEvaluation: () => perform({ action: "evaluate", kind: ref.current.stage === "re_evaluating" ? "revision" : "original" }, lastAction.current?.action === "evaluate" ? lastRequestId.current ?? undefined : undefined),
       retryReview: () => perform({ action: "retryReview" }),
       startRevision: (options?: { openIssue?: number }) => perform({ action: "startRevision", ...options }),
@@ -445,12 +451,12 @@ function useSessionController(initialState: SessionState) {
         for (const kind of ["original", "revision"] as const) {
           if (fields.includes(kind)) edit(kind, s => ({ ...s, drafts: { ...s.drafts, [kind]: kept.drafts[kind] } }));
         }
-        if (fields.includes("outline") && kept.outline !== undefined) { const outline = kept.outline as SessionState["outline"]; edit("outline", s => ({ ...s, outline })); }
+        if (fields.includes("outline") && kept.outline !== undefined) { const outline = kept.outline as SessionDetail["outline"]; edit("outline", s => ({ ...s, outline })); }
       },
       /** Save the leftover as a text file (for what the current stage can no longer take). */
       downloadLeftover: () => {
         if (!leftover) return;
-        const s = { ...ref.current, drafts: { ...ref.current.drafts, ...leftover.record.drafts }, outline: (leftover.record.outline ?? ref.current.outline) as SessionState["outline"] };
+        const s = { ...ref.current, drafts: { ...ref.current.drafts, ...leftover.record.drafts }, outline: (leftover.record.outline ?? ref.current.outline) as SessionDetail["outline"] };
         const blob = new Blob([draftBackupText(s, { composer: "", failed: "" })], { type: "text/plain;charset=utf-8" });
         const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `writemind-${s.id}-before-leaving.txt`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
       },
@@ -461,5 +467,5 @@ function useSessionController(initialState: SessionState) {
 }
 type SessionContextValue = ReturnType<typeof useSessionController> & { questionBankEnabled: boolean; tutorV2Enabled: boolean };
 const SessionContext = createContext<SessionContextValue | null>(null);
-export function SessionProvider({ initialState, children, tutorV2Enabled = false, questionBankEnabled = false }: { initialState: SessionState; children: ReactNode; tutorV2Enabled?: boolean; questionBankEnabled?: boolean }) { const value = useSessionController(initialState); return <SessionContext.Provider value={{ ...value, questionBankEnabled, tutorV2Enabled }}>{children}</SessionContext.Provider>; }
+export function SessionProvider({ initialState, children, tutorV2Enabled = false, questionBankEnabled = false }: { initialState: SessionDetail; children: ReactNode; tutorV2Enabled?: boolean; questionBankEnabled?: boolean }) { const value = useSessionController(initialState); return <SessionContext.Provider value={{ ...value, questionBankEnabled, tutorV2Enabled }}>{children}</SessionContext.Provider>; }
 export function useSession() { const value = useContext(SessionContext); if (!value) throw new Error("useSession must be used inside SessionProvider"); return value; }

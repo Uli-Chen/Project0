@@ -32,7 +32,7 @@ export function FinishSummary({ animate = false }: { animate?: boolean } = {}) {
           </li>
         ))}
       </ul>
-      <p className="mt-3 border-t pt-3 text-[14px] leading-relaxed"><Link href={questionBankEnabled && state.question ? `/topics/${state.question.primaryTopic}` : "/"}>下一步 · {questionBankEnabled && state.question ? "回到本题主题" : "回到首页"}</Link></p>
+      <p className={cn("mt-3 border-t pt-3 text-[14px] leading-relaxed", animate && "motion-reveal")} style={animate ? { "--i": state.finish.memoryChanges.length + 1 } as React.CSSProperties : undefined}><Link href={questionBankEnabled && state.question ? `/topics/${state.question.primaryTopic}` : "/"}>下一步：{questionBankEnabled && state.question ? "回到本题主题" : "回到首页"}</Link></p>
     </section>
   );
 }

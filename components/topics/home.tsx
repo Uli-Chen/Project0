@@ -1,5 +1,6 @@
 import { questionTypeLabels, topicLabels } from '@/lib/question-bank/labels';
 import Link from 'next/link';
+import { Clock } from 'lucide-react';
 import type { CurrentUser } from '@/lib/auth/types';
 import { getTopicData } from '@/lib/db/queries/topics';
 import { listSessions } from '@/lib/db/queries/sessions';
@@ -8,9 +9,10 @@ import { examTime, learningSummary } from '@/lib/learning/summary';
 import { fixedIssues } from '@/lib/learning/fixes';
 import { countWords } from '@/lib/rules/text';
 import { StartPractice } from '@/components/topics/start-practice';
-import { Row, Big } from '@/components/topics/home-row';
+import { Tile, Big } from '@/components/topics/home-row';
 import { PracticeHeatmap } from '@/components/topics/practice-heatmap';
 import { WeekPips } from '@/components/topics/week-pips';
+import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 /** 本周一的日期，用来区分不同周的进度记录 */
@@ -23,10 +25,11 @@ function weekKey() {
 
 // Minutes shown for a card and for an essay with its feedback.
 const CARD_MINUTES = 10, ESSAY_MINUTES = 50;
-const ghostPill = 'inline-flex h-12 items-center rounded-full px-5 text-base text-muted-foreground transition-colors hover:bg-sunk hover:text-foreground';
-const solidPill = 'inline-flex h-12 items-center rounded-full bg-foreground px-7 text-base font-medium text-background transition-colors hover:bg-foreground/85';
+// The quiet action sits on the grey panel, so its hover is a tint of ink rather than the panel's own grey.
+const ghostPill = 'inline-flex h-11 items-center rounded-full px-4 text-[15px] text-muted-foreground transition-colors duration-(--dur-fast) hover:bg-foreground/[0.06] hover:text-foreground';
+const solidPill = buttonVariants({ size: 'lg' });
 
-/** 今天: one recommended practice led by its question, then a short numbered list of where the learner stands. */
+/** 今天: one recommended practice led by its question on a grey panel, then tiles for where the learner stands. */
 export function TopicHome({ user, quickEnabled }: { user: CurrentUser; quickEnabled: boolean }) {
   const { profile } = user;
   const data = getTopicData(user.id);
@@ -62,27 +65,26 @@ export function TopicHome({ user, quickEnabled }: { user: CurrentUser; quickEnab
     ? (offer.activity === 'quick' ? { activity: 'deep' as const, label: '直接写作文' } : quickEnabled ? { activity: 'quick' as const, label: '先做卡片' } : null)
     : null;
 
-  // Always the same four rows, so a new learner sees what will fill up.
-  const rows = [
-    <Row key="focus" n={1} label="这次留意" href={focus ? '/progress' : undefined}><span className={cn('text-[17px]', !focus && 'text-muted-foreground')}>{focus ? focus.title : '—'}</span></Row>,
-    <Row key="fixed" n={2} label="改好的问题" href={fixed.length ? '/progress' : undefined}><Big value={fixed.length} unit="个" note={fixed[0] ? `最近：${fixed[0].title}` : undefined} /></Row>,
-    <Row key="done" n={3} label="已完成" href={essays ? '/essays' : undefined}><Big value={essays} unit={`篇作文 · ${cards} 张卡片`} /></Row>,
-    <Row key="new" n={4} label="新的练习" href="/practice"><span className="text-[17px]">全部主题和题目</span></Row>,
+  // Always the same four tiles, so a new learner sees what will fill up. Only the first one leads somewhere.
+  const tiles = [
+    <Tile key="new" label="新的练习" href="/practice"><span className="text-[17px] leading-snug font-medium">全部主题和题目</span></Tile>,
+    <Tile key="done" label="已完成"><span className="flex flex-wrap items-baseline gap-x-5 gap-y-1"><Big value={essays} unit="篇作文" /><Big value={cards} unit="张卡片" /></span></Tile>,
+    <Tile key="focus" label="这次留意"><span className={cn('line-clamp-2 text-[17px] leading-snug font-medium', !focus && 'text-muted-foreground')}>{focus ? focus.title : '—'}</span></Tile>,
+    <Tile key="fixed" label="改好的问题"><Big value={fixed.length} unit="个" tone={fixed.length ? 'good' : undefined} note={fixed[0] ? `最近：${fixed[0].title}` : undefined} /></Tile>,
   ];
   // Days with practice: a practice started, last worked on or completed.
   const activity = [...data.attempts.flatMap((a) => [a.createdAt, a.lastStudentActionAt]), ...data.completions.map((c) => c.completedAt)];
 
   return (
     <div className="flex flex-col">
-      <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 text-[15px] text-muted-foreground">
-        <p>
-          {today}
-          <span className="mx-2 text-faint">·</span>
+      <header className="motion-enter flex flex-wrap items-center justify-between gap-x-6 gap-y-3 text-[15px] text-muted-foreground" style={{ "--i": 0 } as React.CSSProperties}>
+        <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span>{today}</span>
           {!profile.onboardingCompleted
             ? <Link href="/onboarding" className="text-foreground underline underline-offset-4">设置目标</Link>
             : time.examPassed ? <span className="text-warn">考试日期已过</span>
-            : time.countsDown ? <>距考试 <b className="font-semibold text-foreground tabular-nums">{time.weeks}</b> 周</>
-            : time.timeLeft}
+            : time.countsDown ? <span>距考试 <b className="font-semibold text-foreground tabular-nums">{time.weeks}</b> 周</span>
+            : <span>{time.timeLeft}</span>}
         </p>
         {perWeek > 0 && (
           <div className="flex items-center gap-3">
@@ -92,17 +94,17 @@ export function TopicHome({ user, quickEnabled }: { user: CurrentUser; quickEnab
         )}
       </header>
 
-      <section aria-label="今天的推荐" className="mt-14">
+      <section aria-label="今天的推荐" className="lead motion-enter mt-6 px-6 py-8 sm:px-10 sm:py-10" style={{ "--i": 1 } as React.CSSProperties}>
         {resume ? <Resume session={resume} /> : question && offer ? (
           <>
             <Reason>{reason}</Reason>
             <Question>{question.text}</Question>
-            <Meta items={[topicLabels[question.primaryTopic] ?? question.primaryTopic, typeName, `约 ${offer.kind === 'new' && offer.activity === 'quick' ? CARD_MINUTES : ESSAY_MINUTES} 分钟`]} />
-            <div className="mt-8 flex flex-wrap items-center gap-2">
+            <Meta topic={question.primaryTopic} type={typeName} minutes={offer.kind === 'new' && offer.activity === 'quick' ? CARD_MINUTES : ESSAY_MINUTES} />
+            <div className="mt-7 flex flex-wrap items-center gap-2">
               {offer.kind === 'rewrite'
                 ? <StartPractice size="lg" questionId={offer.questionId} activity="deep" rewriteOfDeepId={offer.rewriteOfDeepId}>同题重写</StartPractice>
                 : <StartPractice size="lg" questionId={offer.questionId} activity={offer.activity} continueFromQuickId={offer.continueFromQuickId} explicitNew={offer.needsExplicitNew}>{offer.needsExplicitNew ? '另开一篇作文' : offer.continueFromQuickId ? '用卡片写成作文' : offer.activity === 'quick' ? '开始卡片' : '开始写作'}</StartPractice>}
-              {alternative && <StartPractice size="lg" variant="ghost" className="text-muted-foreground" questionId={offer.questionId} activity={alternative.activity}>{alternative.label}</StartPractice>}
+              {alternative && <StartPractice size="lg" variant="outline" questionId={offer.questionId} activity={alternative.activity}>{alternative.label}</StartPractice>}
               <Link href="/practice" className={ghostPill}>换一个</Link>
             </div>
           </>
@@ -110,7 +112,7 @@ export function TopicHome({ user, quickEnabled }: { user: CurrentUser; quickEnab
           <>
             <Reason>{pick?.kind === 'resume' ? '这个主题还有没写完的练习' : '选一个主题开始'}</Reason>
             <p className="mt-4 max-w-[22em] text-[28px] leading-[1.3] font-semibold tracking-tight sm:text-[34px]">{quickEnabled ? '卡片理清想法，作文写成一篇。' : '从思路写到完整作文。'}</p>
-            <div className="mt-8 flex flex-wrap items-center gap-2">
+            <div className="mt-7 flex flex-wrap items-center gap-2">
               {pick?.kind === 'resume'
                 ? <Link href={`/essays/${pick.attemptId}`} className={solidPill}>继续练习</Link>
                 : <Link href="/practice" className={solidPill}>去选题</Link>}
@@ -119,11 +121,11 @@ export function TopicHome({ user, quickEnabled }: { user: CurrentUser; quickEnab
         )}
       </section>
 
-      <div className="mt-16 grid gap-12 xl:grid-cols-[minmax(0,1fr)_15rem] xl:gap-14 lg:grid-cols-[minmax(0,1fr)_13rem] lg:gap-10">
-        <ol aria-label="学习情况" className="border-t border-foreground">
-          {rows.map((row, index) => <li key={index} className="border-b">{row}</li>)}
-        </ol>
-        <PracticeHeatmap times={activity} />
+      <div className="mt-3.5 grid gap-3.5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <ul aria-label="学习情况" className="motion-stagger grid gap-3.5 sm:grid-cols-2">
+          {tiles.map((item, index) => <li key={index} className="min-w-0">{item}</li>)}
+        </ul>
+        <div className="motion-enter min-w-0" style={{ "--i": 2 } as React.CSSProperties}><PracticeHeatmap times={activity} /></div>
       </div>
     </div>
   );
@@ -136,11 +138,22 @@ function Reason({ children }: { children: React.ReactNode }) {
 // Long questions step down a size so the whole question stays readable without clamping.
 function Question({ children }: { children: string }) {
   const long = children.length > 150;
-  return <h1 className={cn('mt-4 max-w-[30em] font-serif leading-[1.3] font-medium tracking-[-0.01em] text-pretty', long ? 'text-[24px] sm:text-[32px] sm:leading-[1.28]' : 'text-[28px] sm:text-[40px] sm:leading-[1.22]')}>{children}</h1>;
+  return <h1 className={cn('mt-3.5 max-w-[30em] font-serif leading-[1.3] font-medium tracking-[-0.01em] text-pretty', long ? 'text-[22px] sm:text-[28px] sm:leading-[1.3]' : 'text-[26px] sm:text-[34px] sm:leading-[1.25]')}>{children}</h1>;
 }
 
-function Meta({ items }: { items: string[] }) {
-  return <p className="mt-5 text-[15px] text-muted-foreground">{items.filter(Boolean).map((item, i) => <span key={item}>{i > 0 && <span className="mx-2 text-faint">·</span>}{item}</span>)}</p>;
+/** What the question is and where it stands, each fact in its own form: the topic on its hue, the type as text, progress behind a dot, time behind a clock. */
+function Meta({ topic, type, progress = [], note, minutes }: { topic?: string; type?: string; progress?: string[]; note?: string; minutes?: number }) {
+  return (
+    <ul aria-label="题目信息" className="mt-4 flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-[14px] text-muted-foreground">
+      {topic && <li className="topic-tag" data-topic={topic}>{topicLabels[topic] ?? topic}</li>}
+      {type && <li>{type}</li>}
+      {progress.map((part, i) => i === 0
+        ? <li key={part} className="flex items-center gap-1.5 font-medium text-warn"><span className="size-1.5 rounded-full bg-current" aria-hidden />{part}</li>
+        : <li key={part}>{part}</li>)}
+      {note && <li className="tabular-nums">{note}</li>}
+      {minutes && <li className="flex items-center gap-1 tabular-nums"><Clock className="size-3.5 text-faint" aria-hidden />约 {minutes} 分钟</li>}
+    </ul>
+  );
 }
 
 type Session = ReturnType<typeof listSessions>[number];
@@ -157,8 +170,8 @@ function Resume({ session }: { session: Session }) {
     <>
       <Reason>接着上次的{label}</Reason>
       <Question>{session.prompt.text}</Question>
-      <Meta items={[topic ? topicLabels[topic] ?? topic : '', type ? questionTypeLabels[type] ?? type : '', !quick && words > 0 ? `${statusLabel} · 已写 ${words} 词` : statusLabel]} />
-      <div className="mt-8 flex flex-wrap items-center gap-2">
+      <Meta topic={topic} type={type ? questionTypeLabels[type] ?? type : undefined} progress={statusLabel.split(' · ')} note={!quick && words > 0 ? `已写 ${words} 词` : undefined} />
+      <div className="mt-7 flex flex-wrap items-center gap-2">
         <Link href={`/essays/${session.id}`} className={solidPill}>{quick ? '继续写卡片' : words ? '继续写作' : '开始写作'}</Link>
         <Link href="/practice" className={ghostPill}>换一个</Link>
       </div>

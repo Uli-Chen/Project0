@@ -151,7 +151,7 @@ export function EssayEditor({
           ref={toolbarRef}
           role="toolbar"
           aria-label="选中文字"
-          className="absolute z-20 flex max-w-full flex-wrap items-center gap-0.5 rounded-full bg-foreground p-1 text-background shadow-[0_8px_24px_rgb(0_0_0/0.18)] animate-in fade-in-0 slide-in-from-bottom-1"
+          className="motion-pop absolute z-20 flex max-w-full flex-wrap items-center gap-0.5 rounded-full bg-foreground p-1 text-background shadow-[0_8px_24px_rgb(0_0_0/0.18)]"
           style={{ top: toolbar.top, left: toolbar.left }}
           onMouseDown={(e) => e.preventDefault()}
           onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node) && e.relatedTarget !== ref.current) setToolbar(null); }}

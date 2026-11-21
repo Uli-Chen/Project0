@@ -25,11 +25,13 @@ function frozenContent(row: ReturnType<typeof rowFor>) {
 
 // CLI/server only; connection is injected so tests never open the application DB.
 // Every validation, version switch, question and alias write shares one transaction.
-export function importQuestions(sqlite: Database.Database, rawCatalog: unknown, rawRequirements: unknown, rawAliases: unknown = initialQuestionAliases) {
+export function importQuestions(sqlite: Database.Database, rawCatalog: unknown, rawRequirements: unknown, rawAliases?: unknown) {
   return sqlite.transaction(() => {
     const catalog = catalogSchema.parse(rawCatalog);
+    const sourceSnapshot = catalog.status === "task2_source_snapshot";
     const requirements = z.array(requirementSchema).parse(rawRequirements);
-    const aliases = z.array(aliasSchema).parse(rawAliases).map((entry) => ({ ...entry, alias: normalizeQuestionAlias(entry.alias), candidates: [...entry.candidates].sort() }));
+    const aliases = z.array(aliasSchema).parse(rawAliases === undefined ? (sourceSnapshot ? [] : initialQuestionAliases) : rawAliases)
+      .map((entry) => ({ ...entry, alias: normalizeQuestionAlias(entry.alias), candidates: [...entry.candidates].sort() }));
     const required = new Map<string, QuestionRequirements>();
     const key = (entry: { id: string; version: number }) => JSON.stringify([entry.id, entry.version]);
     for (const entry of requirements) {
@@ -39,6 +41,9 @@ export function importQuestions(sqlite: Database.Database, rawCatalog: unknown, 
     }
     const ids = new Set<string>(), orders = new Set<number>();
     const rows = catalog.questions.map((question) => {
+      if (sourceSnapshot && (question.id.startsWith("qb_mock_") || !["exam_recall", "cambridge_ielts"].includes(question.source.kind))) {
+        throw new Error(`Invalid Task 2 source question: ${question.id}`);
+      }
       if (ids.has(question.id)) throw new Error(`Duplicate catalog id: ${question.id}`);
       if (orders.has(question.bankOrder)) throw new Error(`Duplicate bankOrder: ${question.bankOrder}`);
       ids.add(question.id); orders.add(question.bankOrder);
@@ -56,6 +61,7 @@ export function importQuestions(sqlite: Database.Database, rawCatalog: unknown, 
     const insert = sqlite.prepare(`INSERT INTO questions (id, version, exposure_key, bank_order, text, primary_topic, secondary_topics_json, question_type, pool, source_json, requirements_json, bank_version, is_current)
       VALUES (@id, @version, @exposure_key, @bank_order, @text, @primary_topic, @secondary_topics_json, @question_type, @pool, @source_json, @requirements_json, @bank_version, 0)`);
     const activate = sqlite.prepare("UPDATE questions SET is_current = 1 WHERE id = ? AND version = ?");
+    const hasSourceQuestions = sqlite.prepare("SELECT 1 FROM questions WHERE is_current = 1 AND json_extract(source_json, '$.kind') IN ('exam_recall', 'cambridge_ielts') LIMIT 1").get();
     const switches: typeof rows = [];
     let inserted = 0;
     for (const row of rows) {
@@ -68,10 +74,10 @@ export function importQuestions(sqlite: Database.Database, rawCatalog: unknown, 
       const versions = history.all(row.id) as { version: number; exposure_key: string }[];
       if (versions.some((old) => old.exposure_key !== row.exposure_key)) throw new Error(`Question family cannot change for id: ${row.id}`);
       if (!existing) { insert.run(row); inserted++; }
-      // Old catalog replay preserves the newest current version. Missing IDs are
-      // retained: removal/retirement is not specified by this import contract.
-      if (!versions.length || row.version >= versions[0].version) switches.push(row);
+      // A fixture replay can seed history for legacy aliases after the switch.
+      if ((sourceSnapshot || !hasSourceQuestions) && (!versions.length || row.version >= versions[0].version)) switches.push(row);
     }
+    if (sourceSnapshot) sqlite.prepare("UPDATE questions SET is_current = 0 WHERE is_current = 1 AND id GLOB 'qb_mock_*'").run();
     // Retire all affected IDs before activating; a release may swap their orders.
     for (const row of switches) retire.run(row.id);
     for (const row of switches) activate.run(row.id, row.version);

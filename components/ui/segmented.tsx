@@ -41,9 +41,9 @@ export function Segmented<T extends string>({
             event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>("[role=radio]")[next]?.focus();
           }}
           className={cn(
-            "rounded-full border bg-sheet text-foreground/80 transition-colors hover:border-foreground/40",
+            "rounded-full border border-input bg-sheet text-foreground/80 transition-[color,background-color,border-color,transform] duration-(--dur-fast) ease-(--ease-soft) outline-none hover:border-foreground/40 hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.97]",
             size === "sm" ? "h-7 px-3 text-xs" : "h-8 px-3.5 text-[13px]",
-            value === option.value && "border-foreground bg-foreground text-background hover:border-foreground",
+            value === option.value && "border-primary/60 bg-coach-soft font-medium text-foreground hover:border-primary/60",
           )}
         >
           {option.label}

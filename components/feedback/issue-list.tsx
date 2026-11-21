@@ -55,11 +55,11 @@ export function IssueList({
   onDiscuss?: (rank: number) => void;
 }) {
   return (
-    <ol className="flex flex-col divide-y border-y">
+    <ol className="motion-stagger flex flex-col divide-y border-y">
       {issues.map((issue) => {
         const active = activeRank === issue.rank;
         return (
-          <li key={issue.rank} onMouseEnter={() => onHover(issue.rank)} onMouseLeave={() => onHover(null)} className="py-4">
+          <li key={issue.rank} onMouseEnter={() => onHover(issue.rank)} onMouseLeave={() => onHover(null)} className="-mx-2 rounded-lg px-2 py-4 transition-colors duration-(--dur-fast) hover:bg-sunk/70">
             <button type="button" aria-pressed={active} onClick={() => { onSelect(issue.rank); if (issue.sentenceIds[0]) onJump(issue.sentenceIds[0]); }} className="flex w-full items-start gap-2.5 text-left">
               <IssueBadge rank={issue.rank} active={active} className="-mt-px" />
               <span className="min-w-0 flex-1">

@@ -17,10 +17,9 @@ test ! -e "$rollback"
 cp "$app/.env.local" "$stage/.env.local"
 chmod 600 "$stage/.env.local"
 cd "$app"
-NODE_ENV=production npm run db:backup
-sudo systemctl stop opc
 moved_old=false
 recover() {
+  trap - ERR
   if [ "$moved_old" = true ]; then
     sudo systemctl stop opc || true
     if [ -d "$app" ]; then mv "$app" "$app-failed-$stamp"; fi
@@ -29,6 +28,8 @@ recover() {
   sudo systemctl start opc || true
 }
 trap recover ERR
+sudo systemctl stop opc
+NODE_ENV=production npm run db:backup
 cd "$stage"
 NODE_ENV=production npm run db:migrate
 NODE_ENV=production npm run db:import-questions
@@ -36,9 +37,11 @@ NODE_ENV=production npm run db:migrate-0.4
 mv "$app" "$rollback"
 moved_old=true
 mv "$stage" "$app"
+cd "$app"
 sudo systemctl start opc
 for attempt in $(seq 1 30); do
-  if curl -fsS http://127.0.0.1:3000/login >/dev/null; then
+  if curl -fsS --max-time 2 http://127.0.0.1:3000/login >/dev/null; then
+    NODE_ENV=production SMOKE_BASE_URL=http://127.0.0.1:3000 npm run smoke:release -- --allow-production
     trap - ERR
     printf 'Patch active; previous code: %s\n' "$rollback"
     exit 0

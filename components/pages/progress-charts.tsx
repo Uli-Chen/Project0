@@ -1,23 +1,17 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, type CSSProperties } from "react";
 import { DIM_LABEL, DIMS } from "@/components/feedback/score-card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Dim } from "@/lib/prototype/types";
 
-// 所有系列跟随主题；数据表提供不依赖颜色与悬停的阅读方式。
+// 所有系列跟随主题；每一篇的数值可以用悬停或方向键读到，不只靠颜色和位置。
 const SERIES = { original: "var(--muted-foreground)", revision: "var(--foreground)" };
-const Y_MIN = 0;
 const Y_MAX = 9;
-const TICKS = [0, 3, 6, 9];
 // The SVG is drawn at its real pixel width (one viewBox unit = one CSS pixel), so this is the
 // size the text is actually shown at. Narrow charts drop labels instead of shrinking them.
 export const AXIS_FONT = 14;
 const LABEL_SPACING = 72;
-/** Room one value label ("6.0") needs on a horizontal axis before neighbouring labels are dropped. */
-const TICK_SPACING = 44;
-/** Value labels to print on an axis `length` px long: all of them when they fit, else only the ends. */
-export const tickLabels = (length: number) => (length / (TICKS.length - 1) >= TICK_SPACING ? TICKS : [Y_MIN, Y_MAX]);
 
 /** Width of the chart's container in CSS pixels; desktop width until it has been measured. */
 function useChartWidth(fallback = 640) {
@@ -31,181 +25,159 @@ function useChartWidth(fallback = 640) {
   return [ref, width ?? fallback] as const;
 }
 
-type MockPoint = { date: string; label: string; overall: number; dims: Record<Dim, number> };
-type Tip = { x: number; y: number; lines: string[] } | null;
+export type ScorePoint = { date: string; label: string; overall: number; dims: Record<Dim, number>; revised?: { overall: number; dims: Record<Dim, number> } };
+type Metric = "overall" | Dim;
+type Range = "30" | "90" | "all";
+const RANGES: { value: Range; label: string }[] = [{ value: "30", label: "近 30 天" }, { value: "90", label: "近 90 天" }, { value: "all", label: "全部" }];
+const DAY = 86_400_000;
+// SVG 元素的 transform-origin 默认在用户坐标原点；pop 缩放需要各自的包围盒
+const POP: CSSProperties = { transformBox: "fill-box", transformOrigin: "center" };
+const H = 240;
 
-export function MockScoreChart({ points: allPoints, target }: { points: MockPoint[]; target?: number }) {
-  const [metric, setMetric] = useState<"overall" | Dim>("overall");
-  const [tip, setTip] = useState<Tip>(null);
+/**
+ * 成绩走势：一条原稿成绩的折线，改写过的那一篇在同一位置再标出改写后的分数。
+ * 数据会越积越多，所以按时段看（近 30 天 / 近 90 天 / 全部）；点多了先缩小、再只留折线，悬停或方向键读每一篇。
+ */
+export function MockScoreChart({ points: all, target, summary = false }: { points: ScorePoint[]; target?: number; summary?: boolean }) {
+  const [metric, setMetric] = useState<Metric>("overall");
+  // 以“今天”为终点；按天取整，服务端和浏览器渲染出的时段一致
+  const [today] = useState(() => Math.floor(Date.now() / DAY) * DAY + DAY);
+  // 记录多、跨度长时默认只看近 90 天，否则直接看全部
+  const [range, setRange] = useState<Range>(() => (all.length > 30 && all.some((p) => today - new Date(p.date).getTime() > 90 * DAY) ? "90" : "all"));
+  const [active, setActive] = useState<number | null>(null);
   const [measure, W] = useChartWidth();
-  const points = allPoints.slice(-12);
-  const H = 240;
+  const points = range === "all" ? all : all.filter((p) => today - new Date(p.date).getTime() <= Number(range) * DAY);
+  const n = points.length;
   const pad = { l: 36, r: 72, t: 16, b: 36 };
-  const x = (i: number) => pad.l + (points.length === 1 ? (W - pad.l - pad.r) / 2 : (i * (W - pad.l - pad.r)) / (points.length - 1));
+  const x = (i: number) => pad.l + (n === 1 ? (W - pad.l - pad.r) / 2 : (i * (W - pad.l - pad.r)) / (n - 1));
   // Every `step`-th label counted back from the latest, so the newest point is always labelled.
-  const step = Math.max(1, Math.ceil(points.length / Math.max(1, Math.floor((W - pad.l - pad.r) / LABEL_SPACING))));
-  const y = (v: number) => pad.t + ((Y_MAX - v) / (Y_MAX - Y_MIN)) * (H - pad.t - pad.b);
-  const value = (p: MockPoint) => (metric === "overall" ? p.overall : p.dims[metric]);
+  const step = Math.max(1, Math.ceil(n / Math.max(1, Math.floor((W - pad.l - pad.r) / LABEL_SPACING))));
+  const value = (p: ScorePoint) => (metric === "overall" ? p.overall : p.dims[metric]);
+  const revised = (p: ScorePoint) => (p.revised ? (metric === "overall" ? p.revised.overall : p.revised.dims[metric]) : null);
+  // 分数多在 4 分以上：都不低于 4 时纵轴从 3 起，把变化看清楚；有更低的分数就回到 0
+  const low = Math.min(target ?? Y_MAX, ...points.flatMap((p) => [value(p), revised(p) ?? Y_MAX])) >= 4 ? 3 : 0;
+  const ticks = low === 3 ? [3, 5, 7, 9] : [0, 3, 6, 9];
+  const y = (v: number) => pad.t + ((Y_MAX - v) / (Y_MAX - low)) * (H - pad.t - pad.b);
   const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${x(i)},${y(value(p))}`).join(" ");
-  const last = points.at(-1)!;
+  const last = points.at(-1);
   // The latest score and the target share the right margin; when they would overlap, keep the target.
-  const showLast = target === undefined || Math.abs(y(value(last)) - y(target)) >= AXIS_FONT + 2;
+  const showLast = !!last && (target === undefined || Math.abs(y(value(last)) - y(target)) >= AXIS_FONT + 2);
+  // 点多了就让位给折线：30 个以内是完整的点，80 个以内缩成小点，再多只画线
+  const dot = n <= 30 ? 4.5 : n <= 80 ? 2.5 : 0;
+  const rewrites = points.filter((p) => p.revised);
+  const mean = (values: number[]) => values.reduce((sum, v) => sum + v, 0) / values.length;
+  const current = active !== null && active < n ? points[active] : null;
+  const describe = (p: ScorePoint) => `${formatChartDate(p.date)} ${p.label}：${value(p).toFixed(1)} 分${revised(p) !== null ? `，改写后 ${revised(p)!.toFixed(1)} 分` : ""}`;
+  const nearest = (clientX: number, box: DOMRect) => (n <= 1 ? 0 : Math.max(0, Math.min(n - 1, Math.round((((clientX - box.left) / box.width) * W - pad.l) / ((W - pad.l - pad.r) / (n - 1))))));
 
   return (
     <div>
-      <ToggleGroup aria-label="评分维度" size="sm" variant="outline" spacing={0} value={[metric]} onValueChange={(value) => { if (value[0]) setMetric(value[0] as "overall" | Dim); }}>
-        {[{ value: "overall" as const, label: "总分" }, ...DIMS.map((d) => ({ value: d, label: DIM_LABEL[d] }))].map((option) => <ToggleGroupItem key={option.value} value={option.value} className="px-2.5 text-[14px]">{option.label}</ToggleGroupItem>)}
-      </ToggleGroup>
-      <div ref={measure} className="relative mt-4">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full tabular-nums" role="img" aria-label="模考成绩变化">
-          {TICKS.map((t) => (
-            <g key={t}>
-              <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeWidth={1} />
-              <text x={pad.l - 8} y={y(t)} dy="0.32em" textAnchor="end" fontSize={AXIS_FONT} fill="var(--muted-foreground)">
-                {t.toFixed(1)}
-              </text>
-            </g>
-          ))}
-          {target !== undefined && <><line x1={pad.l} x2={W - pad.r} y1={y(target)} y2={y(target)} stroke="var(--foreground)" strokeOpacity={0.35} strokeWidth={1} />
-          <text x={W - pad.r + 6} y={y(target)} dy="0.32em" fontSize={AXIS_FONT} fill="var(--muted-foreground)">
-            目标 {target}
-          </text></>}
-          <path d={path} fill="none" stroke={SERIES.revision} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-          {points.map((p, i) => (
-            <g key={`${p.date}-${i}`}>
-              <circle cx={x(i)} cy={y(value(p))} r={5} fill={SERIES.revision} stroke="var(--background)" strokeWidth={2} />
-              <circle
-                cx={x(i)}
-                cy={y(value(p))}
-                r={16}
-                fill="transparent"
-                tabIndex={0}
-                aria-label={`${p.label} ${p.date}: ${value(p).toFixed(1)} 分`}
-                onFocus={() => setTip({ x: (x(i) / W) * 100, y: y(value(p)), lines: [`${formatChartDate(p.date)} ${p.label}`, value(p).toFixed(1)] })}
-                onBlur={() => setTip(null)}
-                onMouseEnter={() => setTip({ x: (x(i) / W) * 100, y: y(value(p)), lines: [`${formatChartDate(p.date)} ${p.label}`, value(p).toFixed(1)] })}
-                onMouseLeave={() => setTip(null)}
-              />
-              {(points.length - 1 - i) % step === 0 && <text x={x(i)} y={H - 12} textAnchor="middle" fontSize={AXIS_FONT} fill="var(--muted-foreground)">
-                {p.label}
-              </text>}
-            </g>
-          ))}
-          {showLast && <text x={x(points.length - 1) + 10} y={y(value(last))} dy="0.32em" fontSize={AXIS_FONT} fontWeight={600} fill="var(--foreground)">
-            {value(last).toFixed(1)}
-          </text>}
-        </svg>
-        <PercentTooltip tip={tip} />
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5">
+        <ToggleGroup aria-label="评分维度" size="sm" variant="outline" spacing={0} value={[metric]} onValueChange={(next) => { if (next[0]) { setActive(null); setMetric(next[0] as Metric); } }}>
+          {[{ value: "overall" as const, label: "总分" }, ...DIMS.map((d) => ({ value: d, label: DIM_LABEL[d] }))].map((option) => <ToggleGroupItem key={option.value} value={option.value} className="px-2.5 text-[14px]">{option.label}</ToggleGroupItem>)}
+        </ToggleGroup>
+        <ToggleGroup aria-label="时段" size="sm" variant="outline" spacing={0} value={[range]} onValueChange={(next) => { if (next[0]) { setActive(null); setRange(next[0] as Range); } }}>
+          {RANGES.map((option) => <ToggleGroupItem key={option.value} value={option.value} className="px-2.5 text-[14px]">{option.label}</ToggleGroupItem>)}
+        </ToggleGroup>
       </div>
-      {allPoints.length > 12 && <p className="mt-2 text-[14px] text-muted-foreground">仅显示最近 12 篇</p>}
-      <ScoreDataTable caption="独立模考成绩" headings={["日期", "总分", ...DIMS.map((dim) => DIM_LABEL[dim])]} rows={allPoints.map((point) => [fullDate(point.date), point.overall.toFixed(1), ...DIMS.map((dim) => point.dims[dim].toFixed(1))])} />
-    </div>
-  );
-}
 
-/** 坐标以百分比存放，按容器宽度定位 */
-function PercentTooltip({ tip }: { tip: Tip }) {
-  if (!tip) return null;
-  return (
-    <div
-      className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-md bg-foreground px-2.5 py-1.5 text-[14px] text-background"
-      style={{ left: `${tip.x}%`, top: `calc(${(tip.y / 240) * 100}% - 10px)` }}
-    >
-      {tip.lines.map((l, i) => (
-        <p key={i} className={i === 0 ? "opacity-70" : "tabular-nums"}>
-          {l}
-        </p>
-      ))}
-    </div>
-  );
-}
+      {summary && n > 0 && (
+        <dl key={`${metric}-${range}`} className="motion-swap mt-5 flex flex-wrap gap-x-10 gap-y-3">
+          <Figure label={`${n} 篇的平均`} value={mean(points.map(value)).toFixed(1)} />
+          <Figure label="最高" value={Math.max(...points.map(value)).toFixed(1)} />
+          {rewrites.length > 0 && <Figure label="改写后平均提升" value={signed(mean(rewrites.map((p) => revised(p)! - value(p))))} tone={mean(rewrites.map((p) => revised(p)! - value(p)))} />}
+        </dl>
+      )}
 
-export function PracticeDumbbell({ rows: allRows }: { rows: Array<{ date: string; original: number; revision: number }> }) {
-  const [tip, setTip] = useState<Tip>(null);
-  const [measure, W] = useChartWidth();
-  const rows = allRows.slice(-12);
-  const rowH = 40;
-  const pad = { l: 92, r: 24, t: 8, b: 28 };
-  const H = pad.t + rows.length * rowH + pad.b;
-  const x = (v: number) => pad.l + ((v - Y_MIN) / (Y_MAX - Y_MIN)) * (W - pad.l - pad.r);
-  const labelled = tickLabels(W - pad.l - pad.r);
-
-  return (
-    <div>
-      <div className="flex gap-5 text-[14px] text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full" style={{ background: SERIES.original }} />
-          原稿
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full" style={{ background: SERIES.revision }} />
-          改写稿
-        </span>
-      </div>
-      <div ref={measure} className="relative mt-3">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full tabular-nums" role="img" aria-label="练习成绩：原稿与改写稿">
-          {TICKS.map((t) => (
-            <g key={t}>
-              <line x1={x(t)} x2={x(t)} y1={pad.t} y2={H - pad.b} stroke="var(--border)" strokeWidth={1} />
-              {labelled.includes(t) && <text x={x(t)} y={H - 8} textAnchor="middle" fontSize={AXIS_FONT} fill="var(--muted-foreground)">
-                {t.toFixed(1)}
-              </text>}
-            </g>
-          ))}
-          {rows.map((r, i) => {
-            const cy = pad.t + i * rowH + rowH / 2;
-            return (
-              <g
-                key={`${r.date}-${i}`}
-                tabIndex={0}
-                aria-label={`${formatChartDate(r.date)} 原稿 ${r.original} 分，改写稿 ${r.revision} 分`}
-                onFocus={() => setTip({ x: (x(r.revision) / W) * 100, y: cy, lines: [formatChartDate(r.date), `原稿 ${r.original.toFixed(1)}，改写稿 ${r.revision.toFixed(1)}`] })}
-                onBlur={() => setTip(null)}
-                onMouseEnter={() => setTip({ x: (x(r.revision) / W) * 100, y: cy, lines: [formatChartDate(r.date), `原稿 ${r.original.toFixed(1)}，改写稿 ${r.revision.toFixed(1)}`] })}
-                onMouseLeave={() => setTip(null)}
-              >
-                <rect x={0} y={cy - rowH / 2} width={W} height={rowH} fill="transparent" />
-                <text x={0} y={cy} dy="0.32em" fontSize={AXIS_FONT} fill="var(--muted-foreground)">
-                  {formatChartDate(r.date)}
-                </text>
-                <line x1={x(r.original)} x2={x(r.revision)} y1={cy} y2={cy} stroke="var(--foreground)" strokeOpacity={0.25} strokeWidth={2} />
-                <circle cx={x(r.original)} cy={cy} r={5} fill={SERIES.original} stroke="var(--background)" strokeWidth={2} />
-                <circle cx={x(r.revision)} cy={cy} r={5} fill={SERIES.revision} stroke="var(--background)" strokeWidth={2} />
-              </g>
-            );
-          })}
-        </svg>
-        {tip && (
-          <div
-            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-md bg-foreground px-2.5 py-1.5 text-[14px] text-background"
-            style={{ left: `${tip.x}%`, top: `calc(${(tip.y / H) * 100}% - 12px)` }}
+      {n === 0 ? <p className="flex h-44 items-center justify-center text-[15px] text-muted-foreground">这个时段没有成绩</p> : (
+        <div
+          ref={measure}
+          className="relative mt-4 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          tabIndex={0}
+          role="group"
+          aria-label="成绩走势，用左右方向键逐篇查看"
+          onKeyDown={(event) => {
+            const next = event.key === "ArrowRight" ? Math.min(n - 1, (active ?? -1) + 1) : event.key === "ArrowLeft" ? Math.max(0, (active ?? n) - 1) : event.key === "Home" ? 0 : event.key === "End" ? n - 1 : null;
+            if (next === null) return;
+            event.preventDefault();
+            setActive(next);
+          }}
+          onBlur={() => setActive(null)}
+        >
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            className="w-full tabular-nums"
+            role="img"
+            aria-label={`${n} 篇成绩，最近一篇 ${value(last!).toFixed(1)} 分`}
+            onMouseMove={(event) => setActive(nearest(event.clientX, event.currentTarget.getBoundingClientRect()))}
+            onMouseLeave={() => setActive(null)}
           >
-            <p className="opacity-70">{tip.lines[0]}</p>
-            <p className="tabular-nums">{tip.lines[1]}</p>
-          </div>
-        )}
-      </div>
-      {allRows.length > 12 && <p className="mt-2 text-[14px] text-muted-foreground">仅显示最近 12 篇</p>}
-      <ScoreDataTable caption="原稿与改写稿成绩" headings={["日期", "原稿", "改写稿"]} rows={allRows.map((row) => [fullDate(row.date), row.original.toFixed(1), row.revision.toFixed(1)])} />
+            {ticks.map((t) => (
+              <g key={t}>
+                <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeWidth={1} />
+                <text x={pad.l - 8} y={y(t)} dy="0.32em" textAnchor="end" fontSize={AXIS_FONT} fill="var(--faint)">
+                  {t.toFixed(1)}
+                </text>
+              </g>
+            ))}
+            {target !== undefined && <g className="motion-swap" style={{ animationDelay: "620ms" }}><line x1={pad.l} x2={W - pad.r} y1={y(target)} y2={y(target)} stroke="var(--coach)" strokeOpacity={0.55} strokeWidth={1} strokeDasharray="4 4" />
+            <text x={W - pad.r + 6} y={y(target)} dy="0.32em" fontSize={AXIS_FONT} fill="var(--coach)">
+              目标 {target}
+            </text></g>}
+            {current && <line x1={x(active!)} x2={x(active!)} y1={pad.t} y2={H - pad.b} stroke="var(--coach-line)" strokeWidth={1} />}
+            <g key={`${metric}-${range}`}>
+              <path d={path} pathLength={1} fill="none" stroke={SERIES.revision} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" className="motion-line" style={{ "--delay": "80ms" } as CSSProperties} />
+              {points.map((p, i) => {
+                const after = revised(p);
+                return (
+                  <g key={`${p.date}-${i}`}>
+                    {after !== null && after !== value(p) && <line x1={x(i)} x2={x(i)} y1={y(value(p))} y2={y(after)} stroke="var(--coach)" strokeOpacity={0.45} strokeWidth={2} strokeLinecap="round" className="motion-swap" style={{ animationDelay: "520ms" }} />}
+                    {dot > 0 && <circle cx={x(i)} cy={y(value(p))} r={dot} fill={SERIES.revision} stroke="var(--background)" strokeWidth={n <= 30 ? 2 : 0} className="motion-pop" style={{ ...POP, "--i": i, "--delay": "160ms" } as CSSProperties} />}
+                    {after !== null && <circle cx={x(i)} cy={y(after)} r={Math.max(dot, 3) - 0.5} fill="var(--background)" stroke="var(--coach)" strokeWidth={1.75} className="motion-pop" style={{ ...POP, "--i": i, "--delay": "420ms" } as CSSProperties} />}
+                    {(n - 1 - i) % step === 0 && <text x={x(i)} y={H - 12} textAnchor="middle" fontSize={AXIS_FONT} fill="var(--faint)">
+                      {p.label}
+                    </text>}
+                  </g>
+                );
+              })}
+              {current && <circle cx={x(active!)} cy={y(value(current))} r={Math.max(dot, 3) + 4} fill="none" stroke="var(--coach)" strokeWidth={1.5} />}
+              {showLast && <text x={x(n - 1) + 10} y={y(value(last!))} dy="0.32em" fontSize={AXIS_FONT} fontWeight={600} fill="var(--foreground)" className="motion-swap" style={{ animationDelay: "620ms" }}>
+                {value(last!).toFixed(1)}
+              </text>}
+            </g>
+          </svg>
+          {current && (
+            <div
+              className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-md bg-foreground px-2.5 py-1.5 text-[13px] leading-snug whitespace-nowrap text-background shadow-float"
+              style={{ left: `${Math.min(88, Math.max(12, (x(active!) / W) * 100))}%`, top: `calc(${(Math.min(y(value(current)), y(revised(current) ?? value(current))) / H) * 100}% - 12px)` }}
+            >
+              <p className="opacity-70">{formatChartDate(current.date)} {current.label}</p>
+              <p className="tabular-nums">{value(current).toFixed(1)}{revised(current) !== null && <span className="opacity-70"> → 改写后 </span>}{revised(current)?.toFixed(1)}</p>
+            </div>
+          )}
+          <p className="sr-only" aria-live="polite">{current ? describe(current) : ""}</p>
+        </div>
+      )}
+
+      {rewrites.length > 0 && (
+        <p className="mt-1 flex items-center gap-5 text-[14px] text-muted-foreground" aria-hidden>
+          <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-foreground" />原稿</span>
+          <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full border-[1.75px] border-coach" />改写后</span>
+        </p>
+      )}
     </div>
   );
 }
 
-function fullDate(value: string) {
-  return new Date(value).toLocaleDateString("zh-CN", { timeZone: "Asia/Taipei" });
-}
+const signed = (v: number) => `${v > 0 ? "+" : ""}${v.toFixed(1)}`;
 
-function ScoreDataTable({ caption, headings, rows }: { caption: string; headings: string[]; rows: string[][] }) {
-  return <details className="mt-5 text-[14px]">
-    <summary className="w-fit cursor-pointer rounded-sm py-1 text-muted-foreground hover:text-foreground">数据表</summary>
-    <div className="mt-3 max-w-full overflow-x-auto">
-      <table className="w-full min-w-max text-left tabular-nums">
-        <caption className="sr-only">{caption}</caption>
-        <thead><tr>{headings.map((heading) => <th key={heading} scope="col" className="border-b px-2 py-2 font-medium text-muted-foreground first:pl-0">{heading}</th>)}</tr></thead>
-        <tbody>{rows.map((row, index) => <tr key={index}>{row.map((value, column) => <td key={column} className="border-b px-2 py-2 first:pl-0">{value}</td>)}</tr>)}</tbody>
-      </table>
+function Figure({ label, value, tone = 0 }: { label: string; value: string; tone?: number }) {
+  return (
+    <div>
+      <dt className="text-[13px] text-muted-foreground">{label}</dt>
+      <dd className={`mt-0.5 text-[22px] leading-tight font-semibold tracking-[-0.02em] tabular-nums ${tone > 0 ? "text-good" : tone < 0 ? "text-warn" : ""}`}>{value}</dd>
     </div>
-  </details>;
+  );
 }
 
 function formatChartDate(value: string) {

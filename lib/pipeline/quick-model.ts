@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../db/client";
+import { acquireExecution, isExecutionActive, pruneExpiredExecutions } from "../db/execution-leases";
 import { defaultContinuations, quickOperations, quickPackages, quickOperationInputs, quickCheckResults, topicCards, completionEvents, writingSessions } from "../db/schema";
 import { getCard, cardRequirements } from "../db/queries/cards";
 import { getSession } from "../db/queries/sessions";
@@ -15,6 +16,7 @@ import { quickBudget, callConfigVersion } from "../llm/budget";
 import { reserveCall, type Reservation } from "../llm/calls";
 import { generateJson, buildMessages, estimateInputTokens } from "../llm/client";
 import { getLlmConfig } from "../llm/config";
+import { admitModelCall } from "../llm/admission";
 import { prompt } from "../llm/prompts";
 import { assertQuickSession } from "./http";
 import { SessionError } from "./engine";
@@ -41,11 +43,23 @@ export function quickDetails(userId: string, id: string, now = new Date().toISOS
   const db = getDb(), p = pack(userId, id), u = p ? usage(p) : { followups: 0, checks: 0, retries: 0 }, limits = p?.kind === "supplemental" ? quickBudget.supplemental : quickBudget.initial;
   const rows = db.$client.prepare("SELECT * FROM llm_calls WHERE user_id=? AND package_id IS NOT NULL AND started_at>?").all(userId, new Date(Date.parse(now) - quickBudget.user.windowMs).toISOString()) as CallAccounting[];
   const used = occupiedBudget(rows);
-  return { operations: db.select().from(quickOperations).where(scope(userId, id)).all(), checkResults: db.select().from(quickCheckResults).where(and(eq(quickCheckResults.userId, userId), eq(quickCheckResults.attemptId, id))).all().map(r => ({ ...r, results: JSON.parse(r.resultsJson) as Result[] })), budget: { packageId: p?.id ?? null, kind: p?.kind ?? "initial", remaining: { followups: limits.followups - u.followups, checks: limits.checks - u.checks, retries: limits.retries - u.retries }, nextSupplementalAt: p ? new Date(Date.parse(p.grantedAt) + quickBudget.supplemental.cooldownMs).toISOString() : null, userRemaining: { calls: Math.max(0, quickBudget.user.limits.calls - used.calls), inputTokens: Math.max(0, quickBudget.user.limits.inputTokens - used.inputTokens), outputTokens: Math.max(0, quickBudget.user.limits.outputTokens - used.outputTokens), waitMs: Math.max(0, quickBudget.user.limits.waitMs - used.waitMs) } } };
+  const operations = db.select().from(quickOperations).where(scope(userId, id)).all().map(operation =>
+    operation.status === "running" && !isExecutionActive("quick-operation", operation.id, db.$client)
+      ? { ...operation, status: "indeterminate" as const } : operation);
+  return { operations, checkResults: db.select().from(quickCheckResults).where(and(eq(quickCheckResults.userId, userId), eq(quickCheckResults.attemptId, id))).all().map(r => ({ ...r, results: JSON.parse(r.resultsJson) as Result[] })), budget: { packageId: p?.id ?? null, kind: p?.kind ?? "initial", remaining: { followups: limits.followups - u.followups, checks: limits.checks - u.checks, retries: limits.retries - u.retries }, nextSupplementalAt: p ? new Date(Date.parse(p.grantedAt) + quickBudget.supplemental.cooldownMs).toISOString() : null, userRemaining: { calls: Math.max(0, quickBudget.user.limits.calls - used.calls), inputTokens: Math.max(0, quickBudget.user.limits.inputTokens - used.inputTokens), outputTokens: Math.max(0, quickBudget.user.limits.outputTokens - used.outputTokens), waitMs: Math.max(0, quickBudget.user.limits.waitMs - used.waitMs) } } };
 }
 function response(userId: string, id: string) { const session = getSession(userId, id); assertQuickSession(session); return { defaultDeepId: getDb().select().from(defaultContinuations).where(and(eq(defaultContinuations.userId, userId), eq(defaultContinuations.quickAttemptId, id))).get()?.deepAttemptId ?? null, session, card: getCard(userId, id)!, requirements: cardRequirements(getCard(userId, id)!), ...quickDetails(userId, id) }; }
 function persist(userId: string, s: SessionState, now: string) { s.version++; s.updatedAt = s.savedAt = now; getDb().update(writingSessions).set({ stateJson: JSON.stringify(s), updatedAt: now }).where(and(eq(writingSessions.userId, userId), eq(writingSessions.id, s.id))).run(); }
-export function recoverQuickOperations(now = new Date().toISOString()) { return getDb().$client.prepare("UPDATE quick_operations SET status='indeterminate',finished_at=? WHERE status='running'").run(now).changes; }
+export function recoverQuickOperations(now = new Date().toISOString(), attempt?: { userId: string; id: string }) {
+  const sqlite = getDb().$client;
+  return sqlite.transaction(() => {
+    pruneExpiredExecutions("quick-operation", Date.parse(now), sqlite);
+    return sqlite.prepare(`UPDATE quick_operations SET status = 'indeterminate', finished_at = ? WHERE status = 'running'
+      AND NOT EXISTS (SELECT 1 FROM execution_leases WHERE scope = 'quick-operation' AND key = quick_operations.id)
+      ${attempt ? "AND user_id = ? AND attempt_id = ?" : ""}`)
+      .run(now, ...(attempt ? [attempt.userId, attempt.id] : [])).changes;
+  }).immediate();
+}
 function grant(userId: string, id: string, cardId: string, kind: "initial" | "supplemental", now: string) { const p = { id: randomUUID(), userId, attemptId: id, cardId, kind, grantedAt: now, closedAt: null, limitsJson: JSON.stringify(quickBudget[kind].limits), usedJson: JSON.stringify({ followups: 0, checks: 0, retries: 0 }) }; getDb().insert(quickPackages).values(p).run(); return p; }
 function reserve(op: Operation, frozen: Frozen, retry: boolean, now: string): Reservation {
   const db = getDb(), p = pack(op.userId, op.attemptId);
@@ -65,6 +79,7 @@ export async function runQuickModel(userId: string, id: string, raw: QuickModelA
   const input = quickModelActionSchema.parse(raw), db = getDb();
   const prepared = db.$client.transaction(() => {
     const now = new Date().toISOString(), session = getSession(userId, id); assertQuickSession(session);
+    recoverQuickOperations(now, { userId, id });
     // Doc §4.2: a request with text settles its receipt first; without text the original order stays.
     const askText = input.action === "quickFollowup" ? input.text : undefined;
     const closed = () => { if (session.lifecycle === "closed") throw new SessionError("练习已关闭。", 409); };
@@ -75,6 +90,14 @@ export async function runQuickModel(userId: string, id: string, raw: QuickModelA
     const receipts = keys.map(key => getRequestReceipt(db.$client, userId, key)).filter(r => r !== null);
     for (const r of receipts) if (r.attemptId !== id || r.action !== input.action || r.paramsHash !== hash || r.resultRef !== receipts[0].resultRef) throw new ReceiptConflict();
     const receipt = (ref: string) => { for (const key of keys) writeRequestReceipt(db.$client, { userId, idempotencyKey: key, attemptId: id, action: input.action, paramsHash: hash, resultRef: ref, createdAt: now }); session.completedRequests = [...(session.completedRequests ?? []), ...keys].slice(-50); session.lastStudentActionAt = now; persist(userId, session, now); };
+    function begin(op: Operation, frozen: Frozen, retry: boolean) {
+      const lease = acquireExecution("quick-operation", op.id, db.$client);
+      if (!lease) throw new SessionError("这项练习仍在处理中，请稍后重试。", 409);
+      const reservation = reserve(op, frozen, retry, now);
+      admitModelCall();
+      receipt(op.id);
+      return { op, frozen, reservation, lease };
+    }
     if (receipts.length) {
       // An identical replay of a text request is read-only: no new receipt rows, no session write.
       if (askText !== undefined && receipts.length === keys.length) return null;
@@ -121,7 +144,7 @@ export async function runQuickModel(userId: string, id: string, raw: QuickModelA
           op = { ...op, packageId: active.id };
           db.update(quickOperations).set({ packageId: active.id }).where(eq(quickOperations.id, op.id)).run();
           const frozen: Frozen = JSON.parse(saved.inputJson);
-          const reservation = reserve(op, frozen, false, now); receipt(op.id); return { op, frozen, reservation };
+          return begin(op, frozen, false);
         }
         receipt(op.id); return null;
       }
@@ -140,51 +163,59 @@ export async function runQuickModel(userId: string, id: string, raw: QuickModelA
       op = { id: randomUUID(), userId, attemptId: id, cardId: card.id, cardVersion: card.contentVersion, kind, slot, packageId: p.id, status: "running", startedAt: now, finishedAt: null };
       db.insert(quickOperations).values(op).run(); db.insert(quickOperationInputs).values({ operationId: op.id, userId, attemptId: id, inputJson: JSON.stringify(frozen) }).run();
     }
-    const reservation = reserve(op, frozen, input.action === "quickRetry", now); receipt(op.id); return { op, frozen, reservation };
+    return begin(op, frozen, input.action === "quickRetry");
   }).immediate();
   if (!prepared) return response(userId, id);
   let { reservation } = prepared;
-  const { op, frozen } = prepared;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    let result: z.infer<typeof followSchema> | z.infer<typeof checkSchema>;
-    try {
-      const options = { callSite: op.kind === "check" ? "quick.check" as const : "quick.followup" as const, userId, sessionId: id, operationId: op.id, purpose: op.kind === "check" ? "quick_check" as const : "quick_followup" as const, reservation, maxInputTokens: quickBudget.perCall.inputTokens, retries: 0 };
-      result = op.kind === "check" ? await generateJson(instruction.check, frozen.context, checkSchema, options) : await generateJson(instructionFor(op, frozen), frozen.context, followSchema, options);
-      if ("results" in result) {
-        const ids = frozen.context.requirements.map(r => r.id);
-        if (result.results.length !== ids.length || new Set(result.results.map(r => r.id)).size !== ids.length || result.results.some(r => !ids.includes(r.id) || !validQuickNote(r.note) || (r.status === "gap" ? !r.note : r.note !== null))) throw new Error("invalid_output");
-      } else if (!validQuickQuestion(result.question) || (result.targetKey !== null && ![...frozen.context.requirements.flatMap(r => r.keys), ...frozen.context.parts.map(p => p.key)].includes(result.targetKey))) throw new Error("invalid_output");
-    } catch (error) {
-      const call = db.$client.prepare("SELECT outcome FROM llm_calls WHERE id=?").get(reservation.id) as { outcome: string } | undefined;
-      const invalid = error instanceof Error && error.message === "invalid_output" || call?.outcome === "invalid_output";
-      if (invalid) db.$client.prepare("UPDATE llm_calls SET outcome='invalid_output' WHERE id=? AND outcome='ok'").run(reservation.id);
-      const status = invalid ? "invalid_output" : call?.outcome === "timeout" ? "timeout" : "indeterminate";
-      db.update(quickOperations).set({ status, finishedAt: new Date().toISOString() }).where(and(eq(quickOperations.id, op.id), eq(quickOperations.status, "running"))).run();
-      if (invalid && attempt === 0) { try { reservation = db.$client.transaction(() => { if (!getSession(userId, id)) throw new SessionError("练习不存在", 404); return reserve(op, frozen, true, new Date().toISOString()); }).immediate(); continue; } catch { /* original failure remains */ } }
+  const { op, frozen, lease } = prepared;
+  lease.keepAlive();
+  try {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (!lease.current()) break;
+      let result: z.infer<typeof followSchema> | z.infer<typeof checkSchema>;
+      try {
+        const options = { callSite: op.kind === "check" ? "quick.check" as const : "quick.followup" as const, userId, sessionId: id, operationId: op.id, purpose: op.kind === "check" ? "quick_check" as const : "quick_followup" as const, reservation, maxInputTokens: quickBudget.perCall.inputTokens, retries: 0 };
+        result = op.kind === "check" ? await generateJson(instruction.check, frozen.context, checkSchema, options) : await generateJson(instructionFor(op, frozen), frozen.context, followSchema, options);
+        if ("results" in result) {
+          const ids = frozen.context.requirements.map(r => r.id);
+          if (result.results.length !== ids.length || new Set(result.results.map(r => r.id)).size !== ids.length || result.results.some(r => !ids.includes(r.id) || !validQuickNote(r.note) || (r.status === "gap" ? !r.note : r.note !== null))) throw new Error("invalid_output");
+        } else if (!validQuickQuestion(result.question) || (result.targetKey !== null && ![...frozen.context.requirements.flatMap(r => r.keys), ...frozen.context.parts.map(p => p.key)].includes(result.targetKey))) throw new Error("invalid_output");
+      } catch (error) {
+        const call = db.$client.prepare("SELECT outcome FROM llm_calls WHERE id=?").get(reservation.id) as { outcome: string } | undefined;
+        const invalid = error instanceof Error && error.message === "invalid_output" || call?.outcome === "invalid_output";
+        if (invalid) db.$client.prepare("UPDATE llm_calls SET outcome='invalid_output' WHERE id=? AND outcome='ok'").run(reservation.id);
+        const status = invalid ? "invalid_output" : call?.outcome === "timeout" ? "timeout" : "indeterminate";
+        db.$client.transaction(() => {
+          if (lease.current()) db.update(quickOperations).set({ status, finishedAt: new Date().toISOString() }).where(and(eq(quickOperations.id, op.id), eq(quickOperations.status, "running"))).run();
+        }).immediate();
+        if (invalid && attempt === 0) { try { reservation = db.$client.transaction(() => { if (!lease.current() || !getSession(userId, id)) throw new SessionError("练习已中断，请刷新后重试。", 409); return reserve(op, frozen, true, new Date().toISOString()); }).immediate(); continue; } catch { /* original failure remains */ } }
+        break;
+      }
+      try { db.$client.transaction(() => {
+        const now = new Date().toISOString(), session = getSession(userId, id), card = getCard(userId, id);
+        const current = db.select().from(quickOperations).where(eq(quickOperations.id, op.id)).get();
+        if (!lease.current() || !current || current.status !== "running") return;
+        if (!session || !card || session.lifecycle === "closed" || (op.kind === "check" && card.contentVersion !== op.cardVersion)) { db.update(quickOperations).set({ status: "stale", finishedAt: now }).where(eq(quickOperations.id, op.id)).run(); return; }
+        if ("question" in result) {
+          session.messages.push({ id: randomUUID(), role: "coach", stage: "quick", action: "quickFollowup", content: result.question, ...(result.targetKey ? { targetKey: result.targetKey } : {}) }); persist(userId, session, now);
+          db.update(quickOperations).set({ status: "ok", finishedAt: now }).where(eq(quickOperations.id, op.id)).run();
+        } else {
+          const results = [...frozen.empty, ...result.results], passed = results.every(r => r.status === "met"), state = passed ? "passed" : "needs_development";
+          db.insert(quickCheckResults).values({ checkId: op.id, userId, attemptId: id, cardVersion: op.cardVersion, outcome: state, resultsJson: JSON.stringify(results), createdAt: now }).run();
+          db.update(topicCards).set({ state, lastCheckId: op.id, lastCheckedVersion: op.cardVersion }).where(eq(topicCards.id, card.id)).run();
+          if (passed) db.insert(completionEvents).values({ userId, attemptId: id, activity: "quick", exposureKey: session.question?.exposureKey, questionId: card.questionId, primaryTopic: session.question?.primaryTopic, questionType: session.question?.questionType, completedAt: now, freshness: "unknown", relation: "none" }).onConflictDoNothing().run();
+          db.update(quickOperations).set({ status: passed ? "ok" : "needs_development", finishedAt: now }).where(eq(quickOperations.id, op.id)).run();
+        }
+      }).immediate(); } catch {
+        // The result transaction rolled back; keep charged calls and expose an explicit
+        // technical retry instead of leaving a running operation until restart.
+        try { db.$client.transaction(() => {
+          if (lease.current()) db.update(quickOperations).set({ status: "indeterminate", finishedAt: new Date().toISOString() }).where(and(eq(quickOperations.id, op.id), eq(quickOperations.status, "running"))).run();
+        }).immediate(); }
+        catch { console.error("quick result recovery failed; reservation retained until startup recovery"); }
+      }
       break;
     }
-    try { db.$client.transaction(() => {
-      const now = new Date().toISOString(), session = getSession(userId, id), card = getCard(userId, id);
-      const current = db.select().from(quickOperations).where(eq(quickOperations.id, op.id)).get();
-      if (!current || current.status !== "running") return;
-      if (!session || !card || session.lifecycle === "closed" || (op.kind === "check" && card.contentVersion !== op.cardVersion)) { db.update(quickOperations).set({ status: "stale", finishedAt: now }).where(eq(quickOperations.id, op.id)).run(); return; }
-      if ("question" in result) {
-        session.messages.push({ id: randomUUID(), role: "coach", stage: "quick", action: "quickFollowup", content: result.question, ...(result.targetKey ? { targetKey: result.targetKey } : {}) }); persist(userId, session, now);
-        db.update(quickOperations).set({ status: "ok", finishedAt: now }).where(eq(quickOperations.id, op.id)).run();
-      } else {
-        const results = [...frozen.empty, ...result.results], passed = results.every(r => r.status === "met"), state = passed ? "passed" : "needs_development";
-        db.insert(quickCheckResults).values({ checkId: op.id, userId, attemptId: id, cardVersion: op.cardVersion, outcome: state, resultsJson: JSON.stringify(results), createdAt: now }).run();
-        db.update(topicCards).set({ state, lastCheckId: op.id, lastCheckedVersion: op.cardVersion }).where(eq(topicCards.id, card.id)).run();
-        if (passed) db.insert(completionEvents).values({ userId, attemptId: id, activity: "quick", exposureKey: session.question?.exposureKey, questionId: card.questionId, primaryTopic: session.question?.primaryTopic, questionType: session.question?.questionType, completedAt: now, freshness: "unknown", relation: "none" }).onConflictDoNothing().run();
-        db.update(quickOperations).set({ status: passed ? "ok" : "needs_development", finishedAt: now }).where(eq(quickOperations.id, op.id)).run();
-      }
-    }).immediate(); } catch {
-      // The result transaction rolled back; keep charged calls and expose an explicit
-      // technical retry instead of leaving a running operation until restart.
-      try { db.update(quickOperations).set({ status: "indeterminate", finishedAt: new Date().toISOString() }).where(and(eq(quickOperations.id, op.id), eq(quickOperations.status, "running"))).run(); }
-      catch { console.error("quick result recovery failed; reservation retained until startup recovery"); }
-    }
-    break;
-  }
+  } finally { lease.release(); }
   return response(userId, id);
 }

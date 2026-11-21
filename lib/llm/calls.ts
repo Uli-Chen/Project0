@@ -2,6 +2,7 @@ import "server-only";
 import type Database from "better-sqlite3";
 import { z } from "zod";
 import { getDb } from "../db/client";
+import { acquireExecution, isExecutionActive, pruneExpiredExecutions } from "../db/execution-leases";
 import { decideReservation, type CallAccounting, type CallOutcome, type QuotaRejection } from "../rules/llm-budget";
 import { callConfigVersion, llmPurposes, quickBudget, type BudgetLimits, type LlmPurpose, type QuickPurpose } from "./budget";
 
@@ -29,8 +30,13 @@ const settlement = z.object({ finishReason: z.string().nullable().optional(), us
 export type CallSettlement = z.infer<typeof settlement>;
 
 function insertCall(sqlite: Database.Database, call: CallRecord) {
-  sqlite.prepare(`INSERT INTO llm_calls(id,user_id,session_id,purpose,operation_id,package_id,attempt,model,config_version,started_at,reserved_input,reserved_output,reserved_ms,outcome)
-    VALUES(@id,@userId,@sessionId,@purpose,@operationId,@packageId,@attempt,@model,@configVersion,@startedAt,@reservedInput,@reservedOutput,@reservedMs,'reserved')`).run(call);
+  sqlite.transaction(() => {
+    sqlite.prepare(`INSERT INTO llm_calls(id,user_id,session_id,purpose,operation_id,package_id,attempt,model,config_version,started_at,reserved_input,reserved_output,reserved_ms,outcome)
+      VALUES(@id,@userId,@sessionId,@purpose,@operationId,@packageId,@attempt,@model,@configVersion,@startedAt,@reservedInput,@reservedOutput,@reservedMs,'reserved')`).run(call);
+    // The provider call has a deadline. Keep its reservation live through the
+    // configured timeout and a short window for dispatch and settlement.
+    if (!acquireExecution("llm-call", call.id, sqlite, call.reservedMs + 30_000)) throw new Error("Call lease already exists");
+  }).immediate();
 }
 
 /** Caller must await outer transaction commit before dispatch. If composing
@@ -75,22 +81,31 @@ export function observeCall(input: Omit<CallRecord, "id" | "packageId" | "config
 export function settleCall(reservation: CallRecord, result: CallSettlement, sqlite?: Database.Database): void {
   try {
     const parsed = settlement.parse(result);
-    (sqlite ?? getDb().$client).prepare(`UPDATE llm_calls SET input_tokens = ?, output_tokens = ?, latency_ms = ?, outcome = ?, finish_reason = ?, reasoning_tokens = ?
-      WHERE id = ? AND user_id = ? AND outcome = 'reserved'`).run(parsed.usage?.inputTokens ?? null, parsed.usage?.outputTokens ?? null, parsed.latencyMs, parsed.outcome, parsed.finishReason ?? null, parsed.usage?.reasoningTokens ?? null, reservation.id, reservation.userId);
+    const db = sqlite ?? getDb().$client;
+    db.transaction(() => {
+      if (!isExecutionActive("llm-call", reservation.id, db)) return;
+      const settled = db.prepare(`UPDATE llm_calls SET input_tokens = ?, output_tokens = ?, latency_ms = ?, outcome = ?, finish_reason = ?, reasoning_tokens = ?
+        WHERE id = ? AND user_id = ? AND outcome = 'reserved'`).run(parsed.usage?.inputTokens ?? null, parsed.usage?.outputTokens ?? null, parsed.latencyMs, parsed.outcome, parsed.finishReason ?? null, parsed.usage?.reasoningTokens ?? null, reservation.id, reservation.userId);
+      if (settled.changes) db.prepare("DELETE FROM execution_leases WHERE scope = 'llm-call' AND key = ?").run(reservation.id);
+    }).immediate();
   } catch { console.error("llm_calls settlement failed; reservation retained"); }
 }
 
 export function recoverInflightCalls(now: string, sqlite = getDb().$client): number {
   z.iso.datetime().parse(now);
-  // Recovery time is not model wait time. Do not invent latency or usage.
-  return sqlite.prepare("UPDATE llm_calls SET outcome = 'indeterminate' WHERE outcome = 'reserved'").run().changes;
+  return sqlite.transaction(() => {
+    pruneExpiredExecutions("llm-call", Date.parse(now), sqlite);
+    // Preserve reservations currently owned by another process.
+    return sqlite.prepare(`UPDATE llm_calls SET outcome = 'indeterminate' WHERE outcome = 'reserved'
+      AND NOT EXISTS (SELECT 1 FROM execution_leases WHERE scope = 'llm-call' AND key = llm_calls.id)`).run().changes;
+  }).immediate();
 }
 
 /** Refuse rolled-back, settled, recovered or mismatched reservations before fetch. */
 export function consumeReservation(reservation: Reservation, expected: { userId?: string; sessionId?: string | null; operationId?: string; purpose: LlmPurpose; inputTokens: number; model: string }, sqlite = getDb().$client): void {
   if (sqlite.inTransaction) throw new Error("Model dispatch must be outside a transaction");
   const row = sqlite.prepare("SELECT * FROM llm_calls WHERE id = ? AND user_id = ?").get(reservation.id, reservation.userId) as (CallAccounting & { operation_id: string; session_id: string | null; purpose: string; model: string; config_version: string; attempt: number }) | undefined;
-  if (!availableReservations.has(reservation) || !row || row.outcome !== "reserved" || row.package_id !== reservation.packageId || row.operation_id !== reservation.operationId || row.session_id !== reservation.sessionId || row.purpose !== reservation.purpose || row.model !== expected.model || row.config_version !== reservation.configVersion || row.attempt !== reservation.attempt || row.reserved_input !== reservation.reservedInput || row.reserved_output !== reservation.reservedOutput || row.reserved_ms !== reservation.reservedMs || expected.purpose !== reservation.purpose || (expected.userId !== undefined && expected.userId !== reservation.userId) || (expected.sessionId !== undefined && expected.sessionId !== reservation.sessionId) || (expected.operationId !== undefined && expected.operationId !== reservation.operationId)) throw new Error("Reservation is not available for this call");
+  if (!availableReservations.has(reservation) || !row || row.outcome !== "reserved" || !isExecutionActive("llm-call", reservation.id, sqlite) || row.package_id !== reservation.packageId || row.operation_id !== reservation.operationId || row.session_id !== reservation.sessionId || row.purpose !== reservation.purpose || row.model !== expected.model || row.config_version !== reservation.configVersion || row.attempt !== reservation.attempt || row.reserved_input !== reservation.reservedInput || row.reserved_output !== reservation.reservedOutput || row.reserved_ms !== reservation.reservedMs || expected.purpose !== reservation.purpose || (expected.userId !== undefined && expected.userId !== reservation.userId) || (expected.sessionId !== undefined && expected.sessionId !== reservation.sessionId) || (expected.operationId !== undefined && expected.operationId !== reservation.operationId)) throw new Error("Reservation is not available for this call");
   if (expected.inputTokens > row.reserved_input) throw new Error("input_too_long: actual messages exceed reservation");
   availableReservations.delete(reservation);
 }

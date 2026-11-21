@@ -69,13 +69,13 @@ export function Composer({
       />
       <div className="flex items-center gap-2 px-2 pb-2">
         <div className="min-w-0 flex-1">{toolbar}</div>
-        {text.length >= Math.round(maxLength * 11 / 12) && <span role="status" className="meta">{text.length.toLocaleString()} / {maxLength.toLocaleString("en-US")}</span>}
+        {text.length >= Math.round(maxLength * 11 / 12) && <span role="status" className="meta motion-swap">{text.length.toLocaleString()} / {maxLength.toLocaleString("en-US")}</span>}
         <button
           type="button"
           onClick={send}
           disabled={!text.trim() || disabled}
           aria-label="发送"
-          className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-opacity disabled:opacity-25"
+          className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-[opacity,transform] duration-(--dur-fast) ease-(--ease-soft) enabled:hover:bg-primary/90 enabled:active:scale-92 disabled:opacity-25"
         >
           <ArrowUp className="size-4" />
         </button>

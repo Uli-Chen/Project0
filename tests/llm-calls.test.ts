@@ -105,7 +105,9 @@ test("响应丢失：连接或响应体中断为 indeterminate，绝不自动重
 });
 test("启动恢复：reserved 变 indeterminate，用量和预留不变，晚到结果不能释放额度", async () => {
   const r = reserve(); const before = rows()[0];
-  assert.equal(recoverInflightCalls(now), 1); assert.equal(recoverInflightCalls(now), 0);
+  assert.equal(recoverInflightCalls(new Date().toISOString()), 0);
+  const expired = new Date(Date.now() + 60_000).toISOString();
+  assert.equal(recoverInflightCalls(expired), 1); assert.equal(recoverInflightCalls(expired), 0);
   assert.deepEqual(rows()[0], { ...before, outcome: "indeterminate" });
   settleCall(r, { usage: { inputTokens: 1, outputTokens: 1 }, latencyMs: 1, outcome: "ok" });
   assert.equal(rows()[0].outcome, "indeterminate"); assert.equal(occupiedBudget(rows()).inputTokens, 4000);

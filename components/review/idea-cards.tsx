@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Layers } from "lucide-react";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { topicCards } from "@/lib/db/schema";
@@ -9,6 +10,8 @@ import { questionTypeLabels, topicLabels } from "@/lib/question-bank/labels";
 import { sessionTopic } from "@/lib/learning/session-topic";
 import { StartPractice } from "@/components/topics/start-practice";
 import { TOPIC_ORDER } from "@/components/review/topics";
+import { buttonVariants } from "@/components/ui/button";
+import { Empty, EmptyContent, EmptyDescription, EmptyMedia } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 
 // A card's own state, and whether its latest content is the content that passed.
@@ -32,21 +35,21 @@ export function IdeaCards({ userId, topic, all }: { userId: string; topic: strin
   return (
     <div>
       {groups.length === 0 ? (
-        <p className="surface px-8 py-14 text-center text-[15px] text-muted-foreground">还没有{all ? "" : "通过检查的"}观点卡片。<Link href="/practice" className="ml-2 text-foreground underline underline-offset-4">去练习</Link></p>
+        <Empty><EmptyMedia variant="icon"><Layers /></EmptyMedia><EmptyDescription>还没有{all ? "" : "通过检查的"}观点卡片。</EmptyDescription><EmptyContent><Link href="/practice" className={buttonVariants({ variant: "outline", size: "sm" })}>去练习</Link></EmptyContent></Empty>
       ) : groups.map((group) => (
-        <section key={group.key} className="mt-10 first:mt-0">
+        <section key={group.key} className="mt-9 first:mt-0">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="section-heading">{group.name}</h2>
             <span className="text-[15px] text-muted-foreground tabular-nums">{group.cards.length} 张</span>
           </div>
-          <ul className="mt-4 grid gap-4 lg:grid-cols-2">
+          <ul className="motion-stagger mt-3 grid gap-3.5 lg:grid-cols-2">
             {group.cards.map(({ card, session, passed }) => {
               const labels = new Map(cardSlots(cardRequirements(card)).map((slot) => [slot.key, slot.label]));
               const points = card.content.parts.filter((part) => part.text.trim()).slice(0, POINTS);
               const [stateLabel, tone] = passed ? STATE.passed : STATE[card.state === "passed" ? "unchecked" : card.state] ?? STATE.draft;
               const type = session.question?.questionType;
               return (
-                <li key={card.id} className="surface flex flex-col gap-4 p-5">
+                <li key={card.id} className="surface flex flex-col gap-4 p-5 transition-shadow duration-(--dur-standard) ease-(--ease-soft) hover:shadow-lift">
                   <Link href={`/essays/${session.id}`} className="line-clamp-2 font-serif text-[17px] leading-[1.55] underline-offset-4 hover:underline">{session.question?.text ?? session.prompt.text}</Link>
                   {points.length > 0 ? (
                     <dl className="flex flex-col gap-2.5">
@@ -65,7 +68,7 @@ export function IdeaCards({ userId, topic, all }: { userId: string; topic: strin
                     </ul>
                     {passed
                       ? <StartPractice size="sm" variant="outline" questionId={card.questionId} activity="deep" continueFromQuickId={session.id}>用卡片写作文</StartPractice>
-                      : <Link href={`/essays/${session.id}`} className="inline-flex h-8.5 items-center rounded-full border border-input px-3.5 text-sm font-medium transition-colors hover:border-foreground/40 hover:bg-sunk">继续修改</Link>}
+                      : <Link href={`/essays/${session.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>继续修改</Link>}
                   </div>
                 </li>
               );

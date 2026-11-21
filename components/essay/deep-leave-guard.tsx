@@ -12,7 +12,7 @@ export function DeepLeaveNotice({ saving, draftDirty, message = "", onCancel, on
 }) {
   return <div className="space-y-4">
     <p className="text-sm text-muted-foreground">教练输入框里还有未发送的文字，仅保留在当前页面，不会随作文草稿保存。离开将丢弃这些文字；可以返回发送或先复制。</p>
-    {message && <textarea readOnly aria-label="未发送文字（可复制）" value={message} className="min-h-24 w-full rounded-md border p-2 text-sm" />}
+    {message && <textarea readOnly aria-label="未发送文字（可复制）" value={message} className="min-h-24 w-full resize-none rounded-lg border border-input bg-sunk p-2.5 text-sm leading-relaxed outline-none" />}
     {draftDirty && <p className="text-sm">继续离开前会先保存作文和提纲；保存失败会留在当前页面。</p>}
     <div className="flex flex-wrap justify-end gap-2"><Button variant="outline" disabled={saving} onClick={onCancel}>留在这里</Button><Button disabled={saving} onClick={onLeave}>{saving ? "正在保存作文…" : draftDirty ? "保存作文并离开，不发送聊天" : "离开，舍弃未发送文字"}</Button></div>
   </div>;
